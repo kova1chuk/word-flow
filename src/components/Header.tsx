@@ -42,6 +42,12 @@ export default function Header() {
           <div className="flex items-center space-x-4">
             {user ? (
               <>
+                <Link
+                  href="/words"
+                  className="text-gray-700 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+                >
+                  My Words
+                </Link>
                 <span className="text-sm text-gray-700">
                   Welcome, {user.email}
                 </span>

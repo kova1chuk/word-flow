@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { db } from "@/lib/firebase";
 import {
@@ -30,6 +30,12 @@ interface AnalysisResult {
   wordFrequency: { [key: string]: number };
 }
 
+interface TranslationResult {
+  word: string;
+  translation: string;
+  explanation: string;
+}
+
 export default function AnalyzePage() {
   const { user, loading } = useAuth();
   const router = useRouter();
@@ -41,6 +47,10 @@ export default function AnalyzePage() {
   const [loadingAnalysis, setLoadingAnalysis] = useState(false);
   const [addingWords, setAddingWords] = useState(false);
   const [error, setError] = useState("");
+  const [translations, setTranslations] = useState<TranslationResult[]>([]);
+  const [loadingTranslations, setLoadingTranslations] = useState(false);
+  const [activeTooltip, setActiveTooltip] = useState<number | null>(null);
+  const tooltipRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -52,6 +62,26 @@ export default function AnalyzePage() {
       fetchUserWords();
     }
   }, [user, loading, router]);
+
+  // Close tooltip on outside click
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        tooltipRef.current &&
+        !tooltipRef.current.contains(event.target as Node)
+      ) {
+        setActiveTooltip(null);
+      }
+    }
+    if (activeTooltip !== null) {
+      document.addEventListener("mousedown", handleClickOutside);
+    } else {
+      document.removeEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [activeTooltip]);
 
   const fetchUserWords = async () => {
     if (!user) return;
@@ -137,29 +167,79 @@ export default function AnalyzePage() {
       setError("");
 
       const wordsRef = collection(db, "words");
-      const promises = analysisResult.unknownWordList.map((word) =>
-        addDoc(wordsRef, {
+      // Create a map for quick lookup of explanations
+      const explanationMap: Record<string, string> = {};
+      translations.forEach((t) => {
+        explanationMap[t.word.toLowerCase()] = t.explanation;
+      });
+
+      const promises = analysisResult.unknownWordList.map((word) => {
+        const def =
+          explanationMap[word.toLowerCase()] &&
+          explanationMap[word.toLowerCase()] !== "No definition found."
+            ? explanationMap[word.toLowerCase()]
+            : `[Auto-added from text analysis]`;
+        return addDoc(wordsRef, {
           userId: user.uid,
           word: word.trim(),
-          definition: `[Auto-added from text analysis]`,
+          definition: def,
           example: "",
           createdAt: Timestamp.now(),
-        })
-      );
+        });
+      });
 
       await Promise.all(promises);
-
       // Refresh user words
       await fetchUserWords();
-
       // Re-analyze text to update results
       setInputText(inputText);
       analyzeText();
-    } catch (error) {
-      console.error("Error adding unknown words:", error);
+    } catch {
       setError("Failed to add unknown words");
     } finally {
       setAddingWords(false);
+    }
+  };
+
+  // Fetch explanations (definitions) for unknown words using DictionaryAPI.dev
+  const fetchTranslations = async () => {
+    if (!analysisResult || analysisResult.unknownWordList.length === 0) return;
+    setLoadingTranslations(true);
+    setTranslations([]);
+    try {
+      const results: TranslationResult[] = [];
+      for (const word of analysisResult.unknownWordList) {
+        // Fetch English definition from DictionaryAPI.dev
+        let explanation = "";
+        try {
+          const res = await fetch(
+            `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(
+              word
+            )}`
+          );
+          if (res.ok) {
+            const data = await res.json();
+            if (
+              Array.isArray(data) &&
+              data[0]?.meanings?.[0]?.definitions?.[0]?.definition
+            ) {
+              explanation = data[0].meanings[0].definitions[0].definition;
+            } else {
+              explanation = "No definition found.";
+            }
+          } else {
+            explanation = "No definition found.";
+          }
+        } catch {
+          explanation = "No definition found.";
+        }
+        results.push({ word, translation: "", explanation });
+      }
+      setTranslations(results);
+    } catch {
+      setTranslations([]);
+    } finally {
+      setLoadingTranslations(false);
     }
   };
 
@@ -200,23 +280,91 @@ export default function AnalyzePage() {
               Enter Text
             </h2>
             <div className="space-y-4">
-              <div>
-                <label
-                  htmlFor="text-input"
-                  className="block text-sm font-medium text-gray-700 mb-2"
-                >
-                  Text to Analyze
-                </label>
-                <textarea
-                  id="text-input"
-                  value={inputText}
-                  onChange={(e) => setInputText(e.target.value)}
-                  rows={12}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 text-base leading-relaxed bg-white placeholder-gray-500 resize-none"
-                  placeholder="Paste or type your text here..."
-                />
-              </div>
-
+              {!analysisResult ? (
+                <div>
+                  <label
+                    htmlFor="text-input"
+                    className="block text-sm font-medium text-gray-700 mb-2"
+                  >
+                    Text to Analyze
+                  </label>
+                  <textarea
+                    id="text-input"
+                    value={inputText}
+                    onChange={(e) => setInputText(e.target.value)}
+                    rows={12}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 text-base leading-relaxed bg-white placeholder-gray-500 resize-none"
+                    placeholder="Paste or type your text here..."
+                  />
+                </div>
+              ) : (
+                <div className="prose max-w-none bg-gray-50 p-4 rounded border">
+                  {(() => {
+                    // Split original text into words and spaces
+                    const words =
+                      inputText.match(/\w+|\s+|[^"]\w*|[.,!?;:]/g) || [];
+                    const unknownSet = new Set(
+                      analysisResult.unknownWordList.map((w) => w.toLowerCase())
+                    );
+                    const knownMap = new Map(
+                      userWords.map((w) => [
+                        w.word.toLowerCase().trim(),
+                        w.definition,
+                      ])
+                    );
+                    const explanationMap: Record<string, string> = {};
+                    translations.forEach((t) => {
+                      explanationMap[t.word.toLowerCase()] = t.explanation;
+                    });
+                    return words.map((w, i) => {
+                      const clean = w.toLowerCase().replace(/[^a-z0-9]/g, "");
+                      let tooltip = null;
+                      const isWord = /\w+/.test(w);
+                      let definition = "";
+                      let colorClass = "";
+                      if (unknownSet.has(clean)) {
+                        definition =
+                          explanationMap[clean] &&
+                          explanationMap[clean] !== "No definition found."
+                            ? explanationMap[clean]
+                            : "No definition";
+                        colorClass = "bg-red-100 text-red-700";
+                      } else if (knownMap.has(clean)) {
+                        definition = knownMap.get(clean) || "No definition";
+                        colorClass = "bg-green-100 text-green-700";
+                      }
+                      if (
+                        isWord &&
+                        (unknownSet.has(clean) || knownMap.has(clean))
+                      ) {
+                        tooltip =
+                          activeTooltip === i ? (
+                            <div
+                              ref={tooltipRef}
+                              className="absolute z-50 mt-2 left-1/2 -translate-x-1/2 bg-white border border-gray-300 shadow-lg rounded px-3 py-2 text-sm text-gray-900 min-w-[180px] max-w-xs"
+                            >
+                              <div className="font-semibold mb-1">{w}</div>
+                              <div>{definition}</div>
+                            </div>
+                          ) : null;
+                        return (
+                          <span
+                            key={i}
+                            className={`relative ${colorClass} rounded px-1 mx-0.5 inline-block cursor-pointer`}
+                            onClick={() =>
+                              setActiveTooltip(activeTooltip === i ? null : i)
+                            }
+                          >
+                            {w}
+                            {tooltip}
+                          </span>
+                        );
+                      }
+                      return <span key={i}>{w}</span>;
+                    });
+                  })()}
+                </div>
+              )}
               <button
                 onClick={analyzeText}
                 disabled={loadingAnalysis || !inputText.trim()}
@@ -329,6 +477,66 @@ export default function AnalyzePage() {
             )}
           </div>
         </div>
+
+        {/* Translations Section */}
+        {analysisResult && analysisResult.unknownWords > 0 && (
+          <div className="mt-12">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-2xl font-bold text-gray-900">
+                Unknown Word Translations & Explanations
+              </h2>
+              <button
+                onClick={fetchTranslations}
+                disabled={loadingTranslations}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {loadingTranslations ? "Translating..." : "Fetch Translations"}
+              </button>
+            </div>
+            {translations.length > 0 && (
+              <div className="overflow-x-auto">
+                <table className="min-w-full bg-white rounded shadow">
+                  <thead>
+                    <tr>
+                      <th className="px-4 py-2 text-left text-sm font-semibold text-gray-700">
+                        Word
+                      </th>
+                      <th className="px-4 py-2 text-left text-sm font-semibold text-gray-700">
+                        Translation
+                      </th>
+                      <th className="px-4 py-2 text-left text-sm font-semibold text-gray-700">
+                        Explanation
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {translations.map((t) => (
+                      <tr key={t.word}>
+                        <td className="px-4 py-2 text-gray-900 font-medium">
+                          {t.word}
+                        </td>
+                        <td className="px-4 py-2 text-green-700">
+                          {t.translation}
+                        </td>
+                        <td className="px-4 py-2 text-gray-600">
+                          {t.explanation}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+            {loadingTranslations && (
+              <div className="text-gray-500 mt-4">Fetching translations...</div>
+            )}
+            {!loadingTranslations && translations.length === 0 && (
+              <div className="text-gray-500 mt-4">
+                No translations fetched yet.
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

@@ -12,6 +12,7 @@ import {
   deleteDoc,
   doc,
   Timestamp,
+  updateDoc,
 } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 
@@ -21,6 +22,8 @@ interface Word {
   definition: string;
   example: string;
   createdAt: Timestamp;
+  translation?: string;
+  status?: string;
 }
 
 export default function WordsPage() {
@@ -34,6 +37,7 @@ export default function WordsPage() {
   const [newExample, setNewExample] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+  const [updating, setUpdating] = useState<string | null>(null);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -134,6 +138,70 @@ export default function WordsPage() {
     } catch (error) {
       console.error("Error deleting word:", error);
       setError("Failed to delete word");
+    }
+  };
+
+  const reloadTranslation = async (word: Word) => {
+    setUpdating(word.id);
+    try {
+      let translation = "";
+      const res = await fetch("https://libretranslate.de/translate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          q: word.word,
+          source: "en",
+          target: "uk", // Example: translate to Ukrainian
+          format: "text",
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        translation = data.translatedText;
+      } else {
+        translation = "[Translation error]";
+      }
+      await updateDoc(doc(db, "words", word.id), { translation });
+      setWords((prev) =>
+        prev.map((w) => (w.id === word.id ? { ...w, translation } : w))
+      );
+    } catch {
+      setError("Failed to reload translation");
+    } finally {
+      setUpdating(null);
+    }
+  };
+
+  const reloadDefinition = async (word) => {
+    setUpdating(word.id);
+    try {
+      let definition = "";
+      const res = await fetch(
+        `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(
+          word.word
+        )}`
+      );
+      if (res.ok) {
+        const data = await res.json();
+        if (
+          Array.isArray(data) &&
+          data[0]?.meanings?.[0]?.definitions?.[0]?.definition
+        ) {
+          definition = data[0].meanings[0].definitions[0].definition;
+        } else {
+          definition = "No definition found.";
+        }
+      } else {
+        definition = "No definition found.";
+      }
+      await updateDoc(doc(db, "words", word.id), { definition });
+      setWords((prev) =>
+        prev.map((w) => (w.id === word.id ? { ...w, definition } : w))
+      );
+    } catch {
+      setError("Failed to reload definition");
+    } finally {
+      setUpdating(null);
     }
   };
 
@@ -308,6 +376,40 @@ export default function WordsPage() {
                   <div className="text-xs text-gray-500 pt-2 border-t">
                     Added: {word.createdAt.toDate().toLocaleDateString()}
                   </div>
+
+                  <div className="mt-2 text-green-700">
+                    Translation:{" "}
+                    {word.translation || (
+                      <span className="text-gray-400">(none)</span>
+                    )}
+                  </div>
+                  <div className="mt-2 text-sm text-gray-500">
+                    Status: {word.status || "to_learn"}
+                  </div>
+                </div>
+
+                <div className="mt-4">
+                  <button
+                    onClick={() => reloadTranslation(word)}
+                    disabled={updating === word.id}
+                    className="text-blue-600 hover:text-blue-800 text-xs border border-blue-200 rounded px-2 py-1 ml-1 disabled:opacity-50"
+                  >
+                    Reload
+                  </button>
+                </div>
+
+                <div className="mt-2 text-gray-800">
+                  Definition:{" "}
+                  {word.definition || (
+                    <span className="text-gray-400">(none)</span>
+                  )}{" "}
+                  <button
+                    onClick={() => reloadDefinition(word)}
+                    disabled={updating === word.id}
+                    className="text-blue-600 hover:text-blue-800 text-xs border border-blue-200 rounded px-2 py-1 ml-1 disabled:opacity-50"
+                  >
+                    Reload
+                  </button>
                 </div>
               </div>
             ))}

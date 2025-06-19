@@ -40,6 +40,8 @@ export default function WordsPage() {
   const [error, setError] = useState("");
   const [updating, setUpdating] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(12);
 
   const STATUS_OPTIONS = [
     { value: "all", label: "All Words" },
@@ -48,6 +50,8 @@ export default function WordsPage() {
     { value: "to_learn", label: "To Learn" },
     { value: "unset", label: "No Status" },
   ];
+
+  const PAGE_SIZE_OPTIONS = [6, 12, 24, 48];
 
   useEffect(() => {
     if (!loading && !user) {
@@ -232,6 +236,29 @@ export default function WordsPage() {
     return word.status === statusFilter;
   });
 
+  // Pagination logic
+  const totalPages = Math.ceil(filteredWords.length / pageSize);
+  const startIndex = (currentPage - 1) * pageSize;
+  const endIndex = startIndex + pageSize;
+  const currentWords = filteredWords.slice(startIndex, endIndex);
+
+  // Reset to first page when filter changes
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [statusFilter]);
+
+  const goToPage = (page: number) => {
+    setCurrentPage(Math.max(1, Math.min(page, totalPages)));
+  };
+
+  const goToPreviousPage = () => {
+    goToPage(currentPage - 1);
+  };
+
+  const goToNextPage = () => {
+    goToPage(currentPage + 1);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -393,19 +420,101 @@ export default function WordsPage() {
             )}
           </div>
         ) : (
-          <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {filteredWords.map((word) => (
-              <WordCard
-                key={word.id}
-                word={word}
-                onReloadDefinition={reloadDefinition}
-                onReloadTranslation={reloadTranslation}
-                onDelete={handleDeleteWord}
-                onStatusChange={handleStatusChange}
-                updating={updating}
-              />
-            ))}
-          </div>
+          <>
+            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+              {currentWords.map((word) => (
+                <WordCard
+                  key={word.id}
+                  word={word}
+                  onReloadDefinition={reloadDefinition}
+                  onReloadTranslation={reloadTranslation}
+                  onDelete={handleDeleteWord}
+                  onStatusChange={handleStatusChange}
+                  updating={updating}
+                />
+              ))}
+            </div>
+
+            {/* Pagination Controls */}
+            {totalPages > 1 && (
+              <div className="mt-8 flex flex-col sm:flex-row justify-between items-center gap-4">
+                <div className="flex items-center gap-4">
+                  <span className="text-sm text-gray-700">
+                    Showing {startIndex + 1}-
+                    {Math.min(endIndex, filteredWords.length)} of{" "}
+                    {filteredWords.length} words
+                  </span>
+                  <div className="flex items-center gap-2">
+                    <label htmlFor="pageSize" className="text-sm text-gray-700">
+                      Words per page:
+                    </label>
+                    <select
+                      id="pageSize"
+                      value={pageSize}
+                      onChange={(e) => {
+                        setPageSize(Number(e.target.value));
+                        setCurrentPage(1);
+                      }}
+                      className="border border-gray-300 rounded-md px-2 py-1 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                      {PAGE_SIZE_OPTIONS.map((size) => (
+                        <option key={size} value={size}>
+                          {size}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <button
+                    onClick={goToPreviousPage}
+                    disabled={currentPage === 1}
+                    className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    Previous
+                  </button>
+
+                  <div className="flex items-center gap-1">
+                    {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                      let pageNum;
+                      if (totalPages <= 5) {
+                        pageNum = i + 1;
+                      } else if (currentPage <= 3) {
+                        pageNum = i + 1;
+                      } else if (currentPage >= totalPages - 2) {
+                        pageNum = totalPages - 4 + i;
+                      } else {
+                        pageNum = currentPage - 2 + i;
+                      }
+
+                      return (
+                        <button
+                          key={pageNum}
+                          onClick={() => goToPage(pageNum)}
+                          className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
+                            currentPage === pageNum
+                              ? "bg-blue-600 text-white"
+                              : "text-gray-700 bg-white border border-gray-300 hover:bg-gray-50"
+                          }`}
+                        >
+                          {pageNum}
+                        </button>
+                      );
+                    })}
+                  </div>
+
+                  <button
+                    onClick={goToNextPage}
+                    disabled={currentPage === totalPages}
+                    className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                  >
+                    Next
+                  </button>
+                </div>
+              </div>
+            )}
+          </>
         )}
       </div>
     </div>

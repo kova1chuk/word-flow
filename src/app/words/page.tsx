@@ -39,6 +39,15 @@ export default function WordsPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [updating, setUpdating] = useState<string | null>(null);
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+
+  const STATUS_OPTIONS = [
+    { value: "all", label: "All Words" },
+    { value: "well_known", label: "Well Known" },
+    { value: "want_repeat", label: "Want Repeat" },
+    { value: "to_learn", label: "To Learn" },
+    { value: "unset", label: "No Status" },
+  ];
 
   useEffect(() => {
     if (!loading && !user) {
@@ -217,6 +226,12 @@ export default function WordsPage() {
     }
   };
 
+  const filteredWords = words.filter((word) => {
+    if (statusFilter === "all") return true;
+    if (statusFilter === "unset") return !word.status;
+    return word.status === statusFilter;
+  });
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -243,13 +258,34 @@ export default function WordsPage() {
           </div>
         )}
 
-        <div className="mb-6">
+        <div className="mb-6 flex justify-between items-center">
           <button
             onClick={() => setShowAddForm(!showAddForm)}
             className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
           >
             {showAddForm ? "Cancel" : "+ Add New Word"}
           </button>
+
+          <div className="flex items-center gap-2">
+            <span className="text-sm font-medium text-gray-700">
+              Filter by status:
+            </span>
+            <div className="flex gap-1">
+              {STATUS_OPTIONS.map((option) => (
+                <button
+                  key={option.value}
+                  onClick={() => setStatusFilter(option.value)}
+                  className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
+                    statusFilter === option.value
+                      ? "bg-blue-600 text-white"
+                      : "bg-gray-200 text-gray-700 hover:bg-gray-300"
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
 
         {showAddForm && (
@@ -335,24 +371,30 @@ export default function WordsPage() {
           <div className="flex justify-center py-12">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
           </div>
-        ) : words.length === 0 ? (
+        ) : filteredWords.length === 0 ? (
           <div className="bg-white rounded-lg shadow-md p-8 text-center">
             <h3 className="text-lg font-medium text-gray-900 mb-2">
-              No words yet
+              {words.length === 0
+                ? "No words yet"
+                : "No words match the selected filter"}
             </h3>
             <p className="text-gray-600 mb-4">
-              Start building your vocabulary by adding your first word!
+              {words.length === 0
+                ? "Start building your vocabulary by adding your first word!"
+                : "Try selecting a different status filter to see more words."}
             </p>
-            <button
-              onClick={() => setShowAddForm(true)}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
-            >
-              Add Your First Word
-            </button>
+            {words.length === 0 && (
+              <button
+                onClick={() => setShowAddForm(true)}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+              >
+                Add Your First Word
+              </button>
+            )}
           </div>
         ) : (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {words.map((word) => (
+            {filteredWords.map((word) => (
               <WordCard
                 key={word.id}
                 word={word}

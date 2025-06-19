@@ -10,6 +10,8 @@ import {
   getDocs,
   addDoc,
   Timestamp,
+  updateDoc,
+  doc,
 } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 
@@ -52,6 +54,13 @@ export default function AnalyzePage() {
   const [loadingTranslations, setLoadingTranslations] = useState(false);
   const [activeTooltip, setActiveTooltip] = useState<number | null>(null);
   const tooltipRef = useRef<HTMLDivElement | null>(null);
+  const [addingWord, setAddingWord] = useState<string | null>(null);
+
+  const STATUS_OPTIONS = [
+    { value: "well_known", label: "Well Known", color: "bg-green-500" },
+    { value: "want_repeat", label: "Want Repeat", color: "bg-orange-400" },
+    { value: "to_learn", label: "To Learn", color: "bg-blue-600" },
+  ];
 
   useEffect(() => {
     if (!loading && !user) {
@@ -121,7 +130,7 @@ export default function AnalyzePage() {
       // Clean and split text into words
       const words = inputText
         .toLowerCase()
-        .replace(/[^\w\s]/g, " ") // Remove punctuation
+        .replace(/[^\w\s]/g, " ")
         .split(/\s+/)
         .filter((word) => word.length > 0);
 
@@ -244,6 +253,113 @@ export default function AnalyzePage() {
     }
   };
 
+  const addSingleWord = async (word: string, status?: string) => {
+    if (!user) return;
+
+    try {
+      setAddingWord(word);
+      const wordsRef = collection(db, "words");
+
+      // Check if word already exists
+      const wordExists = userWords.some(
+        (w) => w.word.toLowerCase().trim() === word.toLowerCase().trim()
+      );
+
+      if (wordExists) {
+        setError("This word already exists in your collection");
+        return;
+      }
+
+      let definition = "";
+      // Try to get definition from translations first
+      const translationDef = translations.find(
+        (t) => t.word.toLowerCase() === word.toLowerCase()
+      )?.explanation;
+
+      if (translationDef && translationDef !== "No definition found.") {
+        definition = translationDef;
+      } else {
+        // If no translation, try to fetch definition
+        try {
+          const res = await fetch(
+            `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(
+              word
+            )}`
+          );
+          if (res.ok) {
+            const data = await res.json();
+            if (data[0]?.meanings?.[0]?.definitions?.[0]?.definition) {
+              definition = data[0].meanings[0].definitions[0].definition;
+            }
+          }
+        } catch (error) {
+          console.error("Error fetching definition:", error);
+        }
+      }
+
+      // Add the word
+      const newWordDoc = await addDoc(wordsRef, {
+        userId: user.uid,
+        word: word.trim(),
+        definition: definition || "[Auto-added from text analysis]",
+        example: "",
+        createdAt: Timestamp.now(),
+        status: status || "to_learn",
+      });
+
+      // Update local state
+      const newWord = {
+        id: newWordDoc.id,
+        word: word.trim(),
+        definition: definition || "[Auto-added from text analysis]",
+        example: "",
+        createdAt: Timestamp.now(),
+        status: status || "to_learn",
+      };
+
+      setUserWords((prev) => [...prev, newWord]);
+
+      // Update analysis result
+      if (analysisResult) {
+        const updatedResult = { ...analysisResult };
+        const wordLower = word.toLowerCase().trim();
+
+        // Remove from unknown words
+        updatedResult.unknownWordList = updatedResult.unknownWordList.filter(
+          (w) => w.toLowerCase() !== wordLower
+        );
+        updatedResult.unknownWords = updatedResult.unknownWords - 1;
+        updatedResult.knownWords = updatedResult.knownWords + 1;
+
+        setAnalysisResult(updatedResult);
+      }
+
+      setActiveTooltip(null); // Close tooltip after adding
+    } catch (error) {
+      console.error("Error adding word:", error);
+      setError("Failed to add word");
+    } finally {
+      setAddingWord(null);
+    }
+  };
+
+  const updateWordStatus = async (wordId: string, status: string) => {
+    if (!user) return;
+    try {
+      await updateDoc(doc(db, "words", wordId), { status });
+
+      // Update local state
+      setUserWords((prev) =>
+        prev.map((word) => (word.id === wordId ? { ...word, status } : word))
+      );
+
+      setActiveTooltip(null); // Close tooltip after updating
+    } catch (error) {
+      console.error("Error updating word status:", error);
+      setError("Failed to update word status");
+    }
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -323,6 +439,8 @@ export default function AnalyzePage() {
                       const isWord = /\w+/.test(w);
                       let definition = "";
                       let colorClass = "";
+                      let existingWord = null;
+
                       if (unknownSet.has(clean)) {
                         definition =
                           explanationMap[clean] &&
@@ -337,21 +455,75 @@ export default function AnalyzePage() {
                           wordInfo?.status === "well_known"
                             ? "bg-green-100 text-green-700"
                             : "bg-blue-100 text-blue-700";
+                        existingWord = userWords.find(
+                          (uw) => uw.word.toLowerCase().trim() === clean
+                        );
                       }
-                      if (
-                        isWord &&
-                        (unknownSet.has(clean) || knownMap.has(clean))
-                      ) {
+
+                      if (isWord) {
                         tooltip =
                           activeTooltip === i ? (
                             <div
                               ref={tooltipRef}
-                              className="absolute z-50 mt-2 left-1/2 -translate-x-1/2 bg-white border border-gray-300 shadow-lg rounded px-3 py-2 text-sm text-gray-900 min-w-[180px] max-w-xs"
+                              className="absolute z-50 mt-2 left-1/2 -translate-x-1/2 bg-white border border-gray-300 shadow-lg rounded-lg px-4 py-3 text-sm text-gray-900 min-w-[250px] max-w-sm"
                             >
-                              <div className="font-semibold mb-1">{w}</div>
-                              <div>{definition}</div>
+                              <div className="font-semibold mb-2 text-base">
+                                {w}
+                              </div>
+                              <div className="mb-3">{definition}</div>
+
+                              {existingWord ? (
+                                <>
+                                  <div className="mb-2 text-xs font-medium text-gray-500">
+                                    Change status:
+                                  </div>
+                                  <div className="flex flex-wrap gap-1">
+                                    {STATUS_OPTIONS.map((option) => (
+                                      <button
+                                        key={option.value}
+                                        onClick={() =>
+                                          updateWordStatus(
+                                            existingWord.id,
+                                            option.value
+                                          )
+                                        }
+                                        className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+                                          existingWord.status === option.value
+                                            ? `${option.color} text-white`
+                                            : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                                        }`}
+                                      >
+                                        {option.label}
+                                      </button>
+                                    ))}
+                                  </div>
+                                </>
+                              ) : (
+                                <>
+                                  <div className="mb-2 text-xs font-medium text-gray-500">
+                                    Add to dictionary with status:
+                                  </div>
+                                  <div className="flex flex-wrap gap-1">
+                                    {STATUS_OPTIONS.map((option) => (
+                                      <button
+                                        key={option.value}
+                                        onClick={() =>
+                                          addSingleWord(w, option.value)
+                                        }
+                                        disabled={addingWord === w}
+                                        className={`px-2 py-1 rounded text-xs font-medium ${option.color} text-white hover:opacity-90 disabled:opacity-50 transition-colors`}
+                                      >
+                                        {addingWord === w
+                                          ? "Adding..."
+                                          : option.label}
+                                      </button>
+                                    ))}
+                                  </div>
+                                </>
+                              )}
                             </div>
                           ) : null;
+
                         return (
                           <span
                             key={i}

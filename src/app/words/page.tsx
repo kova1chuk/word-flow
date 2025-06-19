@@ -86,6 +86,16 @@ export default function WordsPage() {
       return;
     }
 
+    // Check if word already exists
+    const wordExists = words.some(
+      (word) => word.word.toLowerCase().trim() === newWord.toLowerCase().trim()
+    );
+
+    if (wordExists) {
+      setError("This word already exists in your collection");
+      return;
+    }
+
     try {
       setSubmitting(true);
       setError("");

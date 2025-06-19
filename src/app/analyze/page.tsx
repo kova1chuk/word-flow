@@ -19,6 +19,7 @@ interface Word {
   definition: string;
   example: string;
   createdAt: Timestamp;
+  status: string;
 }
 
 interface AnalysisResult {
@@ -309,7 +310,7 @@ export default function AnalyzePage() {
                     const knownMap = new Map(
                       userWords.map((w) => [
                         w.word.toLowerCase().trim(),
-                        w.definition,
+                        { definition: w.definition, status: w.status },
                       ])
                     );
                     const explanationMap: Record<string, string> = {};
@@ -330,8 +331,12 @@ export default function AnalyzePage() {
                             : "No definition";
                         colorClass = "bg-red-100 text-red-700";
                       } else if (knownMap.has(clean)) {
-                        definition = knownMap.get(clean) || "No definition";
-                        colorClass = "bg-green-100 text-green-700";
+                        const wordInfo = knownMap.get(clean);
+                        definition = wordInfo?.definition || "No definition";
+                        colorClass =
+                          wordInfo?.status === "well_known"
+                            ? "bg-green-100 text-green-700"
+                            : "bg-blue-100 text-blue-700";
                       }
                       if (
                         isWord &&
@@ -443,6 +448,78 @@ export default function AnalyzePage() {
                             {word}
                           </span>
                         ))}
+                      </div>
+                    </div>
+                  </div>
+                )}
+
+                {/* Known Words Section */}
+                {analysisResult.knownWords > 0 && (
+                  <div className="border-t pt-6">
+                    <h3 className="text-lg font-medium text-gray-900 mb-4">
+                      Known Words ({analysisResult.knownWords})
+                    </h3>
+                    <div className="space-y-4">
+                      {/* Well Known Words */}
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-700 mb-2">
+                          Well Known:
+                        </h4>
+                        <div className="bg-green-50 p-4 rounded-lg max-h-32 overflow-y-auto">
+                          <div className="flex flex-wrap gap-2">
+                            {(() => {
+                              const wellKnownWords = Object.keys(
+                                analysisResult.wordFrequency
+                              ).filter((word) =>
+                                userWords.some(
+                                  (uw) =>
+                                    uw.word.toLowerCase().trim() ===
+                                      word.toLowerCase() &&
+                                    uw.status === "well_known"
+                                )
+                              );
+                              return wellKnownWords.map((word, index) => (
+                                <span
+                                  key={index}
+                                  className="bg-green-100 px-2 py-1 rounded text-sm border border-green-200 text-green-800 font-medium"
+                                >
+                                  {word}
+                                </span>
+                              ));
+                            })()}
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* In Dictionary Words */}
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-700 mb-2">
+                          In Dictionary:
+                        </h4>
+                        <div className="bg-blue-50 p-4 rounded-lg max-h-32 overflow-y-auto">
+                          <div className="flex flex-wrap gap-2">
+                            {(() => {
+                              const inDictWords = Object.keys(
+                                analysisResult.wordFrequency
+                              ).filter((word) =>
+                                userWords.some(
+                                  (uw) =>
+                                    uw.word.toLowerCase().trim() ===
+                                      word.toLowerCase() &&
+                                    uw.status !== "well_known"
+                                )
+                              );
+                              return inDictWords.map((word, index) => (
+                                <span
+                                  key={index}
+                                  className="bg-blue-100 px-2 py-1 rounded text-sm border border-blue-200 text-blue-800 font-medium"
+                                >
+                                  {word}
+                                </span>
+                              ));
+                            })()}
+                          </div>
+                        </div>
                       </div>
                     </div>
                   </div>

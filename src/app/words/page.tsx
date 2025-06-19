@@ -15,12 +15,13 @@ import {
   updateDoc,
 } from "firebase/firestore";
 import { useRouter } from "next/navigation";
+import WordCard from "@/components/WordCard";
 
 interface Word {
   id: string;
   word: string;
   definition: string;
-  example: string;
+  example?: string;
   createdAt: Timestamp;
   translation?: string;
   status?: string;
@@ -129,11 +130,10 @@ export default function WordsPage() {
     }
   };
 
-  const handleDeleteWord = async (wordId: string) => {
+  const handleDeleteWord = async (word: Word) => {
     if (!user) return;
-
     try {
-      await deleteDoc(doc(db, "words", wordId));
+      await deleteDoc(doc(db, "words", word.id));
       await fetchWords();
     } catch (error) {
       console.error("Error deleting word:", error);
@@ -172,7 +172,7 @@ export default function WordsPage() {
     }
   };
 
-  const reloadDefinition = async (word) => {
+  const reloadDefinition = async (word: Word) => {
     setUpdating(word.id);
     try {
       let definition = "";
@@ -200,6 +200,18 @@ export default function WordsPage() {
       );
     } catch {
       setError("Failed to reload definition");
+    } finally {
+      setUpdating(null);
+    }
+  };
+
+  const handleStatusChange = async (id: string, status: string) => {
+    setUpdating(id);
+    try {
+      await updateDoc(doc(db, "words", id), { status });
+      setWords((prev) => prev.map((w) => (w.id === id ? { ...w, status } : w)));
+    } catch {
+      setError("Failed to update status");
     } finally {
       setUpdating(null);
     }
@@ -341,77 +353,15 @@ export default function WordsPage() {
         ) : (
           <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
             {words.map((word) => (
-              <div key={word.id} className="bg-white rounded-lg shadow-md p-6">
-                <div className="flex justify-between items-start mb-3">
-                  <h3 className="text-xl font-semibold text-gray-900">
-                    {word.word}
-                  </h3>
-                  <button
-                    onClick={() => handleDeleteWord(word.id)}
-                    className="text-red-600 hover:text-red-800 text-sm font-medium transition-colors"
-                  >
-                    Delete
-                  </button>
-                </div>
-
-                <div className="space-y-3">
-                  <div>
-                    <h4 className="text-sm font-medium text-gray-700 mb-1">
-                      Definition
-                    </h4>
-                    <p className="text-gray-900">{word.definition}</p>
-                  </div>
-
-                  {word.example && (
-                    <div>
-                      <h4 className="text-sm font-medium text-gray-700 mb-1">
-                        Example
-                      </h4>
-                      <p className="text-gray-600 italic">
-                        &ldquo;{word.example}&rdquo;
-                      </p>
-                    </div>
-                  )}
-
-                  <div className="text-xs text-gray-500 pt-2 border-t">
-                    Added: {word.createdAt.toDate().toLocaleDateString()}
-                  </div>
-
-                  <div className="mt-2 text-green-700">
-                    Translation:{" "}
-                    {word.translation || (
-                      <span className="text-gray-400">(none)</span>
-                    )}
-                  </div>
-                  <div className="mt-2 text-sm text-gray-500">
-                    Status: {word.status || "to_learn"}
-                  </div>
-                </div>
-
-                <div className="mt-4">
-                  <button
-                    onClick={() => reloadTranslation(word)}
-                    disabled={updating === word.id}
-                    className="text-blue-600 hover:text-blue-800 text-xs border border-blue-200 rounded px-2 py-1 ml-1 disabled:opacity-50"
-                  >
-                    Reload
-                  </button>
-                </div>
-
-                <div className="mt-2 text-gray-800">
-                  Definition:{" "}
-                  {word.definition || (
-                    <span className="text-gray-400">(none)</span>
-                  )}{" "}
-                  <button
-                    onClick={() => reloadDefinition(word)}
-                    disabled={updating === word.id}
-                    className="text-blue-600 hover:text-blue-800 text-xs border border-blue-200 rounded px-2 py-1 ml-1 disabled:opacity-50"
-                  >
-                    Reload
-                  </button>
-                </div>
-              </div>
+              <WordCard
+                key={word.id}
+                word={word}
+                onReloadDefinition={reloadDefinition}
+                onReloadTranslation={reloadTranslation}
+                onDelete={handleDeleteWord}
+                onStatusChange={handleStatusChange}
+                updating={updating}
+              />
             ))}
           </div>
         )}

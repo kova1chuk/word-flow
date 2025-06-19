@@ -12,12 +12,7 @@ import {
   doc,
   Timestamp,
 } from "firebase/firestore";
-
-const STATUS_OPTIONS = [
-  { value: "well_known", label: "Well known" },
-  { value: "want_repeat", label: "Want repeat" },
-  { value: "to_learn", label: "To learn" },
-];
+import WordTrainingCard from "@/components/WordTrainingCard";
 
 interface Word {
   id: string;
@@ -175,94 +170,17 @@ export default function TrainingPage() {
             <p className="text-red-700">{error}</p>
           </div>
         )}
-        <div className="bg-white rounded-lg shadow-md p-8 flex flex-col items-center relative">
-          <div className="absolute top-2 right-4 text-xs text-gray-400">
-            {current + 1} / {words.length}
-          </div>
-          <div
-            className="text-2xl font-bold text-blue-700 mb-4 text-center"
-            style={{ letterSpacing: 1 }}
-          >
-            {word.word}
-          </div>
-          <div className="mb-4 w-full">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="font-semibold text-gray-700">Definition:</span>
-              <button
-                onClick={() => reloadDefinition(word)}
-                disabled={updating === word.id}
-                className="text-blue-600 hover:text-blue-800 text-xs border border-blue-200 rounded px-2 py-1 ml-1 disabled:opacity-50"
-                title="Reload definition"
-              >
-                Reload
-              </button>
-            </div>
-            <div className="text-gray-800 text-base mb-2">
-              {word.definition}
-            </div>
-          </div>
-          <div className="mb-4 w-full">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="font-semibold text-gray-700">Translation:</span>
-              <button
-                onClick={() => reloadTranslation(word)}
-                disabled={updating === word.id}
-                className="text-blue-600 hover:text-blue-800 text-xs border border-blue-200 rounded px-2 py-1 ml-1 disabled:opacity-50"
-                title="Reload translation"
-              >
-                Reload
-              </button>
-            </div>
-            <div className="text-green-700 text-base mb-2">
-              {word.translation || (
-                <span className="text-gray-400">(none)</span>
-              )}
-            </div>
-          </div>
-          <div className="mb-4 w-full">
-            <span className="font-semibold text-gray-700">Status:</span>
-            <div className="flex gap-2 mt-2">
-              {STATUS_OPTIONS.map((opt) => (
-                <button
-                  key={opt.value}
-                  onClick={() => handleStatusChange(word.id, opt.value)}
-                  disabled={updating === word.id || word.status === opt.value}
-                  className={`px-4 py-2 rounded font-medium border transition-colors text-sm
-                    ${
-                      word.status === opt.value
-                        ? opt.value === "well_known"
-                          ? "bg-green-500 text-white border-green-500"
-                          : opt.value === "want_repeat"
-                          ? "bg-orange-400 text-white border-orange-400"
-                          : "bg-blue-600 text-white border-blue-600"
-                        : "bg-white text-gray-700 border-gray-300 hover:bg-gray-100"
-                    }
-                    disabled:opacity-60`}
-                >
-                  {opt.label}
-                </button>
-              ))}
-            </div>
-          </div>
-          <div className="flex justify-between w-full mt-6">
-            <button
-              onClick={() => setCurrent((c) => Math.max(0, c - 1))}
-              disabled={current === 0}
-              className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded disabled:opacity-50"
-            >
-              Previous
-            </button>
-            <button
-              onClick={() =>
-                setCurrent((c) => Math.min(words.length - 1, c + 1))
-              }
-              disabled={current === words.length - 1}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded disabled:opacity-50"
-            >
-              Next
-            </button>
-          </div>
-        </div>
+        <WordTrainingCard
+          word={word}
+          onReloadDefinition={reloadDefinition}
+          onReloadTranslation={reloadTranslation}
+          onStatusChange={handleStatusChange}
+          updating={updating}
+          current={current}
+          total={words.length}
+          onPrev={() => setCurrent((c) => Math.max(0, c - 1))}
+          onNext={() => setCurrent((c) => Math.min(words.length - 1, c + 1))}
+        />
       </div>
     </div>
   );

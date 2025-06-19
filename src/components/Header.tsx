@@ -48,6 +48,12 @@ export default function Header() {
                 >
                   My Words
                 </Link>
+                <Link
+                  href="/analyze"
+                  className="text-gray-700 hover:text-gray-900 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+                >
+                  Analyze Text
+                </Link>
                 <span className="text-sm text-gray-700">
                   Welcome, {user.email}
                 </span>

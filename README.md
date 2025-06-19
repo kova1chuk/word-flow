@@ -8,6 +8,7 @@ A Next.js application with Firebase authentication and Cloud Firestore for manag
 - 📧 Email/Password Sign In & Sign Up
 - 🌐 Google OAuth Sign In
 - 📚 Personal Word Collection Management
+- 📊 Text Analysis & Word Recognition
 - ☁️ Cloud Firestore Integration
 - 🎨 Modern UI with Tailwind CSS
 - 📱 Responsive Design
@@ -79,12 +80,22 @@ npm run dev
 - **Delete Words**: Remove words from the collection
 - **User Isolation**: Each user can only see and manage their own words
 
+## Text Analysis
+
+- **Text Input**: Paste or type any text for analysis
+- **Word Statistics**: Count total words, unique words, known words, and unknown words
+- **Word Recognition**: Automatically identifies which words are already in your collection
+- **Bulk Add**: Add all unknown words to your collection with one click
+- **Word Frequency**: Shows the most common words in the analyzed text
+- **Real-time Analysis**: Instant results with visual statistics
+
 ## Pages
 
 - `/` - Main page showing auth status
 - `/signin` - Sign in page with email/password and Google options
 - `/signup` - Sign up page with email/password and Google options
 - `/words` - Word management page (requires authentication)
+- `/analyze` - Text analysis page (requires authentication)
 
 ## Tech Stack
 
@@ -106,6 +117,8 @@ src/
 │   │   └── page.tsx          # Sign up page
 │   ├── words/
 │   │   └── page.tsx          # Word management page
+│   ├── analyze/
+│   │   └── page.tsx          # Text analysis page
 │   ├── layout.tsx            # Root layout with AuthProvider
 │   └── page.tsx              # Main page
 ├── components/

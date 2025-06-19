@@ -30,6 +30,20 @@ export default function TrainingPage() {
   const [updating, setUpdating] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [current, setCurrent] = useState(0);
+  const [trainingStarted, setTrainingStarted] = useState(false);
+  const [selectedStatuses, setSelectedStatuses] = useState<string[]>([
+    "to_learn",
+    "want_repeat",
+    "unset",
+  ]);
+  const [trainingWords, setTrainingWords] = useState<Word[]>([]);
+
+  const STATUS_OPTIONS = [
+    { value: "to_learn", label: "To Learn", color: "bg-blue-600" },
+    { value: "want_repeat", label: "Want Repeat", color: "bg-orange-400" },
+    { value: "well_known", label: "Well Known", color: "bg-green-500" },
+    { value: "unset", label: "No Status", color: "bg-gray-500" },
+  ];
 
   useEffect(() => {
     if (!loading && !user) {
@@ -70,6 +84,9 @@ export default function TrainingPage() {
       setWords((prev) =>
         prev.map((w) => (w.id === wordId ? { ...w, status } : w))
       );
+      setTrainingWords((prev) =>
+        prev.map((w) => (w.id === wordId ? { ...w, status } : w))
+      );
     } catch {
       setError("Failed to update status");
     } finally {
@@ -103,6 +120,9 @@ export default function TrainingPage() {
       setWords((prev) =>
         prev.map((w) => (w.id === word.id ? { ...w, definition } : w))
       );
+      setTrainingWords((prev) =>
+        prev.map((w) => (w.id === word.id ? { ...w, definition } : w))
+      );
     } catch {
       setError("Failed to reload definition");
     } finally {
@@ -120,7 +140,7 @@ export default function TrainingPage() {
         body: JSON.stringify({
           q: word.word,
           source: "en",
-          target: "uk", // Example: translate to Ukrainian
+          target: "uk",
           format: "text",
         }),
       });
@@ -134,11 +154,58 @@ export default function TrainingPage() {
       setWords((prev) =>
         prev.map((w) => (w.id === word.id ? { ...w, translation } : w))
       );
+      setTrainingWords((prev) =>
+        prev.map((w) => (w.id === word.id ? { ...w, translation } : w))
+      );
     } catch {
       setError("Failed to reload translation");
     } finally {
       setUpdating(null);
     }
+  };
+
+  const toggleStatusSelection = (status: string) => {
+    setSelectedStatuses((prev) =>
+      prev.includes(status)
+        ? prev.filter((s) => s !== status)
+        : [...prev, status]
+    );
+  };
+
+  const startTraining = () => {
+    const filteredWords = words.filter((word) => {
+      if (selectedStatuses.includes("unset")) {
+        return selectedStatuses.includes(word.status || "unset");
+      }
+      return selectedStatuses.includes(word.status || "");
+    });
+
+    if (filteredWords.length === 0) {
+      setError(
+        "No words match the selected statuses. Please select different statuses."
+      );
+      return;
+    }
+
+    // Shuffle the words for random order
+    const shuffledWords = [...filteredWords].sort(() => Math.random() - 0.5);
+    setTrainingWords(shuffledWords);
+    setCurrent(0);
+    setTrainingStarted(true);
+    setError("");
+  };
+
+  const stopTraining = () => {
+    setTrainingStarted(false);
+    setTrainingWords([]);
+    setCurrent(0);
+  };
+
+  const getStatusCount = (status: string) => {
+    if (status === "unset") {
+      return words.filter((word) => !word.status).length;
+    }
+    return words.filter((word) => word.status === status).length;
   };
 
   if (loading || loadingWords) {
@@ -151,35 +218,135 @@ export default function TrainingPage() {
 
   if (!words.length) {
     return (
-      <div className="min-h-screen flex items-center justify-center text-gray-500">
-        No words in your collection.
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-4">
+            No words in your collection
+          </h1>
+          <p className="text-gray-600">Add some words to start training!</p>
+        </div>
       </div>
     );
   }
 
-  const word = words[current];
+  // Training Settings Screen
+  if (!trainingStarted) {
+    return (
+      <div className="min-h-screen bg-gray-50 py-8">
+        <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="bg-white rounded-lg shadow-md p-8">
+            <h1 className="text-3xl font-bold text-gray-900 mb-8 text-center">
+              Training Settings
+            </h1>
+
+            {error && (
+              <div className="mb-6 bg-red-50 border border-red-200 rounded-md p-4">
+                <p className="text-red-700">{error}</p>
+              </div>
+            )}
+
+            <div className="mb-8">
+              <h2 className="text-xl font-semibold text-gray-900 mb-4">
+                Select which words to train:
+              </h2>
+              <div className="grid gap-3">
+                {STATUS_OPTIONS.map((option) => {
+                  const count = getStatusCount(option.value);
+                  const isSelected = selectedStatuses.includes(option.value);
+
+                  return (
+                    <button
+                      key={option.value}
+                      onClick={() => toggleStatusSelection(option.value)}
+                      className={`flex items-center justify-between p-4 rounded-lg border-2 transition-colors ${
+                        isSelected
+                          ? "border-blue-500 bg-blue-50"
+                          : "border-gray-200 bg-white hover:border-gray-300"
+                      }`}
+                    >
+                      <div className="flex items-center gap-3">
+                        <div
+                          className={`w-4 h-4 rounded-full ${option.color}`}
+                        ></div>
+                        <span className="font-medium text-gray-900">
+                          {option.label}
+                        </span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm text-gray-500">
+                          {count} words
+                        </span>
+                        {isSelected && (
+                          <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
+                            <svg
+                              className="w-3 h-3 text-white"
+                              fill="currentColor"
+                              viewBox="0 0 20 20"
+                            >
+                              <path
+                                fillRule="evenodd"
+                                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                clipRule="evenodd"
+                              />
+                            </svg>
+                          </div>
+                        )}
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="flex justify-center">
+              <button
+                onClick={startTraining}
+                disabled={selectedStatuses.length === 0}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-md text-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Start Training
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Training Session Screen
+  const currentWord = trainingWords[current];
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center">
       <div className="w-full max-w-md">
-        <h1 className="text-3xl font-bold text-gray-900 mb-8 text-center">
-          Word Training
-        </h1>
+        <div className="flex justify-between items-center mb-6">
+          <h1 className="text-2xl font-bold text-gray-900">Training Session</h1>
+          <button
+            onClick={stopTraining}
+            className="text-gray-500 hover:text-gray-700 text-sm font-medium"
+          >
+            Stop Training
+          </button>
+        </div>
+
         {error && (
           <div className="mb-6 bg-red-50 border border-red-200 rounded-md p-4 text-center">
             <p className="text-red-700">{error}</p>
           </div>
         )}
+
         <WordTrainingCard
-          word={word}
+          word={currentWord}
           onReloadDefinition={reloadDefinition}
           onReloadTranslation={reloadTranslation}
           onStatusChange={handleStatusChange}
           updating={updating}
           current={current}
-          total={words.length}
+          total={trainingWords.length}
           onPrev={() => setCurrent((c) => Math.max(0, c - 1))}
-          onNext={() => setCurrent((c) => Math.min(words.length - 1, c + 1))}
+          onNext={() =>
+            setCurrent((c) => Math.min(trainingWords.length - 1, c + 1))
+          }
         />
       </div>
     </div>

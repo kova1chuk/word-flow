@@ -179,7 +179,10 @@ export default function TrainingPage() {
           <div className="absolute top-2 right-4 text-xs text-gray-400">
             {current + 1} / {words.length}
           </div>
-          <div className="text-2xl font-bold text-blue-700 mb-4">
+          <div
+            className="text-2xl font-bold text-blue-700 mb-4 text-center"
+            style={{ letterSpacing: 1 }}
+          >
             {word.word}
           </div>
           <div className="mb-4 w-full">
@@ -218,18 +221,28 @@ export default function TrainingPage() {
           </div>
           <div className="mb-4 w-full">
             <span className="font-semibold text-gray-700">Status:</span>
-            <select
-              className="border rounded px-2 py-1 text-sm ml-2"
-              value={word.status || "to_learn"}
-              onChange={(e) => handleStatusChange(word.id, e.target.value)}
-              disabled={updating === word.id}
-            >
+            <div className="flex gap-2 mt-2">
               {STATUS_OPTIONS.map((opt) => (
-                <option key={opt.value} value={opt.value}>
+                <button
+                  key={opt.value}
+                  onClick={() => handleStatusChange(word.id, opt.value)}
+                  disabled={updating === word.id || word.status === opt.value}
+                  className={`px-4 py-2 rounded font-medium border transition-colors text-sm
+                    ${
+                      word.status === opt.value
+                        ? opt.value === "well_known"
+                          ? "bg-green-500 text-white border-green-500"
+                          : opt.value === "want_repeat"
+                          ? "bg-orange-400 text-white border-orange-400"
+                          : "bg-blue-600 text-white border-blue-600"
+                        : "bg-white text-gray-700 border-gray-300 hover:bg-gray-100"
+                    }
+                    disabled:opacity-60`}
+                >
                   {opt.label}
-                </option>
+                </button>
               ))}
-            </select>
+            </div>
           </div>
           <div className="flex justify-between w-full mt-6">
             <button

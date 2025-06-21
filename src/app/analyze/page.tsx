@@ -12,8 +12,11 @@ import {
   Timestamp,
   updateDoc,
   doc,
+  writeBatch,
 } from "firebase/firestore";
 import { useRouter } from "next/navigation";
+import { FixedSizeList as List } from "react-window";
+import { config } from "@/lib/config";
 
 interface AnalysisResult {
   totalWords: number;
@@ -68,13 +71,12 @@ export default function AnalyzePage() {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [fileName, setFileName] = useState<string | null>(null);
   const [dragActive, setDragActive] = useState(false);
-  const [bookMetadata, setBookMetadata] = useState<{
-    title?: string;
-    creator?: string;
-    language?: string;
-    subject?: string;
-    description?: string;
-  } | null>(null);
+  const [bookMetadata, setBookMetadata] = useState<{ title?: string } | null>(
+    null
+  );
+  const [sentences, setSentences] = useState<string[]>([]);
+  const [isSaving, setIsSaving] = useState(false);
+  const [savingProgress, setSavingProgress] = useState(0);
 
   const STATUS_OPTIONS = [
     { value: "well_known", label: "Well Known", color: "bg-green-500" },
@@ -203,6 +205,9 @@ export default function AnalyzePage() {
       };
 
       setAnalysisResult(result);
+      setText(text);
+      setSentences(text.split("."));
+      setBookMetadata({ title: text.split(".")[0] });
       setAnalysisProgress(100);
     } catch (error) {
       console.error("Error analyzing text:", error);
@@ -266,9 +271,7 @@ export default function AnalyzePage() {
       const results: TranslationResult[] = [];
       for (const word of analysisResult.unknownWordList.slice(0, 20)) {
         try {
-          const response = await fetch(
-            `https://api.dictionaryapi.dev/api/v2/entries/en/${word}`
-          );
+          const response = await fetch(`${config.dictionaryApi}/${word}`);
           if (response.ok) {
             const data = await response.json();
             const definition =
@@ -503,54 +506,120 @@ export default function AnalyzePage() {
       return;
     }
 
+    console.log(
+      "Uploading file:",
+      file.name,
+      "Size:",
+      file.size,
+      "Type:",
+      file.type
+    );
+
     setUploading(true);
     setUploadProgress(0);
+    setAnalysisResult(null);
     setError("");
     setFileName(file.name);
     setBookMetadata(null);
+    setSentences([]);
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    console.log(
+      "FormData created, entries:",
+      Array.from(formData.entries()).map(
+        ([key, value]) =>
+          `${key}: ${
+            value instanceof File
+              ? `${value.name} (${value.size} bytes)`
+              : value
+          }`
+      )
+    );
+
+    const progressInterval = setInterval(() => {
+      setUploadProgress((prev) => {
+        if (prev >= 90) {
+          clearInterval(progressInterval);
+          return 90;
+        }
+        return prev + 10;
+      });
+    }, 200);
 
     try {
-      // Create FormData
-      const formData = new FormData();
-      formData.append("file", file);
-
-      // Simulate initial progress
-      const progressInterval = setInterval(() => {
-        setUploadProgress((prev) => {
-          if (prev >= 90) {
-            clearInterval(progressInterval);
-            return 90;
-          }
-          return prev + 10;
-        });
-      }, 100);
-
-      // Send file to API
-      const response = await fetch("/api/parse-epub", {
+      const response = await fetch("/api/upload", {
         method: "POST",
         body: formData,
       });
 
       clearInterval(progressInterval);
 
+      console.log("Upload response status:", response.status);
+
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to process EPUB file");
+        const errorData = await response.json();
+        console.log("Upload error data:", errorData);
+        throw new Error(errorData.error || "Failed to process EPUB file.");
       }
 
-      const { text: extractedText, metadata } = await response.json();
+      const data = await response.json();
       setUploadProgress(100);
-      setBookMetadata(metadata);
 
-      // Set the extracted text
-      setText(extractedText);
+      setLoadingAnalysis(true);
+      setAnalysisProgress(0);
 
-      // Auto-analyze the extracted text
-      setTimeout(() => {
-        handleAnalyze();
-        setUploadProgress(0);
-        setUploading(false);
-      }, 500);
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      const {
+        word_list,
+        unique_words,
+        sentences,
+        total_words,
+        total_unique_words,
+      } = data;
+
+      setAnalysisProgress(25);
+      const wordFrequency: { [key: string]: number } = {};
+      word_list.forEach((word: string) => {
+        wordFrequency[word] = (wordFrequency[word] || 0) + 1;
+      });
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      setAnalysisProgress(75);
+      const userKnownWords = userWords.map((w) => w.word.toLowerCase().trim());
+      const knownWordsList = unique_words.filter((word: string) =>
+        userKnownWords.includes(word)
+      );
+      const unknownWordsList = unique_words.filter(
+        (word: string) => !userKnownWords.includes(word)
+      );
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      setAnalysisProgress(95);
+      const result: AnalysisResult = {
+        totalWords: total_words,
+        uniqueWords: total_unique_words,
+        knownWords: knownWordsList.length,
+        unknownWords: unknownWordsList.length,
+        unknownWordList: unknownWordsList,
+        wordFrequency,
+        averageWordLength:
+          total_words > 0
+            ? word_list.reduce(
+                (sum: number, word: string) => sum + word.length,
+                0
+              ) / total_words
+            : 0,
+        readingTime: total_words / 200,
+      };
+
+      setAnalysisResult(result);
+      setText(sentences.join(" "));
+      setSentences(sentences);
+      setBookMetadata({ title: file.name });
+      setAnalysisProgress(100);
     } catch (error) {
       console.error("File upload error:", error);
       setError(
@@ -558,8 +627,9 @@ export default function AnalyzePage() {
           ? error.message
           : "Failed to parse EPUB file. Please try again."
       );
+    } finally {
       setUploading(false);
-      setUploadProgress(0);
+      setLoadingAnalysis(false);
     }
   };
 
@@ -591,6 +661,54 @@ export default function AnalyzePage() {
 
   const handleAnalyze = () => {
     analyzeText();
+  };
+
+  const saveAnalysis = async () => {
+    if (!user || !analysisResult || !bookMetadata) {
+      setError("No analysis result to save.");
+      return;
+    }
+
+    setIsSaving(true);
+    setSavingProgress(0);
+    setError("");
+
+    try {
+      const analysisDocRef = await addDoc(collection(db, "analyses"), {
+        userId: user.uid,
+        title: bookMetadata.title || "Untitled Analysis",
+        createdAt: Timestamp.now(),
+        summary: {
+          totalWords: analysisResult.totalWords,
+          uniqueWords: analysisResult.uniqueWords,
+          knownWords: analysisResult.knownWords,
+          unknownWords: analysisResult.unknownWords,
+          averageWordLength: analysisResult.averageWordLength,
+          readingTime: analysisResult.readingTime,
+        },
+      });
+
+      const sentencesRef = collection(analysisDocRef, "sentences");
+      const batchSize = 400;
+      const totalSentences = sentences.length;
+
+      for (let i = 0; i < totalSentences; i += batchSize) {
+        const batch = writeBatch(db);
+        const end = Math.min(i + batchSize, totalSentences);
+        for (let j = i; j < end; j++) {
+          const sentenceDocRef = doc(sentencesRef);
+          batch.set(sentenceDocRef, { text: sentences[j], index: j });
+        }
+        await batch.commit();
+        const progress = Math.round(((i + batchSize) / totalSentences) * 100);
+        setSavingProgress(progress > 100 ? 100 : progress);
+      }
+    } catch (error) {
+      console.error("Error saving analysis:", error);
+      setError("Failed to save the analysis. Please try again.");
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   if (loading) {
@@ -648,30 +766,6 @@ export default function AnalyzePage() {
                           <span className="font-medium">Title:</span>{" "}
                           {bookMetadata.title}
                         </p>
-                      )}
-                      {bookMetadata.creator && (
-                        <p className="text-sm text-blue-800">
-                          <span className="font-medium">Author:</span>{" "}
-                          {bookMetadata.creator}
-                        </p>
-                      )}
-                      {bookMetadata.language && (
-                        <p className="text-sm text-blue-800">
-                          <span className="font-medium">Language:</span>{" "}
-                          {bookMetadata.language}
-                        </p>
-                      )}
-                      {bookMetadata.subject && (
-                        <p className="text-sm text-blue-800">
-                          <span className="font-medium">Subject:</span>{" "}
-                          {bookMetadata.subject}
-                        </p>
-                      )}
-                      {bookMetadata.description && (
-                        <div className="text-sm text-blue-800">
-                          <span className="font-medium">Description:</span>
-                          <p className="mt-1">{bookMetadata.description}</p>
-                        </div>
                       )}
                     </div>
                   </div>
@@ -788,7 +882,7 @@ export default function AnalyzePage() {
                 <div className="mb-4">
                   <div className="flex justify-between mb-1">
                     <span className="text-base font-medium text-blue-700">
-                      Analyzing text...
+                      Processing analysis...
                     </span>
                     <span className="text-sm font-medium text-blue-700">
                       {analysisProgress}%
@@ -825,436 +919,501 @@ export default function AnalyzePage() {
               Analysis Results
             </h2>
 
-            {!analysisResult ? (
+            {analysisResult && (
+              <div className="mb-4 flex items-center gap-4">
+                <button
+                  onClick={saveAnalysis}
+                  disabled={isSaving}
+                  className="bg-purple-600 text-white py-2 px-4 rounded-md hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                >
+                  {isSaving ? "Saving..." : "Save Analysis"}
+                </button>
+                {isSaving && (
+                  <div className="w-full">
+                    <div className="flex justify-between mb-1">
+                      <span className="text-base font-medium text-purple-700">
+                        Saving analysis...
+                      </span>
+                      <span className="text-sm font-medium text-purple-700">
+                        {savingProgress}%
+                      </span>
+                    </div>
+                    <div className="w-full bg-gray-200 rounded-full h-2.5">
+                      <div
+                        className="bg-purple-600 h-2.5 rounded-full"
+                        style={{ width: `${savingProgress}%` }}
+                      ></div>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {!analysisResult && !loadingAnalysis ? (
               <div className="text-center text-gray-500 py-8">
                 <p>Upload an EPUB file or enter text to see analysis results</p>
               </div>
             ) : (
-              <div className="space-y-6">
-                {/* Summary Stats */}
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="bg-blue-50 p-4 rounded-lg">
-                    <div className="text-2xl font-bold text-blue-600">
-                      {analysisResult.totalWords}
-                    </div>
-                    <div className="text-sm text-blue-700">Total Words</div>
-                  </div>
-                  <div className="bg-green-50 p-4 rounded-lg">
-                    <div className="text-2xl font-bold text-green-600">
-                      {analysisResult.uniqueWords}
-                    </div>
-                    <div className="text-sm text-green-700">Unique Words</div>
-                  </div>
-                  <div className="bg-purple-50 p-4 rounded-lg">
-                    <div className="text-2xl font-bold text-purple-600">
-                      {analysisResult.knownWords}
-                    </div>
-                    <div className="text-sm text-purple-700">Known Words</div>
-                  </div>
-                  <div className="bg-orange-50 p-4 rounded-lg">
-                    <div className="text-2xl font-bold text-orange-600">
-                      {analysisResult.unknownWords}
-                    </div>
-                    <div className="text-sm text-orange-700">Unknown Words</div>
-                  </div>
-                </div>
-
-                {/* Unknown Words Section */}
-                {analysisResult.unknownWords > 0 && (
-                  <div className="border-t pt-6">
-                    <div className="flex justify-between items-center mb-4">
-                      <h3 className="text-lg font-medium text-gray-900">
-                        Unknown Words ({analysisResult.unknownWords})
-                      </h3>
-                      <button
-                        onClick={addUnknownWords}
-                        disabled={addingWords}
-                        className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {addingWords ? "Adding..." : "Add All to My Words"}
-                      </button>
-                    </div>
-
-                    {addingWords && (
-                      <div className="mb-4">
-                        <div className="flex justify-between mb-1">
-                          <span className="text-base font-medium text-green-700">
-                            Adding words...
-                          </span>
-                          <span className="text-sm font-medium text-green-700">
-                            {addWordsProgress}%
-                          </span>
-                        </div>
-                        <div className="w-full bg-gray-200 rounded-full h-2.5">
-                          <div
-                            className="bg-green-600 h-2.5 rounded-full"
-                            style={{ width: `${addWordsProgress}%` }}
-                          ></div>
-                        </div>
+              analysisResult && (
+                <div className="space-y-6">
+                  {/* Summary Stats */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-blue-50 p-4 rounded-lg">
+                      <div className="text-2xl font-bold text-blue-600">
+                        {analysisResult.totalWords}
                       </div>
-                    )}
-
-                    <div className="bg-gray-50 p-4 rounded-lg max-h-48 overflow-y-auto">
-                      <div className="flex flex-wrap gap-2">
-                        {analysisResult.unknownWordList.map((word, index) => (
-                          <span
-                            key={index}
-                            className="bg-gray-100 px-2 py-1 rounded text-sm border text-gray-900 font-medium"
-                          >
-                            {word}
-                          </span>
-                        ))}
+                      <div className="text-sm text-blue-700">Total Words</div>
+                    </div>
+                    <div className="bg-green-50 p-4 rounded-lg">
+                      <div className="text-2xl font-bold text-green-600">
+                        {analysisResult.uniqueWords}
+                      </div>
+                      <div className="text-sm text-green-700">Unique Words</div>
+                    </div>
+                    <div className="bg-purple-50 p-4 rounded-lg">
+                      <div className="text-2xl font-bold text-purple-600">
+                        {analysisResult.knownWords}
+                      </div>
+                      <div className="text-sm text-purple-700">Known Words</div>
+                    </div>
+                    <div className="bg-orange-50 p-4 rounded-lg">
+                      <div className="text-2xl font-bold text-orange-600">
+                        {analysisResult.unknownWords}
+                      </div>
+                      <div className="text-sm text-orange-700">
+                        Unknown Words
                       </div>
                     </div>
                   </div>
-                )}
 
-                {/* Known Words Section */}
-                {analysisResult.knownWords > 0 && (
-                  <div className="border-t pt-6">
-                    <h3 className="text-lg font-medium text-gray-900 mb-4">
-                      Known Words ({analysisResult.knownWords})
-                    </h3>
-                    <div className="space-y-4">
-                      {/* Well Known Words */}
-                      <div>
-                        <h4 className="text-sm font-medium text-gray-700 mb-2">
-                          Well Known:
-                        </h4>
-                        <div className="bg-green-50 p-4 rounded-lg max-h-32 overflow-y-auto">
-                          <div className="flex flex-wrap gap-2">
-                            {wellKnownWords.map(([word]) => (
-                              <span
-                                key={word}
-                                className="bg-green-100 px-2 py-1 rounded text-sm border border-green-200 text-green-800 font-medium"
-                              >
-                                {word}
-                              </span>
-                            ))}
+                  {/* Unknown Words Section */}
+                  {analysisResult.unknownWords > 0 && (
+                    <div className="border-t pt-6">
+                      <div className="flex justify-between items-center mb-4">
+                        <h3 className="text-lg font-medium text-gray-900">
+                          Unknown Words ({analysisResult.unknownWords})
+                        </h3>
+                        <button
+                          onClick={addUnknownWords}
+                          disabled={addingWords}
+                          className="bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {addingWords ? "Adding..." : "Add All to My Words"}
+                        </button>
+                      </div>
+
+                      {addingWords && (
+                        <div className="mb-4">
+                          <div className="flex justify-between mb-1">
+                            <span className="text-base font-medium text-green-700">
+                              Adding words...
+                            </span>
+                            <span className="text-sm font-medium text-green-700">
+                              {addWordsProgress}%
+                            </span>
+                          </div>
+                          <div className="w-full bg-gray-200 rounded-full h-2.5">
+                            <div
+                              className="bg-green-600 h-2.5 rounded-full"
+                              style={{ width: `${addWordsProgress}%` }}
+                            ></div>
                           </div>
                         </div>
-                      </div>
+                      )}
 
-                      {/* In Dictionary Words */}
-                      <div>
-                        <h4 className="text-sm font-medium text-gray-700 mb-2">
-                          In Dictionary:
-                        </h4>
-                        <div className="bg-blue-50 p-4 rounded-lg max-h-32 overflow-y-auto">
-                          <div className="flex flex-wrap gap-2">
-                            {(() => {
-                              const inDictWords = Object.keys(
-                                analysisResult.wordFrequency
-                              ).filter((word) =>
-                                userWords.some(
-                                  (uw) =>
-                                    uw.word.toLowerCase().trim() ===
-                                      word.toLowerCase() &&
-                                    uw.status !== "well_known"
-                                )
-                              );
-                              return inDictWords.map((word, index) => (
+                      <div className="bg-gray-50 p-4 rounded-lg max-h-48 overflow-y-auto">
+                        <div className="flex flex-wrap gap-2">
+                          {analysisResult.unknownWordList.map((word, index) => (
+                            <span
+                              key={index}
+                              className="bg-gray-100 px-2 py-1 rounded text-sm border text-gray-900 font-medium"
+                            >
+                              {word}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Known Words Section */}
+                  {analysisResult.knownWords > 0 && (
+                    <div className="border-t pt-6">
+                      <h3 className="text-lg font-medium text-gray-900 mb-4">
+                        Known Words ({analysisResult.knownWords})
+                      </h3>
+                      <div className="space-y-4">
+                        {/* Well Known Words */}
+                        <div>
+                          <h4 className="text-sm font-medium text-gray-700 mb-2">
+                            Well Known:
+                          </h4>
+                          <div className="bg-green-50 p-4 rounded-lg max-h-32 overflow-y-auto">
+                            <div className="flex flex-wrap gap-2">
+                              {wellKnownWords.map(([word]) => (
                                 <span
-                                  key={index}
-                                  className="bg-blue-100 px-2 py-1 rounded text-sm border border-blue-200 text-blue-800 font-medium"
+                                  key={word}
+                                  className="bg-green-100 px-2 py-1 rounded text-sm border border-green-200 text-green-800 font-medium"
                                 >
                                   {word}
                                 </span>
-                              ));
-                            })()}
+                              ))}
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* In Dictionary Words */}
+                        <div>
+                          <h4 className="text-sm font-medium text-gray-700 mb-2">
+                            In Dictionary:
+                          </h4>
+                          <div className="bg-blue-50 p-4 rounded-lg max-h-32 overflow-y-auto">
+                            <div className="flex flex-wrap gap-2">
+                              {(() => {
+                                const inDictWords = Object.keys(
+                                  analysisResult.wordFrequency
+                                ).filter((word) =>
+                                  userWords.some(
+                                    (uw) =>
+                                      uw.word.toLowerCase().trim() ===
+                                        word.toLowerCase() &&
+                                      uw.status !== "well_known"
+                                  )
+                                );
+                                return inDictWords.map((word, index) => (
+                                  <span
+                                    key={index}
+                                    className="bg-blue-100 px-2 py-1 rounded text-sm border border-blue-200 text-blue-800 font-medium"
+                                  >
+                                    {word}
+                                  </span>
+                                ));
+                              })()}
+                            </div>
                           </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                )}
+                  )}
 
-                {/* Word Frequency */}
-                <div className="border-t pt-6">
-                  <h3 className="text-lg font-medium text-gray-900 mb-4">
-                    Word Frequency
-                  </h3>
+                  {/* Word Frequency */}
+                  <div className="border-t pt-6">
+                    <h3 className="text-lg font-medium text-gray-900 mb-4">
+                      Word Frequency
+                    </h3>
 
-                  {/* Status Filters */}
-                  <div className="mb-6">
-                    <h4 className="text-sm font-medium text-gray-700 mb-2">
-                      Filter by status:
-                    </h4>
-                    <div className="flex flex-wrap gap-2">
-                      <button
-                        onClick={() => toggleFrequencyStatusFilter("all")}
-                        className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
-                          frequencyStatusFilters.includes("all")
-                            ? "bg-gray-800 text-white"
-                            : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                        }`}
-                      >
-                        All Words
-                      </button>
-                      <button
-                        onClick={() => toggleFrequencyStatusFilter("unknown")}
-                        className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
-                          frequencyStatusFilters.includes("unknown")
-                            ? "bg-red-600 text-white"
-                            : "bg-red-50 text-red-700 hover:bg-red-100"
-                        }`}
-                      >
-                        Unknown
-                      </button>
-                      {STATUS_OPTIONS.map((option) => (
+                    {/* Status Filters */}
+                    <div className="mb-6">
+                      <h4 className="text-sm font-medium text-gray-700 mb-2">
+                        Filter by status:
+                      </h4>
+                      <div className="flex flex-wrap gap-2">
                         <button
-                          key={option.value}
-                          onClick={() =>
-                            toggleFrequencyStatusFilter(option.value)
-                          }
+                          onClick={() => toggleFrequencyStatusFilter("all")}
                           className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
-                            frequencyStatusFilters.includes(option.value)
-                              ? `${option.color} text-white`
-                              : `bg-${option.color.split("-")[1]}-50 hover:bg-${
-                                  option.color.split("-")[1]
-                                }-100 text-${option.color.split("-")[1]}-700`
+                            frequencyStatusFilters.includes("all")
+                              ? "bg-gray-800 text-white"
+                              : "bg-gray-100 text-gray-700 hover:bg-gray-200"
                           }`}
                         >
-                          {option.label}
+                          All Words
                         </button>
-                      ))}
-                      <button
-                        onClick={() => toggleFrequencyStatusFilter("unset")}
-                        className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
-                          frequencyStatusFilters.includes("unset")
-                            ? "bg-gray-500 text-white"
-                            : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                        }`}
-                      >
-                        No Status
-                      </button>
+                        <button
+                          onClick={() => toggleFrequencyStatusFilter("unknown")}
+                          className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
+                            frequencyStatusFilters.includes("unknown")
+                              ? "bg-red-600 text-white"
+                              : "bg-red-50 text-red-700 hover:bg-red-100"
+                          }`}
+                        >
+                          Unknown
+                        </button>
+                        {STATUS_OPTIONS.map((option) => (
+                          <button
+                            key={option.value}
+                            onClick={() =>
+                              toggleFrequencyStatusFilter(option.value)
+                            }
+                            className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
+                              frequencyStatusFilters.includes(option.value)
+                                ? `${option.color} text-white`
+                                : `bg-${
+                                    option.color.split("-")[1]
+                                  }-50 hover:bg-${
+                                    option.color.split("-")[1]
+                                  }-100 text-${option.color.split("-")[1]}-700`
+                            }`}
+                          >
+                            {option.label}
+                          </button>
+                        ))}
+                        <button
+                          onClick={() => toggleFrequencyStatusFilter("unset")}
+                          className={`px-3 py-1.5 rounded text-sm font-medium transition-colors ${
+                            frequencyStatusFilters.includes("unset")
+                              ? "bg-gray-500 text-white"
+                              : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                          }`}
+                        >
+                          No Status
+                        </button>
+                      </div>
                     </div>
-                  </div>
 
-                  <div className="space-y-6">
-                    {/* All Words */}
-                    <div>
-                      <h4 className="text-sm font-medium text-gray-700 mb-3">
-                        All Words (
-                        {
-                          filterWordsByStatus(
-                            Object.entries(analysisResult.wordFrequency)
-                          ).length
-                        }{" "}
-                        words)
-                      </h4>
-                      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-                        <table className="min-w-full divide-y divide-gray-200">
-                          <thead className="bg-gray-50">
-                            <tr>
-                              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                                Word
-                              </th>
-                              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                                Count
-                              </th>
-                              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                                Status
-                              </th>
-                              <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">
-                                Actions
-                              </th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-gray-200">
-                            {getPaginatedWords(
+                    <div className="space-y-6">
+                      {/* All Words */}
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-700 mb-3">
+                          All Words (
+                          {
+                            filterWordsByStatus(
+                              Object.entries(analysisResult.wordFrequency)
+                            ).length
+                          }{" "}
+                          words)
+                        </h4>
+                        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                          <table className="min-w-full divide-y divide-gray-200">
+                            <thead className="bg-gray-50">
+                              <tr>
+                                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                                  Word
+                                </th>
+                                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                                  Count
+                                </th>
+                                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                                  Status
+                                </th>
+                                <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">
+                                  Actions
+                                </th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-200">
+                              {getPaginatedWords(
+                                filterWordsByStatus(
+                                  Object.entries(analysisResult.wordFrequency)
+                                ).sort(([, a], [, b]) => b - a),
+                                allWordsPage
+                              ).map(([word, count]) => {
+                                const existingWord = userWords.find(
+                                  (w) =>
+                                    w.word.toLowerCase().trim() ===
+                                    word.toLowerCase()
+                                );
+                                const isUnknown = !existingWord;
+
+                                return (
+                                  <tr key={word} className="hover:bg-gray-50">
+                                    <td className="px-4 py-2 text-sm">
+                                      <span
+                                        className={`inline-block px-2 py-1 rounded ${
+                                          isUnknown
+                                            ? "bg-red-100 text-red-700"
+                                            : existingWord?.status ===
+                                              "well_known"
+                                            ? "bg-green-100 text-green-700"
+                                            : "bg-blue-100 text-blue-700"
+                                        }`}
+                                      >
+                                        {word}
+                                      </span>
+                                    </td>
+                                    <td className="px-4 py-2 text-sm text-gray-500">
+                                      {count}
+                                    </td>
+                                    <td className="px-4 py-2 text-sm">
+                                      {isUnknown ? (
+                                        <span className="text-red-600 text-xs">
+                                          Not in dictionary
+                                        </span>
+                                      ) : (
+                                        <span
+                                          className={`text-xs font-medium ${
+                                            existingWord.status === "well_known"
+                                              ? "text-green-600"
+                                              : existingWord.status ===
+                                                "want_repeat"
+                                              ? "text-orange-600"
+                                              : "text-blue-600"
+                                          }`}
+                                        >
+                                          {STATUS_OPTIONS.find(
+                                            (opt) =>
+                                              opt.value === existingWord.status
+                                          )?.label || "No Status"}
+                                        </span>
+                                      )}
+                                    </td>
+                                    <td className="px-4 py-2 text-sm text-right">
+                                      <div className="flex justify-end gap-1">
+                                        {isUnknown
+                                          ? STATUS_OPTIONS.map((option) => (
+                                              <button
+                                                key={option.value}
+                                                onClick={() =>
+                                                  addSingleWord(
+                                                    word,
+                                                    option.value
+                                                  )
+                                                }
+                                                disabled={addingWord === word}
+                                                className={`px-2 py-1 rounded text-xs font-medium ${option.color} text-white hover:opacity-90 disabled:opacity-50 transition-colors`}
+                                              >
+                                                {addingWord === word
+                                                  ? "..."
+                                                  : option.label}
+                                              </button>
+                                            ))
+                                          : STATUS_OPTIONS.map((option) => (
+                                              <button
+                                                key={option.value}
+                                                onClick={() =>
+                                                  updateWordStatus(
+                                                    existingWord.id,
+                                                    option.value
+                                                  )
+                                                }
+                                                className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+                                                  existingWord.status ===
+                                                  option.value
+                                                    ? `${option.color} text-white`
+                                                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                                                }`}
+                                              >
+                                                {option.label}
+                                              </button>
+                                            ))}
+                                      </div>
+                                    </td>
+                                  </tr>
+                                );
+                              })}
+                            </tbody>
+                          </table>
+                          <Pagination
+                            currentPage={allWordsPage}
+                            totalPages={getTotalPages(
                               filterWordsByStatus(
                                 Object.entries(analysisResult.wordFrequency)
-                              ).sort(([, a], [, b]) => b - a),
-                              allWordsPage
-                            ).map(([word, count]) => {
-                              const existingWord = userWords.find(
-                                (w) =>
-                                  w.word.toLowerCase().trim() ===
-                                  word.toLowerCase()
-                              );
-                              const isUnknown = !existingWord;
+                              )
+                            )}
+                            onPageChange={setAllWordsPage}
+                          />
+                        </div>
+                      </div>
 
-                              return (
+                      {/* Well Known Words */}
+                      <div>
+                        <h4 className="text-sm font-medium text-gray-700 mb-3">
+                          Well Known Words ({wellKnownWords.length} words)
+                        </h4>
+                        <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+                          <table className="min-w-full divide-y divide-gray-200">
+                            <thead className="bg-gray-50">
+                              <tr>
+                                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                                  Word
+                                </th>
+                                <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
+                                  Count
+                                </th>
+                                <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">
+                                  Actions
+                                </th>
+                              </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-200">
+                              {getPaginatedWords(
+                                wellKnownWords,
+                                wellKnownWordsPage
+                              ).map(([word]) => (
                                 <tr key={word} className="hover:bg-gray-50">
                                   <td className="px-4 py-2 text-sm">
-                                    <span
-                                      className={`inline-block px-2 py-1 rounded ${
-                                        isUnknown
-                                          ? "bg-red-100 text-red-700"
-                                          : existingWord?.status ===
-                                            "well_known"
-                                          ? "bg-green-100 text-green-700"
-                                          : "bg-blue-100 text-blue-700"
-                                      }`}
-                                    >
+                                    <span className="inline-block px-2 py-1 rounded bg-green-100 text-green-700">
                                       {word}
                                     </span>
                                   </td>
                                   <td className="px-4 py-2 text-sm text-gray-500">
-                                    {count}
-                                  </td>
-                                  <td className="px-4 py-2 text-sm">
-                                    {isUnknown ? (
-                                      <span className="text-red-600 text-xs">
-                                        Not in dictionary
-                                      </span>
-                                    ) : (
-                                      <span
-                                        className={`text-xs font-medium ${
-                                          existingWord.status === "well_known"
-                                            ? "text-green-600"
-                                            : existingWord.status ===
-                                              "want_repeat"
-                                            ? "text-orange-600"
-                                            : "text-blue-600"
-                                        }`}
-                                      >
-                                        {STATUS_OPTIONS.find(
-                                          (opt) =>
-                                            opt.value === existingWord.status
-                                        )?.label || "No Status"}
-                                      </span>
-                                    )}
+                                    {analysisResult.wordFrequency[word]}
                                   </td>
                                   <td className="px-4 py-2 text-sm text-right">
                                     <div className="flex justify-end gap-1">
-                                      {isUnknown
-                                        ? STATUS_OPTIONS.map((option) => (
-                                            <button
-                                              key={option.value}
-                                              onClick={() =>
-                                                addSingleWord(
-                                                  word,
-                                                  option.value
-                                                )
-                                              }
-                                              disabled={addingWord === word}
-                                              className={`px-2 py-1 rounded text-xs font-medium ${option.color} text-white hover:opacity-90 disabled:opacity-50 transition-colors`}
-                                            >
-                                              {addingWord === word
-                                                ? "..."
-                                                : option.label}
-                                            </button>
-                                          ))
-                                        : STATUS_OPTIONS.map((option) => (
-                                            <button
-                                              key={option.value}
-                                              onClick={() =>
-                                                updateWordStatus(
-                                                  existingWord.id,
-                                                  option.value
-                                                )
-                                              }
-                                              className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
-                                                existingWord.status ===
+                                      {STATUS_OPTIONS.map((option) => (
+                                        <button
+                                          key={option.value}
+                                          onClick={() => {
+                                            const existingWord = userWords.find(
+                                              (w) =>
+                                                w.word.toLowerCase().trim() ===
+                                                word.toLowerCase()
+                                            );
+                                            if (existingWord) {
+                                              updateWordStatus(
+                                                existingWord.id,
                                                 option.value
-                                                  ? `${option.color} text-white`
-                                                  : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                                              }`}
-                                            >
-                                              {option.label}
-                                            </button>
-                                          ))}
+                                              );
+                                            }
+                                          }}
+                                          className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
+                                            option.value === "well_known"
+                                              ? `${option.color} text-white`
+                                              : "bg-gray-100 text-gray-700 hover:bg-gray-200"
+                                          }`}
+                                        >
+                                          {option.label}
+                                        </button>
+                                      ))}
                                     </div>
                                   </td>
                                 </tr>
-                              );
-                            })}
-                          </tbody>
-                        </table>
-                        <Pagination
-                          currentPage={allWordsPage}
-                          totalPages={getTotalPages(
-                            filterWordsByStatus(
-                              Object.entries(analysisResult.wordFrequency)
-                            )
-                          )}
-                          onPageChange={setAllWordsPage}
-                        />
-                      </div>
-                    </div>
-
-                    {/* Well Known Words */}
-                    <div>
-                      <h4 className="text-sm font-medium text-gray-700 mb-3">
-                        Well Known Words ({wellKnownWords.length} words)
-                      </h4>
-                      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-                        <table className="min-w-full divide-y divide-gray-200">
-                          <thead className="bg-gray-50">
-                            <tr>
-                              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                                Word
-                              </th>
-                              <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">
-                                Count
-                              </th>
-                              <th className="px-4 py-2 text-right text-xs font-medium text-gray-500 uppercase">
-                                Actions
-                              </th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-gray-200">
-                            {getPaginatedWords(
-                              wellKnownWords,
-                              wellKnownWordsPage
-                            ).map(([word]) => (
-                              <tr key={word} className="hover:bg-gray-50">
-                                <td className="px-4 py-2 text-sm">
-                                  <span className="inline-block px-2 py-1 rounded bg-green-100 text-green-700">
-                                    {word}
-                                  </span>
-                                </td>
-                                <td className="px-4 py-2 text-sm text-gray-500">
-                                  {analysisResult.wordFrequency[word]}
-                                </td>
-                                <td className="px-4 py-2 text-sm text-right">
-                                  <div className="flex justify-end gap-1">
-                                    {STATUS_OPTIONS.map((option) => (
-                                      <button
-                                        key={option.value}
-                                        onClick={() => {
-                                          const existingWord = userWords.find(
-                                            (w) =>
-                                              w.word.toLowerCase().trim() ===
-                                              word.toLowerCase()
-                                          );
-                                          if (existingWord) {
-                                            updateWordStatus(
-                                              existingWord.id,
-                                              option.value
-                                            );
-                                          }
-                                        }}
-                                        className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
-                                          option.value === "well_known"
-                                            ? `${option.color} text-white`
-                                            : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                                        }`}
-                                      >
-                                        {option.label}
-                                      </button>
-                                    ))}
-                                  </div>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                        <Pagination
-                          currentPage={wellKnownWordsPage}
-                          totalPages={getTotalPages(wellKnownWords)}
-                          onPageChange={setWellKnownWordsPage}
-                        />
+                              ))}
+                            </tbody>
+                          </table>
+                          <Pagination
+                            currentPage={wellKnownWordsPage}
+                            totalPages={getTotalPages(wellKnownWords)}
+                            onPageChange={setWellKnownWordsPage}
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>
                 </div>
-              </div>
+              )
             )}
           </div>
         </div>
+
+        {/* Sentences Section */}
+        {sentences.length > 0 && (
+          <div className="mt-12">
+            <h2 className="text-2xl font-bold text-gray-900 mb-4">
+              Sentences ({sentences.length})
+            </h2>
+            <div className="bg-white rounded-lg shadow-md p-6 h-[500px]">
+              <List
+                height={450}
+                itemCount={sentences.length}
+                itemSize={50}
+                width="100%"
+              >
+                {({ index, style }) => (
+                  <div
+                    style={style}
+                    className="flex items-center border-b border-gray-200 p-2"
+                  >
+                    <span className="text-gray-500 text-sm mr-4 w-8">
+                      {index + 1}.
+                    </span>
+                    <p className="text-gray-800">{sentences[index]}</p>
+                  </div>
+                )}
+              </List>
+            </div>
+          </div>
+        )}
 
         {/* Translations Section */}
         {analysisResult && analysisResult.unknownWords > 0 && (

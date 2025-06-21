@@ -49,24 +49,50 @@ NEXT_PUBLIC_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
 NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your_sender_id
 NEXT_PUBLIC_FIREBASE_APP_ID=your_app_id
 NEXT_PUBLIC_FIREBASE_MEASUREMENT_ID=your_measurement_id
+
+# Optional: Custom backend URI for translation services
+# If not set, defaults to https://libretranslate.de
+BACKEND_URI=https://your-custom-translation-service.com
+
+# Optional: Custom upload service URL for EPUB processing
+# If not set, defaults to the current external service
+UPLOAD_SERVICE_URL=https://your-custom-upload-service.com/upload/
 ```
 
-5. Set up Firestore Security Rules:
+5. **Backend Configuration (Optional)**:
+   - The app uses LibreTranslate by default for word translations
+   - You can set a custom `BACKEND_URI` in your `.env.local` file to use a different translation service
+   - The custom backend should support the same API format as LibreTranslate:
+     - POST `/translate` endpoint
+     - Accepts JSON with `q`, `source`, `target`, and `format` fields
+     - Returns JSON with `translatedText` field
+   - If `BACKEND_URI` is not set, the app will use the default LibreTranslate service
+
+6. **Upload Service Configuration (Optional)**:
+   - The app uses an external service for EPUB file processing
+   - You can set a custom `UPLOAD_SERVICE_URL` in your `.env.local` file to use a different upload service
+   - The custom upload service should support:
+     - POST `/upload/` endpoint
+     - Accepts multipart form data with a `file` field
+     - Returns JSON with `word_list`, `unique_words`, `sentences`, `total_words`, and `total_unique_words` fields
+   - If `UPLOAD_SERVICE_URL` is not set, the app will use the default external service
+
+7. Set up Firestore Security Rules:
    - In Firebase Console, go to Firestore Database
    - Navigate to Rules tab
    - Replace the default rules with the contents of `firestore.rules`
 
-6. (Optional) Set up Firestore Indexes:
+8. (Optional) Set up Firestore Indexes:
    - If you want to use server-side ordering, deploy the indexes from `firestore.indexes.json`
    - Currently, the app uses client-side sorting to avoid index requirements
    - To deploy indexes: `firebase deploy --only firestore:indexes`
 
-7. Run the development server:
+9. Run the development server:
 ```bash
 npm run dev
 ```
 
-8. Open [http://localhost:3000](http://localhost:3000) in your browser.
+10. Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ## Authentication Flow
 
@@ -119,12 +145,17 @@ src/
 │   │   └── page.tsx          # Word management page
 │   ├── analyze/
 │   │   └── page.tsx          # Text analysis page
+│   ├── training/
+│   │   └── page.tsx          # Word training page
 │   ├── layout.tsx            # Root layout with AuthProvider
 │   └── page.tsx              # Main page
 ├── components/
-│   └── Header.tsx            # Header with auth buttons and navigation
+│   ├── Header.tsx            # Header with auth buttons and navigation
+│   ├── WordCard.tsx          # Reusable word card component
+│   └── WordTrainingCard.tsx  # Training-specific word card component
 └── lib/
     ├── auth-context.tsx      # Authentication context
+    ├── config.ts             # Environment configuration
     └── firebase.ts           # Firebase configuration
 ```
 

@@ -13,6 +13,7 @@ import {
   Timestamp,
 } from "firebase/firestore";
 import WordTrainingCard from "@/components/WordTrainingCard";
+import { config } from "@/lib/config";
 
 interface Word {
   id: string;
@@ -134,7 +135,7 @@ export default function TrainingPage() {
     setUpdating(word.id);
     try {
       let translation = "";
-      const res = await fetch("https://libretranslate.de/translate", {
+      const res = await fetch(`${config.backendUri}/translate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

@@ -16,6 +16,7 @@ import {
 } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import WordCard from "@/components/WordCard";
+import { config } from "@/lib/config";
 
 interface Word {
   id: string;
@@ -158,7 +159,7 @@ export default function WordsPage() {
     setUpdating(word.id);
     try {
       let translation = "";
-      const res = await fetch("https://libretranslate.de/translate", {
+      const res = await fetch(`${config.backendUri}/translate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -190,9 +191,7 @@ export default function WordsPage() {
     try {
       let definition = "";
       const res = await fetch(
-        `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(
-          word.word
-        )}`
+        `${config.dictionaryApi}/${encodeURIComponent(word.word)}`
       );
       if (res.ok) {
         const data = await res.json();

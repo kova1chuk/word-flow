@@ -154,23 +154,25 @@ export default function TrainingPage() {
       let translation = "";
       console.log(`Reloading translation for word: "${word.word}"`);
 
-      const res = await fetch(`${config.backendUri}/translate`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          q: word.word,
-          source: "en",
-          target: "uk",
-          format: "text",
-        }),
-      });
+      // Using MyMemory API
+      const langPair = `en|uk`; // English to Ukrainian
+      const url = `${config.translationApi.baseUrl}?q=${encodeURIComponent(
+        word.word
+      )}&langpair=${langPair}`;
+
+      const res = await fetch(url);
       console.log(`Translation API response status: ${res.status}`);
 
       if (res.ok) {
         const data = await res.json();
         console.log(`Translation API response data:`, data);
-        translation = data.translatedText || "No translation found.";
-        console.log(`Found translation: "${translation}"`);
+        if (data.responseData && data.responseData.translatedText) {
+          translation = data.responseData.translatedText;
+          console.log(`Found translation: "${translation}"`);
+        } else {
+          translation = "No translation found.";
+          console.log(`No translation found in API response.`);
+        }
       } else {
         translation = "No translation found.";
         console.log(

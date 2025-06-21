@@ -4,6 +4,7 @@ import { join } from "path";
 import EPub from "epub";
 import { promisify } from "util";
 import { existsSync } from "fs";
+import { tmpdir } from "os";
 
 // Configure the API route
 export const config = {
@@ -125,8 +126,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create a temporary file path
-    const tempDir = join(process.cwd(), "tmp");
+    // Create a temporary file path in the system's temp directory
+    const tempDir = tmpdir();
     tempFilePath = join(tempDir, `temp-${Date.now()}.epub`);
 
     // Ensure temp directory exists

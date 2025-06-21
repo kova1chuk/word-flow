@@ -1,5 +1,14 @@
-import React from "react";
+import React, { useState, useEffect } from "react";
 import type { Timestamp } from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import {
+  collectionGroup,
+  query,
+  getDocs,
+  limit,
+  getDoc,
+} from "firebase/firestore";
+import Link from "next/link";
 
 const STATUS_OPTIONS = [
   {
@@ -29,6 +38,12 @@ type Word = {
   example?: string;
 };
 
+interface Sentence {
+  id: string;
+  text: string;
+  analysisTitle: string;
+}
+
 export default function WordCard({
   word,
   onReloadDefinition,
@@ -44,15 +59,99 @@ export default function WordCard({
   onStatusChange: (id: string, status: string) => void;
   updating?: string | null;
 }) {
+  const [examples, setExamples] = useState<Sentence[]>([]);
+  const [loadingExamples, setLoadingExamples] = useState(false);
+
+  useEffect(() => {
+    fetchExamples();
+  }, [word.word]);
+
+  const fetchExamples = async () => {
+    try {
+      setLoadingExamples(true);
+      console.log(`Fetching examples for word: "${word.word}"`);
+
+      // Get sentences containing this word (without orderBy to avoid index requirement)
+      const sentencesQuery = query(
+        collectionGroup(db, "sentences"),
+        limit(100) // Get more sentences to find examples
+      );
+
+      const querySnapshot = await getDocs(sentencesQuery);
+      console.log(
+        `Found ${querySnapshot.docs.length} total sentences to search through`
+      );
+      const allSentences: Sentence[] = [];
+
+      // Process sentences and find those containing the word
+      for (const doc of querySnapshot.docs) {
+        const data = doc.data();
+        const sentenceText = data.text.toLowerCase();
+        const wordLower = word.word.toLowerCase();
+
+        // Check if sentence contains the word (more flexible search)
+        if (sentenceText.includes(wordLower)) {
+          console.log(
+            `Found matching sentence: "${data.text.substring(0, 50)}..."`
+          );
+
+          // Get the analysis title
+          const analysisRef = doc.ref.parent.parent;
+          let analysisTitle = "Unknown Analysis";
+          if (analysisRef) {
+            try {
+              const analysisDoc = await getDoc(analysisRef);
+              if (analysisDoc.exists()) {
+                analysisTitle = analysisDoc.data().title || "Unknown Analysis";
+              }
+            } catch (error) {
+              console.error("Error getting analysis title:", error);
+            }
+          }
+
+          allSentences.push({
+            id: doc.id,
+            text: data.text,
+            analysisTitle: analysisTitle,
+          });
+        }
+      }
+
+      console.log(
+        `Found ${allSentences.length} examples for word "${word.word}"`
+      );
+      // Sort by analysis title and take first 2 examples
+      const sortedSentences = allSentences.sort((a, b) =>
+        a.analysisTitle.localeCompare(b.analysisTitle)
+      );
+      setExamples(sortedSentences.slice(0, 2));
+    } catch (error) {
+      console.error("Error fetching examples:", error);
+    } finally {
+      setLoadingExamples(false);
+    }
+  };
+
+  const highlightWord = (text: string, word: string) => {
+    // Create a more flexible regex that handles word boundaries and different cases
+    const escapedWord = word.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+    const regex = new RegExp(`(${escapedWord})`, "gi");
+    return text.replace(
+      regex,
+      (match) => `<mark class="bg-yellow-200 px-1 rounded">${match}</mark>`
+    );
+  };
+
   return (
     <div className="bg-white rounded-xl shadow-md p-6 max-w-lg mx-auto mb-6 relative">
       <div className="flex justify-between items-start mb-2">
-        <div
-          className="text-2xl font-bold text-blue-700"
+        <Link
+          href={`/words/${word.word}`}
+          className="text-2xl font-bold text-blue-700 hover:text-blue-900 transition-colors"
           style={{ letterSpacing: 1 }}
         >
           {word.word}
-        </div>
+        </Link>
         {onDelete && (
           <button
             onClick={() => onDelete(word)}
@@ -94,6 +193,46 @@ export default function WordCard({
           {word.translation || <span className="text-gray-400">(none)</span>}
         </div>
       </div>
+
+      {/* Examples Section */}
+      <div className="mb-4">
+        <div className="flex items-center justify-between mb-2">
+          <span className="font-semibold text-gray-700">Examples:</span>
+          <Link
+            href={`/words/${word.word}`}
+            className="text-blue-600 hover:text-blue-800 text-xs font-medium"
+          >
+            View all examples →
+          </Link>
+        </div>
+        {loadingExamples ? (
+          <div className="text-sm text-gray-500">Loading examples...</div>
+        ) : examples.length === 0 ? (
+          <div className="text-sm text-gray-500">No examples found</div>
+        ) : (
+          <div className="space-y-2">
+            {examples.map((example, index) => (
+              <div key={example.id} className="text-sm">
+                <div className="flex justify-between items-start mb-1">
+                  <span className="text-xs text-gray-500">
+                    Example {index + 1}
+                  </span>
+                  <span className="text-xs text-blue-600">
+                    {example.analysisTitle}
+                  </span>
+                </div>
+                <p
+                  className="text-gray-800 leading-relaxed"
+                  dangerouslySetInnerHTML={{
+                    __html: highlightWord(example.text, word.word),
+                  }}
+                />
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
       <div className="mb-4">
         <span className="font-semibold text-gray-700">Status:</span>
         <div className="flex gap-2 mt-2">

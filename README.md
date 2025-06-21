@@ -103,17 +103,38 @@ npm run dev
 
 - **Add Words**: Users can add new words with definitions and optional examples
 - **View Words**: Personal word collection displayed in a responsive grid
+- **Word Examples**: Each word card shows 2 examples from saved analyses
+- **Word Details**: Click on any word to view its dedicated page with up to 20 examples
 - **Delete Words**: Remove words from the collection
 - **User Isolation**: Each user can only see and manage their own words
 
 ## Text Analysis
 
 - **Text Input**: Paste or type any text for analysis
+- **EPUB Upload**: Upload EPUB files for automatic text extraction and analysis
 - **Word Statistics**: Count total words, unique words, known words, and unknown words
 - **Word Recognition**: Automatically identifies which words are already in your collection
 - **Bulk Add**: Add all unknown words to your collection with one click
 - **Word Frequency**: Shows the most common words in the analyzed text
 - **Real-time Analysis**: Instant results with visual statistics
+- **Sentence Preview**: View sentences with unknown words highlighted
+- **Save Analysis**: Save complete analysis with sentences to Firebase
+
+## My Analyses
+
+- **View Saved Analyses**: Browse all your saved text analyses
+- **Sentence Browsing**: View all sentences from each analysis
+- **Search & Filter**: Search sentences by content, filter by chapter, or unknown words
+- **Enhanced Metadata**: Each sentence includes word count, chapter info, and unknown word detection
+- **Analysis Statistics**: View summary statistics for each saved analysis
+
+## Word Training
+
+- **Status-based Training**: Train words based on their learning status
+- **Card-based Interface**: One word at a time with definition and translation
+- **Status Management**: Update word status during training
+- **Reload Functions**: Refresh definitions and translations on demand
+- **Progress Tracking**: Visual progress through training session
 
 ## Pages
 
@@ -121,7 +142,10 @@ npm run dev
 - `/signin` - Sign in page with email/password and Google options
 - `/signup` - Sign up page with email/password and Google options
 - `/words` - Word management page (requires authentication)
+- `/words/[word]` - Individual word page with examples (requires authentication)
 - `/analyze` - Text analysis page (requires authentication)
+- `/analyses` - My Analyses page to view saved analyses and sentences (requires authentication)
+- `/training` - Word training page (requires authentication)
 
 ## Tech Stack
 

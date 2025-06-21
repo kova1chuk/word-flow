@@ -691,13 +691,27 @@ export default function AnalyzePage() {
       const sentencesRef = collection(analysisDocRef, "sentences");
       const batchSize = 400;
       const totalSentences = sentences.length;
+      const userKnownWords = userWords.map((w) => w.word.toLowerCase().trim());
 
       for (let i = 0; i < totalSentences; i += batchSize) {
         const batch = writeBatch(db);
         const end = Math.min(i + batchSize, totalSentences);
         for (let j = i; j < end; j++) {
           const sentenceDocRef = doc(sentencesRef);
-          batch.set(sentenceDocRef, { text: sentences[j], index: j });
+          const sentenceText = sentences[j];
+          const sentenceWords = sentenceText.toLowerCase().split(/\s+/);
+          const hasUnknownWords = sentenceWords.some(
+            (word) => !userKnownWords.includes(word) && /^[a-z]+$/.test(word)
+          );
+
+          batch.set(sentenceDocRef, {
+            text: sentenceText,
+            index: j,
+            wordCount: sentenceWords.length,
+            chapter: "Chapter 1", // This could be enhanced with actual chapter detection
+            hasUnknownWords: hasUnknownWords,
+            createdAt: Timestamp.now(),
+          });
         }
         await batch.commit();
         const progress = Math.round(((i + batchSize) / totalSentences) * 100);

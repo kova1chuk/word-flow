@@ -48,7 +48,9 @@ export default function AnalyzePage() {
     null
   );
   const [loadingAnalysis, setLoadingAnalysis] = useState(false);
+  const [analysisProgress, setAnalysisProgress] = useState(0);
   const [addingWords, setAddingWords] = useState(false);
+  const [addWordsProgress, setAddWordsProgress] = useState(0);
   const [error, setError] = useState("");
   const [translations, setTranslations] = useState<TranslationResult[]>([]);
   const [loadingTranslations, setLoadingTranslations] = useState(false);
@@ -138,40 +140,56 @@ export default function AnalyzePage() {
     }
   };
 
-  const analyzeText = () => {
+  const analyzeText = async () => {
     if (!text.trim()) {
       setError("Please enter some text to analyze");
       return;
     }
 
     setLoadingAnalysis(true);
+    setAnalysisProgress(0);
+    setAnalysisResult(null);
     setError("");
 
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
     try {
-      // Clean and split text into words
+      // Step 1: Pre-processing and splitting words
+      setAnalysisProgress(10);
       const words = text
         .toLowerCase()
         .replace(/[^\w\s]/g, " ")
         .split(/\s+/)
-        .filter((word) => word.length > 0);
+        .filter((word) => word.length > 0)
+        .filter((word) => isNaN(parseInt(word, 10))); // Exclude numbers
+      await new Promise((resolve) => setTimeout(resolve, 0));
 
-      // Count word frequency
+      // Step 2: Counting word frequency
+      setAnalysisProgress(30);
       const wordFrequency: { [key: string]: number } = {};
       words.forEach((word) => {
         wordFrequency[word] = (wordFrequency[word] || 0) + 1;
       });
+      await new Promise((resolve) => setTimeout(resolve, 0));
 
+      // Step 3: Getting unique words and user's known words
+      setAnalysisProgress(60);
       const uniqueWords = Object.keys(wordFrequency);
       const userKnownWords = userWords.map((w) => w.word.toLowerCase().trim());
+      await new Promise((resolve) => setTimeout(resolve, 0));
 
-      // Categorize words
+      // Step 4: Categorizing words
+      setAnalysisProgress(80);
       const knownWords = uniqueWords.filter((word) =>
         userKnownWords.includes(word)
       );
       const unknownWords = uniqueWords.filter(
         (word) => !userKnownWords.includes(word)
       );
+      await new Promise((resolve) => setTimeout(resolve, 0));
 
+      // Step 5: Finalizing results
+      setAnalysisProgress(95);
       const result: AnalysisResult = {
         totalWords: words.length,
         uniqueWords: uniqueWords.length,
@@ -185,6 +203,7 @@ export default function AnalyzePage() {
       };
 
       setAnalysisResult(result);
+      setAnalysisProgress(100);
     } catch (error) {
       console.error("Error analyzing text:", error);
       setError("Failed to analyze text");
@@ -198,6 +217,7 @@ export default function AnalyzePage() {
 
     try {
       setAddingWords(true);
+      setAddWordsProgress(0);
       setError("");
 
       const wordsRef = collection(db, "words");
@@ -216,8 +236,11 @@ export default function AnalyzePage() {
         createdAt: Timestamp.now(),
       }));
 
-      for (const wordData of wordsToAdd) {
+      const totalWords = wordsToAdd.length;
+      for (let i = 0; i < totalWords; i++) {
+        const wordData = wordsToAdd[i];
         await addDoc(wordsRef, wordData);
+        setAddWordsProgress(Math.round(((i + 1) / totalWords) * 100));
       }
 
       await fetchUserWords();
@@ -229,6 +252,7 @@ export default function AnalyzePage() {
       setError("Failed to add words to your collection");
     } finally {
       setAddingWords(false);
+      setAddWordsProgress(0);
     }
   };
 
@@ -760,6 +784,25 @@ export default function AnalyzePage() {
                 </button>
               </div>
 
+              {loadingAnalysis && (
+                <div className="mb-4">
+                  <div className="flex justify-between mb-1">
+                    <span className="text-base font-medium text-blue-700">
+                      Analyzing text...
+                    </span>
+                    <span className="text-sm font-medium text-blue-700">
+                      {analysisProgress}%
+                    </span>
+                  </div>
+                  <div className="w-full bg-gray-200 rounded-full h-2.5">
+                    <div
+                      className="bg-blue-600 h-2.5 rounded-full"
+                      style={{ width: `${analysisProgress}%` }}
+                    ></div>
+                  </div>
+                </div>
+              )}
+
               {/* Sample Text Button for Testing */}
               <div className="mb-4">
                 <button
@@ -831,6 +874,25 @@ export default function AnalyzePage() {
                         {addingWords ? "Adding..." : "Add All to My Words"}
                       </button>
                     </div>
+
+                    {addingWords && (
+                      <div className="mb-4">
+                        <div className="flex justify-between mb-1">
+                          <span className="text-base font-medium text-green-700">
+                            Adding words...
+                          </span>
+                          <span className="text-sm font-medium text-green-700">
+                            {addWordsProgress}%
+                          </span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2.5">
+                          <div
+                            className="bg-green-600 h-2.5 rounded-full"
+                            style={{ width: `${addWordsProgress}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                    )}
 
                     <div className="bg-gray-50 p-4 rounded-lg max-h-48 overflow-y-auto">
                       <div className="flex flex-wrap gap-2">

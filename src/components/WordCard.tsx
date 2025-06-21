@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import type { Timestamp } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 import {
@@ -28,6 +28,16 @@ const STATUS_OPTIONS = [
   },
 ];
 
+interface Phonetic {
+  text: string;
+  audio: string;
+}
+
+interface WordDetails {
+  phonetics: Phonetic[];
+  // meanings can be added later if needed for card view
+}
+
 type Word = {
   id: string;
   word: string;
@@ -36,6 +46,7 @@ type Word = {
   status?: string;
   createdAt: Timestamp;
   example?: string;
+  details?: WordDetails;
 };
 
 interface Sentence {
@@ -61,10 +72,18 @@ export default function WordCard({
 }) {
   const [examples, setExamples] = useState<Sentence[]>([]);
   const [loadingExamples, setLoadingExamples] = useState(false);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     fetchExamples();
   }, [word.word]);
+
+  const playAudio = (audioUrl: string) => {
+    if (audioRef.current) {
+      audioRef.current.src = audioUrl;
+      audioRef.current.play();
+    }
+  };
 
   const fetchExamples = async () => {
     try {
@@ -144,14 +163,40 @@ export default function WordCard({
 
   return (
     <div className="bg-white rounded-xl shadow-md p-6 max-w-lg mx-auto mb-6 relative">
+      <audio ref={audioRef} />
       <div className="flex justify-between items-start mb-2">
-        <Link
-          href={`/words/${word.word}`}
-          className="text-2xl font-bold text-blue-700 hover:text-blue-900 transition-colors"
-          style={{ letterSpacing: 1 }}
-        >
-          {word.word}
-        </Link>
+        <div className="flex items-center space-x-3">
+          <Link
+            href={`/words/${word.word}`}
+            className="text-2xl font-bold text-blue-700 hover:text-blue-900 transition-colors"
+            style={{ letterSpacing: 1 }}
+          >
+            {word.word}
+          </Link>
+          {word.details?.phonetics && word.details.phonetics.length > 0 && (
+            <div className="flex items-center space-x-2">
+              <span className="text-md text-gray-500">
+                {word.details.phonetics[0].text}
+              </span>
+              <button
+                onClick={() => playAudio(word.details!.phonetics[0].audio)}
+                title="Play pronunciation"
+              >
+                <svg
+                  className="w-5 h-5 text-blue-500 hover:text-blue-700"
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"
+                    clipRule="evenodd"
+                  ></path>
+                </svg>
+              </button>
+            </div>
+          )}
+        </div>
         {onDelete && (
           <button
             onClick={() => onDelete(word)}

@@ -1,3 +1,4 @@
+import { useRef } from "react";
 import type { Timestamp } from "firebase/firestore";
 
 const STATUS_OPTIONS = [
@@ -18,6 +19,15 @@ const STATUS_OPTIONS = [
   },
 ];
 
+interface Phonetic {
+  text: string;
+  audio: string;
+}
+
+interface WordDetails {
+  phonetics: Phonetic[];
+}
+
 type Word = {
   id: string;
   word: string;
@@ -26,6 +36,7 @@ type Word = {
   status?: string;
   createdAt: Timestamp;
   example?: string;
+  details?: WordDetails;
 };
 
 export default function WordTrainingCard({
@@ -49,16 +60,51 @@ export default function WordTrainingCard({
   onPrev: () => void;
   onNext: () => void;
 }) {
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+
+  const playAudio = (audioUrl: string) => {
+    if (audioRef.current) {
+      audioRef.current.src = audioUrl;
+      audioRef.current.play();
+    }
+  };
+
   return (
     <div className="bg-white rounded-xl shadow-md p-8 max-w-lg mx-auto mb-6 relative flex flex-col items-center">
+      <audio ref={audioRef} />
       <div className="absolute top-2 right-4 text-xs text-gray-400">
         {current + 1} / {total}
       </div>
-      <div
-        className="text-3xl font-extrabold text-blue-700 mb-6 text-center"
-        style={{ letterSpacing: 1 }}
-      >
-        {word.word}
+      <div className="flex items-center space-x-3 mb-6">
+        <div
+          className="text-3xl font-extrabold text-blue-700 text-center"
+          style={{ letterSpacing: 1 }}
+        >
+          {word.word}
+        </div>
+        {word.details?.phonetics && word.details.phonetics.length > 0 && (
+          <div className="flex items-center space-x-2">
+            <span className="text-xl text-gray-500">
+              {word.details.phonetics[0].text}
+            </span>
+            <button
+              onClick={() => playAudio(word.details!.phonetics[0].audio)}
+              title="Play pronunciation"
+            >
+              <svg
+                className="w-6 h-6 text-blue-500 hover:text-blue-700"
+                fill="currentColor"
+                viewBox="0 0 20 20"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"
+                  clipRule="evenodd"
+                ></path>
+              </svg>
+            </button>
+          </div>
+        )}
       </div>
       <div className="mb-6 w-full">
         <div className="flex items-center gap-2 mb-1">

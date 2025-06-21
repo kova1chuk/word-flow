@@ -18,6 +18,39 @@ import { useRouter } from "next/navigation";
 import WordCard from "@/components/WordCard";
 import { config } from "@/lib/config";
 
+interface Phonetic {
+  text: string;
+  audio: string;
+}
+
+interface Meaning {
+  partOfSpeech: string;
+  definitions: {
+    definition: string;
+    example?: string;
+    synonyms?: string[];
+    antonyms?: string[];
+  }[];
+}
+
+interface WordDetails {
+  phonetics: Phonetic[];
+  meanings: Meaning[];
+}
+
+interface DictionaryApiResponse {
+  phonetics: { text: string; audio: string }[];
+  meanings: {
+    partOfSpeech: string;
+    definitions: {
+      definition: string;
+      example?: string;
+      synonyms?: string[];
+      antonyms?: string[];
+    }[];
+  }[];
+}
+
 interface Word {
   id: string;
   word: string;
@@ -26,6 +59,7 @@ interface Word {
   createdAt: Timestamp;
   translation?: string;
   status?: string;
+  details?: WordDetails;
 }
 
 export default function WordsPage() {
@@ -209,6 +243,7 @@ export default function WordsPage() {
     setUpdating(word.id);
     try {
       let definition = "";
+      let details: WordDetails | undefined = undefined;
       console.log(`Reloading definition for word: "${word.word}"`);
 
       const res = await fetch(
@@ -217,15 +252,32 @@ export default function WordsPage() {
       console.log(`API response status: ${res.status}`);
 
       if (res.ok) {
-        const data = await res.json();
+        const data: DictionaryApiResponse[] = await res.json();
         console.log(`API response data:`, data);
 
-        if (
-          Array.isArray(data) &&
-          data[0]?.meanings?.[0]?.definitions?.[0]?.definition
-        ) {
-          definition = data[0].meanings[0].definitions[0].definition;
-          console.log(`Found definition: "${definition}"`);
+        if (Array.isArray(data) && data.length > 0) {
+          const firstResult = data[0];
+          // Set primary definition
+          definition =
+            firstResult.meanings?.[0]?.definitions?.[0]?.definition ??
+            "No definition found.";
+
+          // Extract detailed information
+          details = {
+            phonetics: (firstResult.phonetics || [])
+              .map((p) => ({ text: p.text, audio: p.audio }))
+              .filter((p): p is Phonetic => !!(p.text && p.audio)),
+            meanings: (firstResult.meanings || []).map((m) => ({
+              partOfSpeech: m.partOfSpeech,
+              definitions: m.definitions.map((d) => ({
+                definition: d.definition,
+                example: d.example,
+                synonyms: d.synonyms,
+                antonyms: d.antonyms,
+              })),
+            })),
+          };
+          console.log(`Found definition: "${definition}"`, details);
         } else {
           definition = "No definition found.";
           console.log("No definition found in API response");
@@ -235,10 +287,20 @@ export default function WordsPage() {
         console.log(`API request failed with status: ${res.status}`);
       }
 
-      console.log(`Updating word document with definition: "${definition}"`);
-      await updateDoc(doc(db, "words", word.id), { definition });
+      console.log(`Updating word document with definition and details`);
+      const dataToUpdate = { definition, details };
+
+      // Remove undefined fields before sending to Firestore
+      Object.keys(dataToUpdate).forEach(
+        (key) =>
+          dataToUpdate[key as keyof typeof dataToUpdate] === undefined &&
+          delete dataToUpdate[key as keyof typeof dataToUpdate]
+      );
+
+      await updateDoc(doc(db, "words", word.id), dataToUpdate);
+
       setWords((prev) =>
-        prev.map((w) => (w.id === word.id ? { ...w, definition } : w))
+        prev.map((w) => (w.id === word.id ? { ...w, ...dataToUpdate } : w))
       );
       console.log("Definition reload completed successfully");
     } catch (error) {

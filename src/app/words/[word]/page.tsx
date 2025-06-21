@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { db } from "@/lib/firebase";
 import {
@@ -11,10 +11,47 @@ import {
   limit,
   collectionGroup,
   getDoc,
+  doc,
+  updateDoc,
   Timestamp,
 } from "firebase/firestore";
 import { useParams } from "next/navigation";
 import Link from "next/link";
+import { config } from "@/lib/config";
+
+// --- Data Interfaces ---
+interface Phonetic {
+  text: string;
+  audio: string;
+}
+
+interface Meaning {
+  partOfSpeech: string;
+  definitions: {
+    definition: string;
+    example?: string;
+    synonyms?: string[];
+    antonyms?: string[];
+  }[];
+}
+
+interface WordDetails {
+  phonetics: Phonetic[];
+  meanings: Meaning[];
+}
+
+interface DictionaryApiResponse {
+  phonetics: { text: string; audio: string }[];
+  meanings: {
+    partOfSpeech: string;
+    definitions: {
+      definition: string;
+      example?: string;
+      synonyms?: string[];
+      antonyms?: string[];
+    }[];
+  }[];
+}
 
 interface Sentence {
   id: string;
@@ -34,8 +71,10 @@ interface Word {
   translation?: string;
   status?: string;
   createdAt: Timestamp;
+  details?: WordDetails;
 }
 
+// --- Component ---
 export default function WordPage() {
   const { user } = useAuth();
   const params = useParams();
@@ -46,6 +85,16 @@ export default function WordPage() {
   const [loading, setLoading] = useState(true);
   const [loadingSentences, setLoadingSentences] = useState(true);
   const [error, setError] = useState("");
+  const [updating, setUpdating] = useState<"definition" | "translation" | null>(
+    null
+  );
+  const [translatedSentences, setTranslatedSentences] = useState<
+    Record<string, string>
+  >({});
+  const [translatingSentenceId, setTranslatingSentenceId] = useState<
+    string | null
+  >(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     if (user && wordParam) {
@@ -56,7 +105,6 @@ export default function WordPage() {
 
   const fetchWord = async () => {
     if (!user) return;
-
     try {
       setLoading(true);
       const wordsRef = collection(db, "words");
@@ -65,14 +113,10 @@ export default function WordPage() {
         where("userId", "==", user.uid),
         where("word", "==", wordParam.toLowerCase())
       );
-
       const querySnapshot = await getDocs(q);
       if (!querySnapshot.empty) {
         const doc = querySnapshot.docs[0];
-        setWord({
-          id: doc.id,
-          ...doc.data(),
-        } as Word);
+        setWord({ id: doc.id, ...doc.data() } as Word);
       } else {
         setError("Word not found in your collection");
       }
@@ -81,6 +125,117 @@ export default function WordPage() {
       setError("Failed to load word information");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const reloadDefinition = async () => {
+    if (!word) return;
+    setUpdating("definition");
+    try {
+      const res = await fetch(
+        `${config.dictionaryApi}/${encodeURIComponent(word.word)}`
+      );
+      if (!res.ok)
+        throw new Error(`API request failed with status ${res.status}`);
+
+      const data: DictionaryApiResponse[] = await res.json();
+      if (!data || data.length === 0)
+        throw new Error("No definition found in API response");
+
+      const firstResult = data[0];
+      const newDefinition =
+        firstResult.meanings?.[0]?.definitions?.[0]?.definition ??
+        "No definition found.";
+      const newDetails: WordDetails = {
+        phonetics: (firstResult.phonetics || [])
+          .map((p) => ({ text: p.text, audio: p.audio }))
+          .filter((p): p is Phonetic => !!(p.text && p.audio)),
+        meanings: (firstResult.meanings || []).map((m) => ({
+          partOfSpeech: m.partOfSpeech,
+          definitions: m.definitions,
+        })),
+      };
+
+      const dataToUpdate = { definition: newDefinition, details: newDetails };
+
+      // Remove undefined fields before sending to Firestore
+      Object.keys(dataToUpdate).forEach(
+        (key) =>
+          dataToUpdate[key as keyof typeof dataToUpdate] === undefined &&
+          delete dataToUpdate[key as keyof typeof dataToUpdate]
+      );
+
+      await updateDoc(doc(db, "words", word.id), dataToUpdate);
+      setWord((prev) => (prev ? { ...prev, ...dataToUpdate } : null));
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "An unknown error occurred"
+      );
+    } finally {
+      setUpdating(null);
+    }
+  };
+
+  const reloadTranslation = async () => {
+    if (!word) return;
+    setUpdating("translation");
+    try {
+      const langPair = `en|uk`;
+      const url = `${config.translationApi.baseUrl}?q=${encodeURIComponent(
+        word.word
+      )}&langpair=${langPair}`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("Translation API request failed");
+
+      const data = await res.json();
+      const newTranslation =
+        data.responseData?.translatedText || "No translation found.";
+
+      await updateDoc(doc(db, "words", word.id), {
+        translation: newTranslation,
+      });
+      setWord((prev) =>
+        prev ? { ...prev, translation: newTranslation } : null
+      );
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "An unknown error occurred"
+      );
+    } finally {
+      setUpdating(null);
+    }
+  };
+
+  const translateSentence = async (sentenceId: string, text: string) => {
+    setTranslatingSentenceId(sentenceId);
+    try {
+      const langPair = `en|uk`;
+      const url = `${config.translationApi.baseUrl}?q=${encodeURIComponent(
+        text
+      )}&langpair=${langPair}`;
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("Translation failed");
+      const data = await res.json();
+      setTranslatedSentences((prev) => ({
+        ...prev,
+        [sentenceId]:
+          data.responseData?.translatedText || "Translation not available",
+      }));
+    } catch (error) {
+      console.error("Sentence translation error:", error);
+      setTranslatedSentences((prev) => ({
+        ...prev,
+        [sentenceId]: "Translation failed",
+      }));
+    } finally {
+      setTranslatingSentenceId(null);
+    }
+  };
+
+  const playAudio = (audioUrl: string) => {
+    if (audioRef.current) {
+      audioRef.current.src = audioUrl;
+      audioRef.current.play();
     }
   };
 
@@ -193,34 +348,78 @@ export default function WordPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+      <audio ref={audioRef} />
+      <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8">
-          <div className="flex items-center justify-between">
-            <div>
-              <Link
-                href="/words"
-                className="text-blue-600 hover:text-blue-700 text-sm font-medium mb-2 inline-block"
-              >
-                ← Back to My Words
-              </Link>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                {word?.word}
-              </h1>
-              {word && (
-                <div className="text-gray-600 space-y-1">
-                  <p>
-                    <strong>Definition:</strong> {word.definition}
-                  </p>
-                  {word.translation && (
-                    <p>
-                      <strong>Translation:</strong> {word.translation}
-                    </p>
+          <Link
+            href="/words"
+            className="text-blue-600 hover:text-blue-700 text-sm font-medium mb-4 inline-block"
+          >
+            ← Back to My Words
+          </Link>
+          <div className="bg-white rounded-lg shadow-md p-6">
+            <div className="flex justify-between items-start">
+              <div>
+                <h1 className="text-4xl font-bold text-gray-900">
+                  {word?.word}
+                </h1>
+                {word?.details?.phonetics &&
+                  word.details.phonetics.length > 0 && (
+                    <div className="flex items-center space-x-2 mt-2">
+                      <span className="text-lg text-gray-600">
+                        {word.details.phonetics[0].text}
+                      </span>
+                      <button
+                        onClick={() =>
+                          playAudio(word.details!.phonetics[0].audio)
+                        }
+                        title="Play pronunciation"
+                      >
+                        <svg
+                          className="w-6 h-6 text-blue-500 hover:text-blue-700"
+                          fill="currentColor"
+                          viewBox="0 0 20 20"
+                        >
+                          <path
+                            fillRule="evenodd"
+                            d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"
+                            clipRule="evenodd"
+                          ></path>
+                        </svg>
+                      </button>
+                    </div>
                   )}
-                  <p>
-                    <strong>Status:</strong> {word.status || "unset"}
-                  </p>
-                </div>
+              </div>
+              <div className="flex space-x-2">
+                <button
+                  onClick={reloadDefinition}
+                  disabled={!!updating}
+                  className="text-sm bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 rounded-md disabled:opacity-50"
+                >
+                  {updating === "definition"
+                    ? "Reloading..."
+                    : "Reload Definition"}
+                </button>
+                <button
+                  onClick={reloadTranslation}
+                  disabled={!!updating}
+                  className="text-sm bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 rounded-md disabled:opacity-50"
+                >
+                  {updating === "translation"
+                    ? "Reloading..."
+                    : "Reload Translation"}
+                </button>
+              </div>
+            </div>
+            <div className="mt-4 text-gray-700 space-y-1">
+              <p>
+                <strong>Definition:</strong> {word?.definition}
+              </p>
+              {word?.translation && (
+                <p>
+                  <strong>Translation:</strong> {word.translation}
+                </p>
               )}
             </div>
           </div>
@@ -232,12 +431,51 @@ export default function WordPage() {
           </div>
         )}
 
+        {/* Definitions */}
+        <div className="mb-8">
+          <h2 className="text-2xl font-semibold text-gray-800 mb-4">
+            Detailed Definitions
+          </h2>
+          <div className="bg-white rounded-lg shadow-md p-6 space-y-6">
+            {word?.details?.meanings.map((meaning, i) => (
+              <div key={i}>
+                <h3 className="text-xl font-semibold text-blue-700 italic">
+                  {meaning.partOfSpeech}
+                </h3>
+                <ol className="list-decimal list-inside mt-2 space-y-4">
+                  {meaning.definitions.map((def, j) => (
+                    <li key={j} className="text-gray-800">
+                      <p className="font-medium">{def.definition}</p>
+                      {def.example && (
+                        <p className="text-sm text-gray-600 mt-1 pl-4 border-l-2 border-gray-200">
+                          <em>&quot;{def.example}&quot;</em>
+                        </p>
+                      )}
+                      {def.synonyms && def.synonyms.length > 0 && (
+                        <p className="text-sm mt-1">
+                          <strong className="text-gray-600">Synonyms:</strong>{" "}
+                          {def.synonyms.join(", ")}
+                        </p>
+                      )}
+                      {def.antonyms && def.antonyms.length > 0 && (
+                        <p className="text-sm mt-1">
+                          <strong className="text-gray-600">Antonyms:</strong>{" "}
+                          {def.antonyms.join(", ")}
+                        </p>
+                      )}
+                    </li>
+                  ))}
+                </ol>
+              </div>
+            ))}
+          </div>
+        </div>
+
         {/* Word Examples */}
         <div className="bg-white rounded-lg shadow-md p-6">
           <h2 className="text-xl font-semibold text-gray-900 mb-6">
-            Examples ({sentences.length})
+            Examples from your analyses ({sentences.length})
           </h2>
-
           {loadingSentences ? (
             <div className="flex items-center justify-center py-8">
               <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -253,35 +491,47 @@ export default function WordPage() {
             </div>
           ) : (
             <div className="space-y-4">
-              {sentences.map((sentence, index) => (
+              {sentences.map((sentence) => (
                 <div
                   key={sentence.id}
-                  className="p-4 border border-gray-200 rounded-lg hover:border-gray-300 transition-colors"
+                  className="p-4 border border-gray-200 rounded-lg"
                 >
-                  <div className="flex justify-between items-start mb-2">
-                    <span className="text-xs text-gray-500">
-                      Example {index + 1}
-                    </span>
-                    <div className="flex items-center space-x-2">
-                      <span className="text-xs text-gray-500">
-                        {sentence.wordCount} words
-                      </span>
-                      <span className="text-xs text-blue-600">
-                        {sentence.analysisTitle}
-                      </span>
-                    </div>
-                  </div>
                   <p
-                    className="text-gray-900 leading-relaxed"
+                    className="text-gray-900 leading-relaxed mb-2"
                     dangerouslySetInnerHTML={{
                       __html: highlightWord(sentence.text, wordParam),
                     }}
                   />
-                  {sentence.chapter && sentence.chapter !== "Unknown" && (
-                    <p className="text-xs text-blue-600 mt-2">
-                      Chapter: {sentence.chapter}
+
+                  {translatedSentences[sentence.id] ? (
+                    <p className="text-sm text-blue-700 bg-blue-50 p-2 rounded-md">
+                      {translatedSentences[sentence.id]}
                     </p>
+                  ) : (
+                    <button
+                      onClick={() =>
+                        translateSentence(sentence.id, sentence.text)
+                      }
+                      disabled={translatingSentenceId === sentence.id}
+                      className="text-sm text-blue-600 hover:underline disabled:opacity-50"
+                    >
+                      {translatingSentenceId === sentence.id
+                        ? "Translating..."
+                        : "Translate"}
+                    </button>
                   )}
+
+                  <div className="flex justify-between items-center mt-2 text-xs text-gray-500">
+                    <span>
+                      From:{" "}
+                      <span className="text-blue-600">
+                        {sentence.analysisTitle}
+                      </span>
+                    </span>
+                    <span>
+                      {sentence.chapter && `Chapter: ${sentence.chapter}`}
+                    </span>
+                  </div>
                 </div>
               ))}
             </div>

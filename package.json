@@ -9,6 +9,7 @@
     "lint": "next lint"
   },
   "dependencies": {
+    "epub": "^1.3.0",
     "firebase": "^11.9.1",
     "next": "15.3.4",
     "react": "^19.0.0",

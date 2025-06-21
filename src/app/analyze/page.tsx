@@ -15,15 +15,6 @@ import {
 } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 
-interface Word {
-  id: string;
-  word: string;
-  definition: string;
-  example: string;
-  createdAt: Timestamp;
-  status: string;
-}
-
 interface AnalysisResult {
   totalWords: number;
   uniqueWords: number;
@@ -31,6 +22,8 @@ interface AnalysisResult {
   unknownWords: number;
   unknownWordList: string[];
   wordFrequency: { [key: string]: number };
+  averageWordLength: number;
+  readingTime: number;
 }
 
 interface TranslationResult {
@@ -39,11 +32,18 @@ interface TranslationResult {
   explanation: string;
 }
 
+interface UserWord {
+  id: string;
+  word: string;
+  status: string;
+  createdAt: Date;
+}
+
 export default function AnalyzePage() {
   const { user, loading } = useAuth();
   const router = useRouter();
-  const [userWords, setUserWords] = useState<Word[]>([]);
-  const [inputText, setInputText] = useState("");
+  const [userWords, setUserWords] = useState<UserWord[]>([]);
+  const [text, setText] = useState("");
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(
     null
   );
@@ -61,6 +61,18 @@ export default function AnalyzePage() {
   const [allWordsPage, setAllWordsPage] = useState(1);
   const [wellKnownWordsPage, setWellKnownWordsPage] = useState(1);
   const wordsPerPage = 10;
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [fileName, setFileName] = useState<string | null>(null);
+  const [dragActive, setDragActive] = useState(false);
+  const [bookMetadata, setBookMetadata] = useState<{
+    title?: string;
+    creator?: string;
+    language?: string;
+    subject?: string;
+    description?: string;
+  } | null>(null);
 
   const STATUS_OPTIONS = [
     { value: "well_known", label: "Well Known", color: "bg-green-500" },
@@ -107,13 +119,16 @@ export default function AnalyzePage() {
       const q = query(wordsRef, where("userId", "==", user.uid));
 
       const querySnapshot = await getDocs(q);
-      const wordsData: Word[] = [];
+      const wordsData: UserWord[] = [];
 
       querySnapshot.forEach((doc) => {
+        const data = doc.data();
         wordsData.push({
           id: doc.id,
-          ...doc.data(),
-        } as Word);
+          word: data.word,
+          status: data.status,
+          createdAt: data.createdAt?.toDate() || new Date(),
+        });
       });
 
       setUserWords(wordsData);
@@ -124,7 +139,7 @@ export default function AnalyzePage() {
   };
 
   const analyzeText = () => {
-    if (!inputText.trim()) {
+    if (!text.trim()) {
       setError("Please enter some text to analyze");
       return;
     }
@@ -134,7 +149,7 @@ export default function AnalyzePage() {
 
     try {
       // Clean and split text into words
-      const words = inputText
+      const words = text
         .toLowerCase()
         .replace(/[^\w\s]/g, " ")
         .split(/\s+/)
@@ -164,6 +179,9 @@ export default function AnalyzePage() {
         unknownWords: unknownWords.length,
         unknownWordList: unknownWords,
         wordFrequency,
+        averageWordLength:
+          words.reduce((sum, word) => sum + word.length, 0) / words.length,
+        readingTime: words.length / 200, // Assuming 200 words per minute
       };
 
       setAnalysisResult(result);
@@ -183,77 +201,80 @@ export default function AnalyzePage() {
       setError("");
 
       const wordsRef = collection(db, "words");
-      // Create a map for quick lookup of explanations
       const explanationMap: Record<string, string> = {};
       translations.forEach((t) => {
         explanationMap[t.word.toLowerCase()] = t.explanation;
       });
 
-      const promises = analysisResult.unknownWordList.map((word) => {
-        const def =
-          explanationMap[word.toLowerCase()] &&
-          explanationMap[word.toLowerCase()] !== "No definition found."
-            ? explanationMap[word.toLowerCase()]
-            : `[Auto-added from text analysis]`;
-        return addDoc(wordsRef, {
-          userId: user.uid,
-          word: word.trim(),
-          definition: def,
-          example: "",
-          createdAt: Timestamp.now(),
-        });
-      });
+      const wordsToAdd = analysisResult.unknownWordList.map((word) => ({
+        userId: user.uid,
+        word: word.toLowerCase().trim(),
+        definition:
+          explanationMap[word.toLowerCase()] || "No definition available",
+        example: "",
+        status: "to_learn",
+        createdAt: Timestamp.now(),
+      }));
 
-      await Promise.all(promises);
-      // Refresh user words
+      for (const wordData of wordsToAdd) {
+        await addDoc(wordsRef, wordData);
+      }
+
       await fetchUserWords();
       // Re-analyze text to update results
-      setInputText(inputText);
+      setText(text);
       analyzeText();
-    } catch {
-      setError("Failed to add unknown words");
+    } catch (error) {
+      console.error("Error adding words:", error);
+      setError("Failed to add words to your collection");
     } finally {
       setAddingWords(false);
     }
   };
 
-  // Fetch explanations (definitions) for unknown words using DictionaryAPI.dev
   const fetchTranslations = async () => {
-    if (!analysisResult || analysisResult.unknownWordList.length === 0) return;
-    setLoadingTranslations(true);
-    setTranslations([]);
+    if (!analysisResult || analysisResult.unknownWords === 0) return;
+
     try {
+      setLoadingTranslations(true);
+      setError("");
+
       const results: TranslationResult[] = [];
-      for (const word of analysisResult.unknownWordList) {
-        // Fetch English definition from DictionaryAPI.dev
-        let explanation = "";
+      for (const word of analysisResult.unknownWordList.slice(0, 20)) {
         try {
-          const res = await fetch(
-            `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(
-              word
-            )}`
+          const response = await fetch(
+            `https://api.dictionaryapi.dev/api/v2/entries/en/${word}`
           );
-          if (res.ok) {
-            const data = await res.json();
-            if (
-              Array.isArray(data) &&
-              data[0]?.meanings?.[0]?.definitions?.[0]?.definition
-            ) {
-              explanation = data[0].meanings[0].definitions[0].definition;
-            } else {
-              explanation = "No definition found.";
-            }
+          if (response.ok) {
+            const data = await response.json();
+            const definition =
+              data[0]?.meanings?.[0]?.definitions?.[0]?.definition ||
+              "No definition found.";
+            results.push({
+              word,
+              translation: word, // English word, so translation is the same
+              explanation: definition,
+            });
           } else {
-            explanation = "No definition found.";
+            results.push({
+              word,
+              translation: word,
+              explanation: "No definition found.",
+            });
           }
         } catch {
-          explanation = "No definition found.";
+          results.push({
+            word,
+            translation: word,
+            explanation: "No definition found.",
+          });
         }
-        results.push({ word, translation: "", explanation });
       }
+
       setTranslations(results);
     } catch {
-      setTranslations([]);
+      console.error("Error fetching translations");
+      setError("Failed to fetch translations");
     } finally {
       setLoadingTranslations(false);
     }
@@ -264,86 +285,42 @@ export default function AnalyzePage() {
 
     try {
       setAddingWord(word);
+      setError("");
+
       const wordsRef = collection(db, "words");
-
-      // Check if word already exists
-      const wordExists = userWords.some(
-        (w) => w.word.toLowerCase().trim() === word.toLowerCase().trim()
-      );
-
-      if (wordExists) {
-        setError("This word already exists in your collection");
-        return;
-      }
-
-      let definition = "";
-      // Try to get definition from translations first
-      const translationDef = translations.find(
-        (t) => t.word.toLowerCase() === word.toLowerCase()
-      )?.explanation;
-
-      if (translationDef && translationDef !== "No definition found.") {
-        definition = translationDef;
-      } else {
-        // If no translation, try to fetch definition
-        try {
-          const res = await fetch(
-            `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(
-              word
-            )}`
-          );
-          if (res.ok) {
-            const data = await res.json();
-            if (data[0]?.meanings?.[0]?.definitions?.[0]?.definition) {
-              definition = data[0].meanings[0].definitions[0].definition;
-            }
-          }
-        } catch (error) {
-          console.error("Error fetching definition:", error);
-        }
-      }
-
-      // Add the word
-      const newWordDoc = await addDoc(wordsRef, {
-        userId: user.uid,
-        word: word.trim(),
-        definition: definition || "[Auto-added from text analysis]",
-        example: "",
-        createdAt: Timestamp.now(),
-        status: status || "to_learn",
+      const explanationMap: Record<string, string> = {};
+      translations.forEach((t) => {
+        explanationMap[t.word.toLowerCase()] = t.explanation;
       });
 
-      // Update local state
-      const newWord = {
-        id: newWordDoc.id,
-        word: word.trim(),
-        definition: definition || "[Auto-added from text analysis]",
+      const wordData = {
+        userId: user.uid,
+        word: word.toLowerCase().trim(),
+        definition:
+          explanationMap[word.toLowerCase()] || "No definition available",
         example: "",
-        createdAt: Timestamp.now(),
         status: status || "to_learn",
+        createdAt: Timestamp.now(),
       };
 
-      setUserWords((prev) => [...prev, newWord]);
+      await addDoc(wordsRef, wordData);
 
-      // Update analysis result
-      if (analysisResult) {
-        const updatedResult = { ...analysisResult };
-        const wordLower = word.toLowerCase().trim();
+      setUserWords((prev) => [
+        ...prev,
+        {
+          id: "temp",
+          word: wordData.word,
+          status: wordData.status,
+          createdAt: new Date(),
+        },
+      ]);
 
-        // Remove from unknown words
-        updatedResult.unknownWordList = updatedResult.unknownWordList.filter(
-          (w) => w.toLowerCase() !== wordLower
-        );
-        updatedResult.unknownWords = updatedResult.unknownWords - 1;
-        updatedResult.knownWords = updatedResult.knownWords + 1;
-
-        setAnalysisResult(updatedResult);
-      }
-
-      setActiveTooltip(null); // Close tooltip after adding
+      // Re-analyze text to update results
+      setText(text);
+      analyzeText();
     } catch (error) {
       console.error("Error adding word:", error);
-      setError("Failed to add word");
+      setError("Failed to add word to your collection");
     } finally {
       setAddingWord(null);
     }
@@ -351,20 +328,36 @@ export default function AnalyzePage() {
 
   const updateWordStatus = async (wordId: string, status: string) => {
     if (!user) return;
-    try {
-      await updateDoc(doc(db, "words", wordId), { status });
 
-      // Update local state
+    try {
+      const wordRef = doc(db, "words", wordId);
+      await updateDoc(wordRef, { status });
+
       setUserWords((prev) =>
         prev.map((word) => (word.id === wordId ? { ...word, status } : word))
       );
 
-      setActiveTooltip(null); // Close tooltip after updating
+      await fetchUserWords();
+      // Re-analyze text to update results
+      setText(text);
+      analyzeText();
     } catch (error) {
       console.error("Error updating word status:", error);
       setError("Failed to update word status");
     }
   };
+
+  const wellKnownWords = analysisResult
+    ? Object.entries(analysisResult.wordFrequency)
+        .filter(([word]) =>
+          userWords.some(
+            (w) =>
+              w.word.toLowerCase().trim() === word.toLowerCase() &&
+              w.status === "well_known"
+          )
+        )
+        .sort(([, a], [, b]) => b - a)
+    : [];
 
   const toggleFrequencyStatusFilter = (status: string) => {
     setFrequencyStatusFilters((prev) => {
@@ -415,18 +408,6 @@ export default function AnalyzePage() {
   const getTotalPages = (words: [string, number][]) => {
     return Math.ceil(words.length / wordsPerPage);
   };
-
-  const wellKnownWords = analysisResult
-    ? Object.entries(analysisResult.wordFrequency)
-        .filter(([word]) =>
-          userWords.some(
-            (w) =>
-              w.word.toLowerCase().trim() === word.toLowerCase() &&
-              w.status === "well_known"
-          )
-        )
-        .sort(([, a], [, b]) => b - a)
-    : [];
 
   const Pagination = ({
     currentPage,
@@ -492,6 +473,102 @@ export default function AnalyzePage() {
     );
   };
 
+  const handleFileUpload = async (file: File) => {
+    if (!file.name.toLowerCase().endsWith(".epub")) {
+      setError("Please upload an EPUB file");
+      return;
+    }
+
+    setUploading(true);
+    setUploadProgress(0);
+    setError("");
+    setFileName(file.name);
+    setBookMetadata(null);
+
+    try {
+      // Create FormData
+      const formData = new FormData();
+      formData.append("file", file);
+
+      // Simulate initial progress
+      const progressInterval = setInterval(() => {
+        setUploadProgress((prev) => {
+          if (prev >= 90) {
+            clearInterval(progressInterval);
+            return 90;
+          }
+          return prev + 10;
+        });
+      }, 100);
+
+      // Send file to API
+      const response = await fetch("/api/parse-epub", {
+        method: "POST",
+        body: formData,
+      });
+
+      clearInterval(progressInterval);
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to process EPUB file");
+      }
+
+      const { text: extractedText, metadata } = await response.json();
+      setUploadProgress(100);
+      setBookMetadata(metadata);
+
+      // Set the extracted text
+      setText(extractedText);
+
+      // Auto-analyze the extracted text
+      setTimeout(() => {
+        handleAnalyze();
+        setUploadProgress(0);
+        setUploading(false);
+      }, 500);
+    } catch (error) {
+      console.error("File upload error:", error);
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Failed to parse EPUB file. Please try again."
+      );
+      setUploading(false);
+      setUploadProgress(0);
+    }
+  };
+
+  const handleDrag = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      handleFileUpload(e.dataTransfer.files[0]);
+    }
+  };
+
+  const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      handleFileUpload(e.target.files[0]);
+    }
+  };
+
+  const handleAnalyze = () => {
+    analyzeText();
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -529,158 +606,173 @@ export default function AnalyzePage() {
               Enter Text
             </h2>
             <div className="space-y-4">
-              {!analysisResult ? (
-                <div>
-                  <label
-                    htmlFor="text-input"
-                    className="block text-sm font-medium text-gray-700 mb-2"
-                  >
-                    Text to Analyze
-                  </label>
-                  <textarea
-                    id="text-input"
-                    value={inputText}
-                    onChange={(e) => setInputText(e.target.value)}
-                    rows={12}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-gray-900 text-base leading-relaxed bg-white placeholder-gray-500 resize-none"
-                    placeholder="Paste or type your text here..."
+              {/* EPUB Upload Section */}
+              <div className="mb-8">
+                <h2 className="text-lg font-medium text-gray-900 mb-4">
+                  Upload EPUB File
+                </h2>
+
+                {/* Book Metadata Section */}
+                {bookMetadata && (
+                  <div className="mb-6 bg-blue-50 border border-blue-200 rounded-md p-4">
+                    <h3 className="text-md font-medium text-blue-900 mb-2">
+                      Book Information
+                    </h3>
+                    <div className="space-y-2">
+                      {bookMetadata.title && (
+                        <p className="text-sm text-blue-800">
+                          <span className="font-medium">Title:</span>{" "}
+                          {bookMetadata.title}
+                        </p>
+                      )}
+                      {bookMetadata.creator && (
+                        <p className="text-sm text-blue-800">
+                          <span className="font-medium">Author:</span>{" "}
+                          {bookMetadata.creator}
+                        </p>
+                      )}
+                      {bookMetadata.language && (
+                        <p className="text-sm text-blue-800">
+                          <span className="font-medium">Language:</span>{" "}
+                          {bookMetadata.language}
+                        </p>
+                      )}
+                      {bookMetadata.subject && (
+                        <p className="text-sm text-blue-800">
+                          <span className="font-medium">Subject:</span>{" "}
+                          {bookMetadata.subject}
+                        </p>
+                      )}
+                      {bookMetadata.description && (
+                        <div className="text-sm text-blue-800">
+                          <span className="font-medium">Description:</span>
+                          <p className="mt-1">{bookMetadata.description}</p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                <div
+                  className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
+                    dragActive
+                      ? "border-blue-400 bg-blue-50"
+                      : "border-gray-300 hover:border-gray-400"
+                  }`}
+                  onDragEnter={handleDrag}
+                  onDragLeave={handleDrag}
+                  onDragOver={handleDrag}
+                  onDrop={handleDrop}
+                >
+                  {uploading ? (
+                    <div className="space-y-4">
+                      <div className="flex items-center justify-center">
+                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                      </div>
+                      <div>
+                        <p className="text-sm text-gray-600">
+                          Processing {fileName}...
+                        </p>
+                        <div className="mt-2 w-full bg-gray-200 rounded-full h-2">
+                          <div
+                            className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                            style={{ width: `${uploadProgress}%` }}
+                          ></div>
+                        </div>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {uploadProgress}% complete
+                        </p>
+                      </div>
+                    </div>
+                  ) : (
+                    <div>
+                      <div className="flex justify-center mb-4">
+                        <svg
+                          className="mx-auto h-12 w-12 text-gray-400"
+                          stroke="currentColor"
+                          fill="none"
+                          viewBox="0 0 48 48"
+                          aria-hidden="true"
+                        >
+                          <path
+                            d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
+                            strokeWidth={2}
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                      </div>
+                      <p className="text-sm text-gray-600 mb-2">
+                        Drag and drop your EPUB file here, or
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() => fileInputRef.current?.click()}
+                        className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                      >
+                        Choose File
+                      </button>
+                      <p className="text-xs text-gray-500 mt-2">
+                        Supports EPUB format only
+                      </p>
+                    </div>
+                  )}
+
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".epub"
+                    onChange={handleFileInput}
+                    className="hidden"
                   />
                 </div>
-              ) : (
-                <div className="prose max-w-none bg-gray-50 p-4 rounded border">
-                  {(() => {
-                    // Split original text into words and spaces
-                    const words =
-                      inputText.match(/\w+|\s+|[^"]\w*|[.,!?;:]/g) || [];
-                    const unknownSet = new Set(
-                      analysisResult.unknownWordList.map((w) => w.toLowerCase())
-                    );
-                    const knownMap = new Map(
-                      userWords.map((w) => [
-                        w.word.toLowerCase().trim(),
-                        { definition: w.definition, status: w.status },
-                      ])
-                    );
-                    const explanationMap: Record<string, string> = {};
-                    translations.forEach((t) => {
-                      explanationMap[t.word.toLowerCase()] = t.explanation;
-                    });
-                    return words.map((w, i) => {
-                      const clean = w.toLowerCase().replace(/[^a-z0-9]/g, "");
-                      let tooltip = null;
-                      const isWord = /\w+/.test(w);
-                      let definition = "";
-                      let colorClass = "";
-                      let existingWord = null;
 
-                      if (unknownSet.has(clean)) {
-                        definition =
-                          explanationMap[clean] &&
-                          explanationMap[clean] !== "No definition found."
-                            ? explanationMap[clean]
-                            : "No definition";
-                        colorClass = "bg-red-100 text-red-700";
-                      } else if (knownMap.has(clean)) {
-                        const wordInfo = knownMap.get(clean);
-                        definition = wordInfo?.definition || "No definition";
-                        colorClass =
-                          wordInfo?.status === "well_known"
-                            ? "bg-green-100 text-green-700"
-                            : "bg-blue-100 text-blue-700";
-                        existingWord = userWords.find(
-                          (uw) => uw.word.toLowerCase().trim() === clean
-                        );
-                      }
+                {fileName && !uploading && (
+                  <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-md">
+                    <p className="text-sm text-green-600">
+                      Successfully processed: {fileName}
+                    </p>
+                  </div>
+                )}
+              </div>
 
-                      if (isWord) {
-                        tooltip =
-                          activeTooltip === i ? (
-                            <div
-                              ref={tooltipRef}
-                              className="absolute z-50 mt-2 left-1/2 -translate-x-1/2 bg-white border border-gray-300 shadow-lg rounded-lg px-4 py-3 text-sm text-gray-900 min-w-[250px] max-w-sm"
-                            >
-                              <div className="font-semibold mb-2 text-base">
-                                {w}
-                              </div>
-                              <div className="mb-3">{definition}</div>
+              {/* Text Input Section */}
+              <div className="mb-8">
+                <h2 className="text-lg font-medium text-gray-900 mb-4">
+                  Or Enter Text Manually
+                </h2>
+                <textarea
+                  value={text}
+                  onChange={(e) => setText(e.target.value)}
+                  placeholder="Paste your text here or upload an EPUB file above..."
+                  className="w-full h-48 p-4 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                />
+              </div>
 
-                              {existingWord ? (
-                                <>
-                                  <div className="mb-2 text-xs font-medium text-gray-500">
-                                    Change status:
-                                  </div>
-                                  <div className="flex flex-wrap gap-1">
-                                    {STATUS_OPTIONS.map((option) => (
-                                      <button
-                                        key={option.value}
-                                        onClick={() =>
-                                          updateWordStatus(
-                                            existingWord.id,
-                                            option.value
-                                          )
-                                        }
-                                        className={`px-2 py-1 rounded text-xs font-medium transition-colors ${
-                                          existingWord.status === option.value
-                                            ? `${option.color} text-white`
-                                            : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                                        }`}
-                                      >
-                                        {option.label}
-                                      </button>
-                                    ))}
-                                  </div>
-                                </>
-                              ) : (
-                                <>
-                                  <div className="mb-2 text-xs font-medium text-gray-500">
-                                    Add to dictionary with status:
-                                  </div>
-                                  <div className="flex flex-wrap gap-1">
-                                    {STATUS_OPTIONS.map((option) => (
-                                      <button
-                                        key={option.value}
-                                        onClick={() =>
-                                          addSingleWord(w, option.value)
-                                        }
-                                        disabled={addingWord === w}
-                                        className={`px-2 py-1 rounded text-xs font-medium ${option.color} text-white hover:opacity-90 disabled:opacity-50 transition-colors`}
-                                      >
-                                        {addingWord === w
-                                          ? "Adding..."
-                                          : option.label}
-                                      </button>
-                                    ))}
-                                  </div>
-                                </>
-                              )}
-                            </div>
-                          ) : null;
+              {/* Analyze Button */}
+              <div className="mb-8">
+                <button
+                  onClick={handleAnalyze}
+                  disabled={!text.trim() || loadingAnalysis}
+                  className="w-full bg-blue-600 text-white py-3 px-6 rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+                >
+                  {loadingAnalysis ? "Analyzing..." : "Analyze Text"}
+                </button>
+              </div>
 
-                        return (
-                          <span
-                            key={i}
-                            className={`relative ${colorClass} rounded px-1 mx-0.5 inline-block cursor-pointer`}
-                            onClick={() =>
-                              setActiveTooltip(activeTooltip === i ? null : i)
-                            }
-                          >
-                            {w}
-                            {tooltip}
-                          </span>
-                        );
-                      }
-                      return <span key={i}>{w}</span>;
-                    });
-                  })()}
-                </div>
-              )}
-              <button
-                onClick={analyzeText}
-                disabled={loadingAnalysis || !inputText.trim()}
-                className="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {loadingAnalysis ? "Analyzing..." : "Analyze Text"}
-              </button>
+              {/* Sample Text Button for Testing */}
+              <div className="mb-4">
+                <button
+                  onClick={() => {
+                    const sampleText = `The quick brown fox jumps over the lazy dog. This is a sample text for testing the word analysis functionality. It contains various words that can be analyzed for frequency and categorization. Some words might be known while others could be unknown depending on your vocabulary.`;
+                    setText(sampleText);
+                    setError("");
+                  }}
+                  className="w-full bg-gray-500 text-white py-2 px-4 rounded-md hover:bg-gray-600 transition-colors text-sm"
+                >
+                  Load Sample Text (for testing)
+                </button>
+              </div>
             </div>
           </div>
 
@@ -691,10 +783,8 @@ export default function AnalyzePage() {
             </h2>
 
             {!analysisResult ? (
-              <div className="text-center py-8 text-gray-500">
-                <p>
-                  Enter text and click &ldquo;Analyze Text&rdquo; to see results
-                </p>
+              <div className="text-center text-gray-500 py-8">
+                <p>Upload an EPUB file or enter text to see analysis results</p>
               </div>
             ) : (
               <div className="space-y-6">

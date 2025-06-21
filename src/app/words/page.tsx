@@ -159,28 +159,46 @@ export default function WordsPage() {
     setUpdating(word.id);
     try {
       let translation = "";
+      console.log(`Reloading translation for word: "${word.word}"`);
+
       const res = await fetch(`${config.backendUri}/translate`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: {
+          "Content-Type": "application/json",
+        },
         body: JSON.stringify({
           q: word.word,
           source: "en",
-          target: "uk", // Example: translate to Ukrainian
-          format: "text",
+          target: "uk",
         }),
       });
+      console.log(`Translation API response status: ${res.status}`);
+
       if (res.ok) {
         const data = await res.json();
-        translation = data.translatedText;
+        console.log(`Translation API response data:`, data);
+        translation = data.translatedText || "No translation found.";
+        console.log(`Found translation: "${translation}"`);
       } else {
-        translation = "[Translation error]";
+        translation = "No translation found.";
+        console.log(
+          `Translation API request failed with status: ${res.status}`
+        );
       }
+
+      console.log(`Updating word document with translation: "${translation}"`);
       await updateDoc(doc(db, "words", word.id), { translation });
       setWords((prev) =>
         prev.map((w) => (w.id === word.id ? { ...w, translation } : w))
       );
-    } catch {
-      setError("Failed to reload translation");
+      console.log("Translation reload completed successfully");
+    } catch (error) {
+      console.error("Error reloading translation:", error);
+      setError(
+        `Failed to reload translation: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
     } finally {
       setUpdating(null);
     }
@@ -190,28 +208,45 @@ export default function WordsPage() {
     setUpdating(word.id);
     try {
       let definition = "";
+      console.log(`Reloading definition for word: "${word.word}"`);
+
       const res = await fetch(
         `${config.dictionaryApi}/${encodeURIComponent(word.word)}`
       );
+      console.log(`API response status: ${res.status}`);
+
       if (res.ok) {
         const data = await res.json();
+        console.log(`API response data:`, data);
+
         if (
           Array.isArray(data) &&
           data[0]?.meanings?.[0]?.definitions?.[0]?.definition
         ) {
           definition = data[0].meanings[0].definitions[0].definition;
+          console.log(`Found definition: "${definition}"`);
         } else {
           definition = "No definition found.";
+          console.log("No definition found in API response");
         }
       } else {
         definition = "No definition found.";
+        console.log(`API request failed with status: ${res.status}`);
       }
+
+      console.log(`Updating word document with definition: "${definition}"`);
       await updateDoc(doc(db, "words", word.id), { definition });
       setWords((prev) =>
         prev.map((w) => (w.id === word.id ? { ...w, definition } : w))
       );
-    } catch {
-      setError("Failed to reload definition");
+      console.log("Definition reload completed successfully");
+    } catch (error) {
+      console.error("Error reloading definition:", error);
+      setError(
+        `Failed to reload definition: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
     } finally {
       setUpdating(null);
     }

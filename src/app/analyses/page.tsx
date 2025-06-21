@@ -9,11 +9,7 @@ import {
   where,
   getDocs,
   orderBy,
-  doc,
-  getDoc,
-  collectionGroup,
   limit,
-  startAfter,
   Timestamp,
 } from "firebase/firestore";
 
@@ -67,11 +63,7 @@ export default function AnalysesPage() {
     try {
       setLoading(true);
       const analysesRef = collection(db, "analyses");
-      const q = query(
-        analysesRef,
-        where("userId", "==", user.uid),
-        orderBy("createdAt", "desc")
-      );
+      const q = query(analysesRef, where("userId", "==", user.uid));
 
       const querySnapshot = await getDocs(q);
       const analysesData: Analysis[] = [];
@@ -81,6 +73,10 @@ export default function AnalysesPage() {
           ...doc.data(),
         } as Analysis);
       });
+
+      analysesData.sort(
+        (a, b) => b.createdAt.toMillis() - a.createdAt.toMillis()
+      );
 
       setAnalyses(analysesData);
     } catch (error) {

@@ -1,23 +1,7 @@
-import { useRef } from "react";
 import type { Word } from "@/types";
-
-const STATUS_OPTIONS = [
-  {
-    value: "well_known",
-    label: "Well known",
-    color: "bg-green-500 text-white border-green-500",
-  },
-  {
-    value: "want_repeat",
-    label: "Want repeat",
-    color: "bg-orange-400 text-white border-orange-400",
-  },
-  {
-    value: "to_learn",
-    label: "To learn",
-    color: "bg-blue-600 text-white border-blue-600",
-  },
-];
+import WordDisplay from "./shared/WordDisplay";
+import StatusSelector from "./shared/StatusSelector";
+import ReloadButton from "./shared/ReloadButton";
 
 export default function WordTrainingCard({
   word,
@@ -40,117 +24,76 @@ export default function WordTrainingCard({
   onPrev: () => void;
   onNext: () => void;
 }) {
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-
-  const playAudio = (audioUrl: string) => {
-    if (audioRef.current) {
-      audioRef.current.src = audioUrl;
-      audioRef.current.play();
-    }
-  };
-
   return (
-    <div className="bg-white rounded-xl shadow-md p-8 max-w-lg mx-auto mb-6 relative flex flex-col items-center">
-      <audio ref={audioRef} />
-      <div className="absolute top-2 right-4 text-xs text-gray-400">
+    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-md p-4 sm:p-8 w-full max-w-2xl mx-auto mb-6 relative flex flex-col items-center">
+      <div className="absolute top-2 right-4 text-xs text-gray-400 dark:text-gray-500">
         {current + 1} / {total}
       </div>
+
       <div className="flex items-center space-x-3 mb-6">
-        <div
-          className="text-3xl font-extrabold text-blue-700 text-center"
-          style={{ letterSpacing: 1 }}
-        >
-          {word.word}
-        </div>
-        {word.details?.phonetics && word.details.phonetics.length > 0 && (
-          <div className="flex items-center space-x-2">
-            <span className="text-xl text-gray-500">
-              {word.details.phonetics[0].text}
+        <WordDisplay word={word} showLink={false} size="lg" />
+      </div>
+
+      <div className="w-full space-y-6">
+        {/* Definition Section */}
+        <div>
+          <div className="flex items-center gap-2 mb-2">
+            <span className="font-semibold text-gray-700 dark:text-gray-300 text-sm sm:text-base">
+              Definition:
             </span>
-            <button
-              onClick={() => playAudio(word.details!.phonetics[0].audio)}
-              title="Play pronunciation"
-            >
-              <svg
-                className="w-6 h-6 text-blue-500 hover:text-blue-700"
-                fill="currentColor"
-                viewBox="0 0 20 20"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z"
-                  clipRule="evenodd"
-                ></path>
-              </svg>
-            </button>
+            <ReloadButton
+              onClick={() => onReloadDefinition(word)}
+              disabled={updating === word.id}
+            />
           </div>
-        )}
+          <div className="text-gray-800 dark:text-gray-200 text-sm sm:text-lg leading-relaxed">
+            {word.definition || (
+              <span className="text-gray-400 dark:text-gray-500">(none)</span>
+            )}
+          </div>
+        </div>
+
+        {/* Translation Section */}
+        <div>
+          <div className="flex items-center gap-2 mb-2">
+            <span className="font-semibold text-green-700 dark:text-green-400 text-sm sm:text-base">
+              Translation:
+            </span>
+            <ReloadButton
+              onClick={() => onReloadTranslation(word)}
+              disabled={updating === word.id}
+            />
+          </div>
+          <div className="text-green-700 dark:text-green-400 text-sm sm:text-lg">
+            {word.translation || (
+              <span className="text-gray-400 dark:text-gray-500">(none)</span>
+            )}
+          </div>
+        </div>
+
+        {/* Status Section */}
+        <StatusSelector
+          word={word}
+          onStatusChange={onStatusChange}
+          updating={updating}
+          className="mb-6"
+          buttonClassName="px-4 py-2"
+        />
       </div>
-      <div className="mb-6 w-full">
-        <div className="flex items-center gap-2 mb-1">
-          <span className="font-semibold text-gray-700">Definition:</span>
-          <button
-            onClick={() => onReloadDefinition(word)}
-            disabled={updating === word.id}
-            className="text-blue-600 hover:text-blue-800 text-xs border border-blue-200 rounded px-2 py-1 ml-1 disabled:opacity-50"
-            title="Reload definition"
-          >
-            Reload
-          </button>
-        </div>
-        <div className="text-gray-800 text-lg">
-          {word.definition || <span className="text-gray-400">(none)</span>}
-        </div>
-      </div>
-      <div className="mb-6 w-full">
-        <div className="flex items-center gap-2 mb-1">
-          <span className="font-semibold text-green-700">Translation:</span>
-          <button
-            onClick={() => onReloadTranslation(word)}
-            disabled={updating === word.id}
-            className="text-blue-600 hover:text-blue-800 text-xs border border-blue-200 rounded px-2 py-1 ml-1 disabled:opacity-50"
-            title="Reload translation"
-          >
-            Reload
-          </button>
-        </div>
-        <div className="text-green-700 text-lg">
-          {word.translation || <span className="text-gray-400">(none)</span>}
-        </div>
-      </div>
-      <div className="mb-6 w-full">
-        <span className="font-semibold text-gray-700">Status:</span>
-        <div className="flex gap-2 mt-2">
-          {STATUS_OPTIONS.map((opt) => (
-            <button
-              key={opt.value}
-              onClick={() => onStatusChange(word.id, opt.value)}
-              disabled={updating === word.id || word.status === opt.value}
-              className={`px-4 py-2 rounded font-medium border transition-colors text-sm
-                ${
-                  word.status === opt.value
-                    ? opt.color
-                    : "bg-white text-gray-700 border-gray-300 hover:bg-gray-100"
-                }
-                disabled:opacity-60`}
-            >
-              {opt.label}
-            </button>
-          ))}
-        </div>
-      </div>
-      <div className="flex justify-between w-full mt-2">
+
+      {/* Navigation Buttons */}
+      <div className="flex justify-between w-full mt-6 gap-4">
         <button
           onClick={onPrev}
           disabled={current === 0}
-          className="bg-gray-200 hover:bg-gray-300 text-gray-700 px-4 py-2 rounded disabled:opacity-50"
+          className="flex-1 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 px-4 py-2 rounded disabled:opacity-50 transition-colors text-sm sm:text-base"
         >
           Previous
         </button>
         <button
           onClick={onNext}
           disabled={current === total - 1}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded disabled:opacity-50"
+          className="flex-1 bg-blue-600 dark:bg-blue-500 hover:bg-blue-700 dark:hover:bg-blue-600 text-white px-4 py-2 rounded disabled:opacity-50 transition-colors text-sm sm:text-base"
         >
           Next
         </button>

@@ -14,6 +14,8 @@ import {
 import WordTrainingCard from "@/components/WordTrainingCard";
 import type { Word, WordDetails, Phonetic } from "@/types";
 import { config } from "@/lib/config";
+import Link from "next/link";
+import PageLoader from "@/components/PageLoader";
 
 interface DictionaryApiResponse {
   phonetics: { text: string; audio: string }[];
@@ -285,12 +287,8 @@ export default function TrainingPage() {
     return words.filter((word) => word.status === status).length;
   };
 
-  if (loading || loadingWords) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
-      </div>
-    );
+  if (loading) {
+    return <PageLoader text="Loading training words..." />;
   }
 
   if (!words.length) {
@@ -309,82 +307,114 @@ export default function TrainingPage() {
   // Training Settings Screen
   if (!trainingStarted) {
     return (
-      <div className="min-h-screen bg-gray-50 py-8">
-        <div className="max-w-2xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="bg-white rounded-lg shadow-md p-8">
-            <h1 className="text-3xl font-bold text-gray-900 mb-8 text-center">
-              Training Settings
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+        <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+              Word Training
             </h1>
-
-            {error && (
-              <div className="mb-6 bg-red-50 border border-red-200 rounded-md p-4">
-                <p className="text-red-700">{error}</p>
-              </div>
-            )}
-
-            <div className="mb-8">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                Select which words to train:
-              </h2>
-              <div className="grid gap-3">
-                {STATUS_OPTIONS.map((option) => {
-                  const count = getStatusCount(option.value);
-                  const isSelected = selectedStatuses.includes(option.value);
-
-                  return (
-                    <button
-                      key={option.value}
-                      onClick={() => toggleStatusSelection(option.value)}
-                      className={`flex items-center justify-between p-4 rounded-lg border-2 transition-colors ${
-                        isSelected
-                          ? "border-blue-500 bg-blue-50"
-                          : "border-gray-200 bg-white hover:border-gray-300"
-                      }`}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div
-                          className={`w-4 h-4 rounded-full ${option.color}`}
-                        ></div>
-                        <span className="font-medium text-gray-900">
-                          {option.label}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm text-gray-500">
-                          {count} words
-                        </span>
-                        {isSelected && (
-                          <div className="w-5 h-5 bg-blue-500 rounded-full flex items-center justify-center">
-                            <svg
-                              className="w-3 h-3 text-white"
-                              fill="currentColor"
-                              viewBox="0 0 20 20"
-                            >
-                              <path
-                                fillRule="evenodd"
-                                d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                clipRule="evenodd"
-                              />
-                            </svg>
-                          </div>
-                        )}
-                      </div>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="flex justify-center">
-              <button
-                onClick={startTraining}
-                disabled={selectedStatuses.length === 0}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-8 py-3 rounded-md text-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Start Training
-              </button>
-            </div>
+            <p className="text-lg text-gray-600 dark:text-gray-400">
+              Practice and reinforce your vocabulary with interactive training
+              sessions.
+            </p>
           </div>
+
+          {error && (
+            <div className="mb-6 bg-red-100 dark:bg-red-900/20 border border-red-400 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-md">
+              <p>{error}</p>
+            </div>
+          )}
+
+          {loadingWords ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            </div>
+          ) : words.length === 0 ? (
+            <div className="text-center py-12">
+              <svg
+                className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                aria-hidden="true"
+              >
+                <path
+                  vectorEffect="non-scaling-stroke"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 12h6m-3-3v6m-9 1V7a2 2 0 012-2h4l2 2h4a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"
+                />
+              </svg>
+              <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">
+                No words available for training
+              </h3>
+              <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+                Add some words to your collection to start training.
+              </p>
+              <div className="mt-6">
+                <Link
+                  href="/words"
+                  className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                >
+                  Add Words
+                </Link>
+              </div>
+            </div>
+          ) : (
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">
+                Select Words to Train
+              </h2>
+
+              <div className="mb-6">
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-4">
+                  Word Statuses
+                </h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+                  {STATUS_OPTIONS.map((status) => (
+                    <div
+                      key={status.value}
+                      className={`p-3 sm:p-4 rounded-lg border-2 cursor-pointer transition-colors ${
+                        selectedStatuses.includes(status.value)
+                          ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
+                          : "border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500"
+                      }`}
+                      onClick={() => toggleStatusSelection(status.value)}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div>
+                          <div className="font-medium text-gray-900 dark:text-white text-sm sm:text-base">
+                            {status.label}
+                          </div>
+                          <div className="text-xs sm:text-sm text-gray-500 dark:text-gray-400">
+                            {getStatusCount(status.value)} words
+                          </div>
+                        </div>
+                        <div
+                          className={`w-3 h-3 sm:w-4 sm:h-4 rounded-full border-2 ${
+                            selectedStatuses.includes(status.value)
+                              ? "bg-blue-500 border-blue-500"
+                              : "border-gray-300 dark:border-gray-600"
+                          }`}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="text-center">
+                <button
+                  onClick={startTraining}
+                  disabled={selectedStatuses.length === 0}
+                  className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 dark:disabled:bg-gray-600 text-white px-8 py-3 rounded-md font-medium transition-colors disabled:cursor-not-allowed"
+                >
+                  Start Training
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
     );
@@ -394,10 +424,12 @@ export default function TrainingPage() {
   const currentWord = trainingWords[current];
 
   return (
-    <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center">
-      <div className="w-full max-w-md">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">Training Session</h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+            Training Session
+          </h1>
           <button
             onClick={stopTraining}
             className="text-gray-500 hover:text-gray-700 text-sm font-medium"
@@ -407,8 +439,8 @@ export default function TrainingPage() {
         </div>
 
         {error && (
-          <div className="mb-6 bg-red-50 border border-red-200 rounded-md p-4 text-center">
-            <p className="text-red-700">{error}</p>
+          <div className="mb-6 bg-red-100 dark:bg-red-900/20 border border-red-400 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-md">
+            <p>{error}</p>
           </div>
         )}
 
@@ -420,9 +452,9 @@ export default function TrainingPage() {
           updating={updating}
           current={current}
           total={trainingWords.length}
-          onPrev={() => setCurrent((c) => Math.max(0, c - 1))}
+          onPrev={() => setCurrent(Math.max(0, current - 1))}
           onNext={() =>
-            setCurrent((c) => Math.min(trainingWords.length - 1, c + 1))
+            setCurrent(Math.min(trainingWords.length - 1, current + 1))
           }
         />
       </div>

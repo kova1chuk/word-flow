@@ -11,6 +11,7 @@ import {
   Timestamp,
 } from "firebase/firestore";
 import Link from "next/link";
+import PageLoader from "@/components/PageLoader";
 
 interface Analysis {
   id: string;
@@ -70,11 +71,7 @@ export default function AnalysesPage() {
   }, [user, fetchAnalyses]);
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
-      </div>
-    );
+    return <PageLoader text="Loading analyses..." />;
   }
 
   if (!user) {
@@ -133,22 +130,22 @@ export default function AnalysesPage() {
           </div>
         )}
 
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {analyses.map((analysis) => (
             <Link key={analysis.id} href={`/analyses/${analysis.id}`}>
-              <div className="block bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 p-6 h-full flex flex-col justify-between">
-                <div>
-                  <h3 className="font-bold text-lg text-gray-900 dark:text-white mb-2 truncate">
+              <div className="block bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 p-4 sm:p-6 h-full flex flex-col justify-between group">
+                <div className="flex-1">
+                  <h3 className="font-bold text-base sm:text-lg text-gray-900 dark:text-white mb-2 line-clamp-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                     {analysis.title}
                   </h3>
-                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                  <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mb-4">
                     Analyzed on{" "}
                     {analysis.createdAt.toDate().toLocaleDateString()}
                   </p>
                 </div>
-                <div className="grid grid-cols-2 gap-4 text-sm">
+                <div className="grid grid-cols-2 gap-3 sm:gap-4 text-xs sm:text-sm">
                   <div className="flex flex-col">
-                    <span className="text-gray-500 dark:text-gray-400">
+                    <span className="text-gray-500 dark:text-gray-400 mb-1">
                       Total Words
                     </span>
                     <span className="font-semibold text-gray-800 dark:text-white">
@@ -156,7 +153,7 @@ export default function AnalysesPage() {
                     </span>
                   </div>
                   <div className="flex flex-col">
-                    <span className="text-gray-500 dark:text-gray-400">
+                    <span className="text-gray-500 dark:text-gray-400 mb-1">
                       Unique Words
                     </span>
                     <span className="font-semibold text-gray-800 dark:text-white">
@@ -164,7 +161,7 @@ export default function AnalysesPage() {
                     </span>
                   </div>
                   <div className="flex flex-col">
-                    <span className="text-gray-500 dark:text-gray-400">
+                    <span className="text-gray-500 dark:text-gray-400 mb-1">
                       Known Words
                     </span>
                     <span className="font-semibold text-green-600">
@@ -172,7 +169,7 @@ export default function AnalysesPage() {
                     </span>
                   </div>
                   <div className="flex flex-col">
-                    <span className="text-gray-500 dark:text-gray-400">
+                    <span className="text-gray-500 dark:text-gray-400 mb-1">
                       Unknown Words
                     </span>
                     <span className="font-semibold text-red-600">

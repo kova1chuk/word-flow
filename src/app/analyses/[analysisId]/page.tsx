@@ -22,6 +22,7 @@ import {
 } from "react-virtualized";
 import "react-virtualized/styles.css"; // Import default styles
 import { config } from "@/lib/config";
+import PageLoader from "@/components/PageLoader";
 
 interface Analysis {
   id: string;
@@ -159,11 +160,7 @@ export default function SingleAnalysisPage() {
   }, [user, analysisId]);
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
-      </div>
-    );
+    return <PageLoader text="Loading analysis..." />;
   }
 
   if (error) {

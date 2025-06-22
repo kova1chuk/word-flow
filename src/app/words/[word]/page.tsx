@@ -18,6 +18,7 @@ import { useParams } from "next/navigation";
 import Link from "next/link";
 import { config } from "@/lib/config";
 import type { Word, WordDetails, Phonetic } from "@/types";
+import PageLoader from "@/components/PageLoader";
 
 // --- Data Interfaces ---
 interface DictionaryApiResponse {
@@ -287,11 +288,7 @@ export default function WordPage() {
   };
 
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
-      </div>
-    );
+    return <PageLoader text="Loading word details..." />;
   }
 
   if (!user) {
@@ -320,27 +317,27 @@ export default function WordPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <audio ref={audioRef} />
       <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8">
           <Link
             href="/words"
-            className="text-blue-600 hover:text-blue-700 text-sm font-medium mb-4 inline-block"
+            className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 text-sm font-medium mb-4 inline-block"
           >
             ← Back to My Words
           </Link>
-          <div className="bg-white rounded-lg shadow-md p-6">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
             <div className="flex justify-between items-start">
               <div>
-                <h1 className="text-4xl font-bold text-gray-900">
+                <h1 className="text-4xl font-bold text-gray-900 dark:text-white">
                   {word?.word}
                 </h1>
                 {word?.details?.phonetics &&
                   word.details.phonetics.length > 0 && (
                     <div className="flex items-center space-x-2 mt-2">
-                      <span className="text-lg text-gray-600">
+                      <span className="text-lg text-gray-600 dark:text-gray-400">
                         {word.details.phonetics[0].text}
                       </span>
                       <button
@@ -350,7 +347,7 @@ export default function WordPage() {
                         title="Play pronunciation"
                       >
                         <svg
-                          className="w-6 h-6 text-blue-500 hover:text-blue-700"
+                          className="w-6 h-6 text-blue-500 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300"
                           fill="currentColor"
                           viewBox="0 0 20 20"
                         >
@@ -368,7 +365,7 @@ export default function WordPage() {
                 <button
                   onClick={reloadDefinition}
                   disabled={!!updating}
-                  className="text-sm bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 rounded-md disabled:opacity-50"
+                  className="text-sm bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 px-3 py-1 rounded-md disabled:opacity-50"
                 >
                   {updating === "definition"
                     ? "Reloading..."
@@ -377,7 +374,7 @@ export default function WordPage() {
                 <button
                   onClick={reloadTranslation}
                   disabled={!!updating}
-                  className="text-sm bg-gray-200 hover:bg-gray-300 text-gray-700 px-3 py-1 rounded-md disabled:opacity-50"
+                  className="text-sm bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 px-3 py-1 rounded-md disabled:opacity-50"
                 >
                   {updating === "translation"
                     ? "Reloading..."
@@ -385,7 +382,7 @@ export default function WordPage() {
                 </button>
               </div>
             </div>
-            <div className="mt-4 text-gray-700 space-y-1">
+            <div className="mt-4 text-gray-700 dark:text-gray-300 space-y-1">
               <p>
                 <strong>Definition:</strong> {word?.definition}
               </p>
@@ -399,40 +396,44 @@ export default function WordPage() {
         </div>
 
         {error && (
-          <div className="mb-6 bg-red-50 border border-red-200 rounded-md p-4">
-            <p className="text-red-700">{error}</p>
+          <div className="mb-6 bg-red-100 dark:bg-red-900/20 border border-red-400 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-md">
+            <p>{error}</p>
           </div>
         )}
 
         {/* Definitions */}
         <div className="mb-8">
-          <h2 className="text-2xl font-semibold text-gray-800 mb-4">
+          <h2 className="text-2xl font-semibold text-gray-800 dark:text-white mb-4">
             Detailed Definitions
           </h2>
-          <div className="bg-white rounded-lg shadow-md p-6 space-y-6">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 space-y-6">
             {word?.details?.meanings.map((meaning, i) => (
               <div key={i}>
-                <h3 className="text-xl font-semibold text-blue-700 italic">
+                <h3 className="text-xl font-semibold text-blue-700 dark:text-blue-400 italic">
                   {meaning.partOfSpeech}
                 </h3>
                 <ol className="list-decimal list-inside mt-2 space-y-4">
                   {meaning.definitions.map((def, j) => (
-                    <li key={j} className="text-gray-800">
+                    <li key={j} className="text-gray-800 dark:text-gray-200">
                       <p className="font-medium">{def.definition}</p>
                       {def.example && (
-                        <p className="text-sm text-gray-600 mt-1 pl-4 border-l-2 border-gray-200">
+                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1 pl-4 border-l-2 border-gray-200 dark:border-gray-600">
                           <em>&quot;{def.example}&quot;</em>
                         </p>
                       )}
                       {def.synonyms && def.synonyms.length > 0 && (
                         <p className="text-sm mt-1">
-                          <strong className="text-gray-600">Synonyms:</strong>{" "}
+                          <strong className="text-gray-600 dark:text-gray-400">
+                            Synonyms:
+                          </strong>{" "}
                           {def.synonyms.join(", ")}
                         </p>
                       )}
                       {def.antonyms && def.antonyms.length > 0 && (
                         <p className="text-sm mt-1">
-                          <strong className="text-gray-600">Antonyms:</strong>{" "}
+                          <strong className="text-gray-600 dark:text-gray-400">
+                            Antonyms:
+                          </strong>{" "}
                           {def.antonyms.join(", ")}
                         </p>
                       )}
@@ -445,8 +446,8 @@ export default function WordPage() {
         </div>
 
         {/* Word Examples */}
-        <div className="bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-semibold text-gray-900 mb-6">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">
             Examples from your analyses ({sentences.length})
           </h2>
           {loadingSentences ? (
@@ -455,10 +456,10 @@ export default function WordPage() {
             </div>
           ) : sentences.length === 0 ? (
             <div className="text-center py-8">
-              <p className="text-gray-500">
+              <p className="text-gray-500 dark:text-gray-400">
                 No examples found for this word in your saved analyses.
               </p>
-              <p className="text-sm text-gray-400 mt-2">
+              <p className="text-sm text-gray-400 dark:text-gray-500 mt-2">
                 Try analyzing some text that contains this word.
               </p>
             </div>
@@ -467,10 +468,10 @@ export default function WordPage() {
               {sentences.map((sentence) => (
                 <div
                   key={sentence.id}
-                  className="p-4 border border-gray-200 rounded-lg"
+                  className="p-4 border border-gray-200 dark:border-gray-600 rounded-lg"
                 >
                   <p
-                    className="text-gray-900 leading-relaxed mb-2"
+                    className="text-gray-900 dark:text-gray-100 leading-relaxed mb-2"
                     dangerouslySetInnerHTML={{
                       __html: highlightWord(
                         sentence.text,
@@ -480,7 +481,7 @@ export default function WordPage() {
                   />
 
                   {translatedSentences[sentence.id] ? (
-                    <p className="text-sm text-blue-700 bg-blue-50 p-2 rounded-md">
+                    <p className="text-sm text-blue-700 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 p-2 rounded-md">
                       {translatedSentences[sentence.id]}
                     </p>
                   ) : (
@@ -489,7 +490,7 @@ export default function WordPage() {
                         translateSentence(sentence.id, sentence.text)
                       }
                       disabled={translatingSentenceId === sentence.id}
-                      className="text-sm text-blue-600 hover:underline disabled:opacity-50"
+                      className="text-sm text-blue-600 dark:text-blue-400 hover:underline disabled:opacity-50"
                     >
                       {translatingSentenceId === sentence.id
                         ? "Translating..."
@@ -497,10 +498,10 @@ export default function WordPage() {
                     </button>
                   )}
 
-                  <div className="flex justify-between items-center mt-2 text-xs text-gray-500">
+                  <div className="flex justify-between items-center mt-2 text-xs text-gray-500 dark:text-gray-400">
                     <span>
                       From:{" "}
-                      <span className="text-blue-600">
+                      <span className="text-blue-600 dark:text-blue-400">
                         {sentence.analysisTitle}
                       </span>
                     </span>

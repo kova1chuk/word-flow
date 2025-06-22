@@ -5,6 +5,7 @@ import { useAuth } from "@/lib/auth-context";
 import { signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { useState, useEffect, useRef } from "react";
+import LoadingSpinner from "./LoadingSpinner";
 
 export default function Header() {
   const { user, loading } = useAuth();
@@ -67,7 +68,7 @@ export default function Header() {
                 Word Flow
               </span>
             </div>
-            <div className="animate-pulse bg-gray-200 dark:bg-gray-700 h-8 w-24 rounded-md"></div>
+            <LoadingSpinner size="sm" />
           </div>
         </div>
       </header>

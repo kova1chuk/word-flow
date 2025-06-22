@@ -8,10 +8,9 @@ import {
   query,
   where,
   getDocs,
-  orderBy,
-  limit,
   Timestamp,
 } from "firebase/firestore";
+import Link from "next/link";
 
 interface Analysis {
   id: string;
@@ -27,29 +26,11 @@ interface Analysis {
   };
 }
 
-interface Sentence {
-  id: string;
-  text: string;
-  index: number;
-  wordCount?: number;
-  chapter?: string;
-  hasUnknownWords?: boolean;
-}
-
 export default function AnalysesPage() {
   const { user } = useAuth();
   const [analyses, setAnalyses] = useState<Analysis[]>([]);
-  const [selectedAnalysis, setSelectedAnalysis] = useState<Analysis | null>(
-    null
-  );
-  const [sentences, setSentences] = useState<Sentence[]>([]);
   const [loading, setLoading] = useState(true);
-  const [loadingSentences, setLoadingSentences] = useState(false);
   const [error, setError] = useState("");
-  const [searchTerm, setSearchTerm] = useState("");
-  const [filterChapter, setFilterChapter] = useState("");
-  const [filterHasUnknownWords, setFilterHasUnknownWords] = useState(false);
-  const sentencesPerPage = 20;
 
   useEffect(() => {
     if (user) {
@@ -74,6 +55,7 @@ export default function AnalysesPage() {
         } as Analysis);
       });
 
+      // Sort by creation date, newest first
       analysesData.sort(
         (a, b) => b.createdAt.toMillis() - a.createdAt.toMillis()
       );
@@ -86,57 +68,6 @@ export default function AnalysesPage() {
       setLoading(false);
     }
   };
-
-  const fetchSentences = async (analysisId: string) => {
-    if (!user) return;
-
-    try {
-      setLoadingSentences(true);
-      const sentencesRef = collection(db, "analyses", analysisId, "sentences");
-
-      const q = query(sentencesRef, orderBy("index"), limit(sentencesPerPage));
-
-      const querySnapshot = await getDocs(q);
-      const sentencesData: Sentence[] = [];
-
-      querySnapshot.forEach((doc) => {
-        const data = doc.data();
-        sentencesData.push({
-          id: doc.id,
-          text: data.text,
-          index: data.index,
-          wordCount: data.text.split(/\s+/).length,
-          chapter: data.chapter || "Unknown",
-          hasUnknownWords: data.hasUnknownWords || false,
-        });
-      });
-
-      setSentences(sentencesData);
-    } catch (error) {
-      console.error("Error fetching sentences:", error);
-      setError("Failed to load sentences");
-    } finally {
-      setLoadingSentences(false);
-    }
-  };
-
-  const handleAnalysisSelect = async (analysis: Analysis) => {
-    setSelectedAnalysis(analysis);
-    await fetchSentences(analysis.id);
-  };
-
-  const filteredSentences = sentences.filter((sentence) => {
-    const matchesSearch = sentence.text
-      .toLowerCase()
-      .includes(searchTerm.toLowerCase());
-    const matchesChapter = !filterChapter || sentence.chapter === filterChapter;
-    const matchesUnknownWords =
-      !filterHasUnknownWords || sentence.hasUnknownWords;
-
-    return matchesSearch && matchesChapter && matchesUnknownWords;
-  });
-
-  const chapters = Array.from(new Set(sentences.map((s) => s.chapter))).sort();
 
   if (loading) {
     return (
@@ -151,209 +82,107 @@ export default function AnalysesPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-4">My Analyses</h1>
-          <p className="text-gray-600">
-            View your saved text analyses and sentences
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+            My Analyses
+          </h1>
+          <p className="text-lg text-gray-600 dark:text-gray-400">
+            Review your saved text and file analyses.
           </p>
         </div>
 
         {error && (
-          <div className="mb-6 bg-red-50 border border-red-200 rounded-md p-4">
-            <p className="text-red-700">{error}</p>
+          <div className="mb-6 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-md">
+            <p>{error}</p>
           </div>
         )}
 
-        <div className="grid gap-8 lg:grid-cols-3">
-          {/* Analyses List */}
-          <div className="lg:col-span-1">
-            <div className="bg-white rounded-lg shadow-md p-6">
-              <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                Analyses
-              </h2>
-
-              {analyses.length === 0 ? (
-                <p className="text-gray-500 text-center py-8">
-                  No analyses found. Create your first analysis in the Analyze
-                  page.
-                </p>
-              ) : (
-                <div className="space-y-3">
-                  {analyses.map((analysis) => (
-                    <button
-                      key={analysis.id}
-                      onClick={() => handleAnalysisSelect(analysis)}
-                      className={`w-full text-left p-4 rounded-lg border transition-colors ${
-                        selectedAnalysis?.id === analysis.id
-                          ? "border-blue-500 bg-blue-50"
-                          : "border-gray-200 hover:border-gray-300"
-                      }`}
-                    >
-                      <h3 className="font-medium text-gray-900 mb-1">
-                        {analysis.title}
-                      </h3>
-                      <p className="text-sm text-gray-600 mb-2">
-                        {analysis.createdAt.toDate().toLocaleDateString()}
-                      </p>
-                      <div className="text-xs text-gray-500 space-y-1">
-                        <p>
-                          Total words:{" "}
-                          {analysis.summary.totalWords.toLocaleString()}
-                        </p>
-                        <p>
-                          Unique words:{" "}
-                          {analysis.summary.uniqueWords.toLocaleString()}
-                        </p>
-                        <p>
-                          Unknown words:{" "}
-                          {analysis.summary.unknownWords.toLocaleString()}
-                        </p>
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              )}
+        {analyses.length === 0 && !loading && (
+          <div className="text-center py-16">
+            <svg
+              className="mx-auto h-12 w-12 text-gray-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              aria-hidden="true"
+            >
+              <path
+                vectorEffect="non-scaling-stroke"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M9 13h6m-3-3v6m-9 1V7a2 2 0 012-2h4l2 2h4a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2z"
+              />
+            </svg>
+            <h3 className="mt-2 text-sm font-medium text-gray-900 dark:text-white">
+              No analyses found
+            </h3>
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+              Get started by analyzing some text or a file.
+            </p>
+            <div className="mt-6">
+              <Link
+                href="/analyze"
+                className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                Analyze Now
+              </Link>
             </div>
           </div>
+        )}
 
-          {/* Sentences View */}
-          <div className="lg:col-span-2">
-            {selectedAnalysis ? (
-              <div className="bg-white rounded-lg shadow-md p-6">
-                <div className="flex justify-between items-center mb-6">
-                  <div>
-                    <h2 className="text-xl font-semibold text-gray-900">
-                      {selectedAnalysis.title}
-                    </h2>
-                    <p className="text-sm text-gray-600">
-                      {selectedAnalysis.createdAt.toDate().toLocaleDateString()}
-                    </p>
-                  </div>
-
-                  <div className="text-right">
-                    <p className="text-sm text-gray-600">
-                      {sentences.length} sentences loaded
-                    </p>
-                  </div>
-                </div>
-
-                {/* Filters */}
-                <div className="mb-6 space-y-4">
-                  <div className="flex flex-wrap gap-4">
-                    <div className="flex-1 min-w-0">
-                      <input
-                        type="text"
-                        placeholder="Search sentences..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                      />
-                    </div>
-
-                    <select
-                      value={filterChapter}
-                      onChange={(e) => setFilterChapter(e.target.value)}
-                      className="px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                    >
-                      <option value="">All chapters</option>
-                      {chapters.map((chapter) => (
-                        <option key={chapter} value={chapter}>
-                          {chapter}
-                        </option>
-                      ))}
-                    </select>
-
-                    <label className="flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={filterHasUnknownWords}
-                        onChange={(e) =>
-                          setFilterHasUnknownWords(e.target.checked)
-                        }
-                        className="mr-2"
-                      />
-                      <span className="text-sm text-gray-700">
-                        Has unknown words
-                      </span>
-                    </label>
-                  </div>
-                </div>
-
-                {/* Sentences List */}
-                {loadingSentences ? (
-                  <div className="flex items-center justify-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {filteredSentences.length === 0 ? (
-                      <p className="text-gray-500 text-center py-8">
-                        No sentences match your filters.
-                      </p>
-                    ) : (
-                      filteredSentences.map((sentence) => (
-                        <div
-                          key={sentence.id}
-                          className="p-4 border border-gray-200 rounded-lg hover:border-gray-300 transition-colors"
-                        >
-                          <div className="flex justify-between items-start mb-2">
-                            <span className="text-xs text-gray-500">
-                              Sentence {sentence.index + 1}
-                            </span>
-                            <div className="flex items-center space-x-2">
-                              <span className="text-xs text-gray-500">
-                                {sentence.wordCount} words
-                              </span>
-                              {sentence.hasUnknownWords && (
-                                <span className="text-xs bg-red-100 text-red-800 px-2 py-1 rounded">
-                                  Has unknown words
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                          <p className="text-gray-900 leading-relaxed">
-                            {sentence.text}
-                          </p>
-                          {sentence.chapter &&
-                            sentence.chapter !== "Unknown" && (
-                              <p className="text-xs text-blue-600 mt-2">
-                                Chapter: {sentence.chapter}
-                              </p>
-                            )}
-                        </div>
-                      ))
-                    )}
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div className="bg-white rounded-lg shadow-md p-6">
-                <div className="text-center py-12">
-                  <svg
-                    className="mx-auto h-12 w-12 text-gray-400"
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                    />
-                  </svg>
-                  <h3 className="mt-2 text-sm font-medium text-gray-900">
-                    No analysis selected
+        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+          {analyses.map((analysis) => (
+            <Link key={analysis.id} href={`/analyses/${analysis.id}`}>
+              <div className="block bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300 p-6 h-full flex flex-col justify-between">
+                <div>
+                  <h3 className="font-bold text-lg text-gray-900 dark:text-white mb-2 truncate">
+                    {analysis.title}
                   </h3>
-                  <p className="mt-1 text-sm text-gray-500">
-                    Select an analysis from the list to view its sentences.
+                  <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+                    Analyzed on{" "}
+                    {analysis.createdAt.toDate().toLocaleDateString()}
                   </p>
                 </div>
+                <div className="grid grid-cols-2 gap-4 text-sm">
+                  <div className="flex flex-col">
+                    <span className="text-gray-500 dark:text-gray-400">
+                      Total Words
+                    </span>
+                    <span className="font-semibold text-gray-800 dark:text-white">
+                      {analysis.summary.totalWords.toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-gray-500 dark:text-gray-400">
+                      Unique Words
+                    </span>
+                    <span className="font-semibold text-gray-800 dark:text-white">
+                      {analysis.summary.uniqueWords.toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-gray-500 dark:text-gray-400">
+                      Known Words
+                    </span>
+                    <span className="font-semibold text-green-600">
+                      {analysis.summary.knownWords.toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-gray-500 dark:text-gray-400">
+                      Unknown Words
+                    </span>
+                    <span className="font-semibold text-red-600">
+                      {analysis.summary.unknownWords.toLocaleString()}
+                    </span>
+                  </div>
+                </div>
               </div>
-            )}
-          </div>
+            </Link>
+          ))}
         </div>
       </div>
     </div>

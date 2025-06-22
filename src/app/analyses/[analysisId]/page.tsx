@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { db } from "@/lib/firebase";
 import {
@@ -13,7 +13,13 @@ import {
   Timestamp,
 } from "firebase/firestore";
 import Link from "next/link";
-import { FixedSizeList as List } from "react-window";
+import {
+  AutoSizer,
+  List,
+  CellMeasurer,
+  CellMeasurerCache,
+} from "react-virtualized";
+import "react-virtualized/styles.css"; // Import default styles
 import { config } from "@/lib/config";
 
 interface Analysis {
@@ -54,16 +60,37 @@ export default function SingleAnalysisPage({
     string | null
   >(null);
   const [viewMode, setViewMode] = useState<"list" | "columns">("list");
+  const listRef = useRef<List | null>(null);
+
+  const cache = useRef(
+    new CellMeasurerCache({
+      fixedWidth: true,
+      defaultHeight: 50,
+    })
+  );
+
+  useEffect(() => {
+    // When view mode changes, clear all cached measurements
+    // and force the list to re-render.
+    cache.current.clearAll();
+    if (listRef.current) {
+      listRef.current.forceUpdateGrid();
+    }
+  }, [viewMode]);
 
   const handleTranslate = async (sentenceId: string, text: string) => {
-    if (translatedSentences[sentenceId]) return; // Already translated
+    if (translatedSentences[sentenceId]) return;
     setTranslatingSentenceId(sentenceId);
+
+    const sentenceIndex = sentences.findIndex((s) => s.id === sentenceId);
+
     try {
       const url = `${config.translationApi.baseUrl}?q=${encodeURIComponent(
         text
       )}&langpair=en|uk`;
       const response = await fetch(url);
       const data = await response.json();
+
       if (data.responseData) {
         setTranslatedSentences((prev) => ({
           ...prev,
@@ -79,6 +106,13 @@ export default function SingleAnalysisPage({
         [sentenceId]: "Translation failed.",
       }));
     } finally {
+      if (sentenceIndex !== -1) {
+        // Clear the specific row's cache and recompute its height
+        cache.current.clear(sentenceIndex, 0);
+        if (listRef.current) {
+          listRef.current.recomputeRowHeights(sentenceIndex);
+        }
+      }
       setTranslatingSentenceId(null);
     }
   };
@@ -236,87 +270,105 @@ export default function SingleAnalysisPage({
             </div>
           </div>
           <div className="h-[600px]">
-            <List
-              height={600}
-              itemCount={sentences.length}
-              itemSize={viewMode === "list" ? 100 : 80}
-              width="100%"
-              className="dark:scrollbar-track-gray-700 dark:scrollbar-thumb-gray-500"
-            >
-              {({ index, style }) => {
-                const sentence = sentences[index];
-                const translation = translatedSentences[sentence.id];
-                const isTranslating = translatingSentenceId === sentence.id;
+            <AutoSizer>
+              {({ width, height }) => (
+                <List
+                  ref={listRef}
+                  className="sentence-list"
+                  width={width}
+                  height={height}
+                  rowCount={sentences.length}
+                  deferredMeasurementCache={cache.current}
+                  rowHeight={cache.current.rowHeight}
+                  rowRenderer={({ index, key, style, parent }) => {
+                    const sentence = sentences[index];
+                    const translation = translatedSentences[sentence.id];
+                    const isTranslating = translatingSentenceId === sentence.id;
 
-                return (
-                  <div style={style} className="py-2 pr-2">
-                    <div className="flex items-start text-lg">
-                      <span className="text-gray-500 dark:text-gray-400 text-base mr-4 w-8 pt-1">
-                        {index + 1}.
-                      </span>
-                      <div className="flex-1">
-                        {/* Two Columns View */}
-                        {viewMode === "columns" && (
-                          <div className="grid grid-cols-2 gap-4">
-                            <p className="text-gray-800 dark:text-gray-200 leading-relaxed">
-                              {sentence.text}
-                            </p>
-                            <div className="border-l border-gray-200 dark:border-gray-700 pl-4">
-                              {translation && (
-                                <p className="text-blue-500 dark:text-blue-400 leading-relaxed">
-                                  {translation}
-                                </p>
+                    return (
+                      <CellMeasurer
+                        key={key}
+                        cache={cache.current}
+                        parent={parent}
+                        columnIndex={0}
+                        rowIndex={index}
+                      >
+                        <div style={style} className="py-2 pr-2">
+                          <div className="flex items-start">
+                            <span className="text-gray-500 dark:text-gray-400 text-base mr-4 w-8 pt-1">
+                              {index + 1}.
+                            </span>
+                            <div className="flex-1">
+                              {viewMode === "columns" && (
+                                <div className="grid grid-cols-2 gap-4">
+                                  <p className="text-gray-800 dark:text-gray-200 text-lg leading-relaxed">
+                                    {sentence.text}
+                                  </p>
+                                  <div className="border-l border-gray-200 dark:border-gray-700 pl-4">
+                                    {translation && (
+                                      <p className="text-blue-500 dark:text-blue-400 text-lg leading-relaxed">
+                                        {translation}
+                                      </p>
+                                    )}
+                                    {!translation && (
+                                      <button
+                                        onClick={() =>
+                                          handleTranslate(
+                                            sentence.id,
+                                            sentence.text
+                                          )
+                                        }
+                                        disabled={isTranslating}
+                                        className="text-sm text-blue-600 hover:underline disabled:opacity-50"
+                                      >
+                                        {isTranslating
+                                          ? "Translating..."
+                                          : "Translate"}
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
                               )}
-                              {!translation && (
-                                <button
-                                  onClick={() =>
-                                    handleTranslate(sentence.id, sentence.text)
-                                  }
-                                  disabled={isTranslating}
-                                  className="text-sm text-blue-600 hover:underline disabled:opacity-50"
-                                >
-                                  {isTranslating
-                                    ? "Translating..."
-                                    : "Translate"}
-                                </button>
+                              {viewMode === "list" && (
+                                <div>
+                                  <p className="text-gray-800 dark:text-gray-200 text-lg leading-relaxed">
+                                    {sentence.text}
+                                  </p>
+                                  <div className="mt-3">
+                                    {translation && (
+                                      <p className="text-blue-500 dark:text-blue-400 text-base leading-relaxed pl-3 border-l-2 border-blue-500">
+                                        {translation}
+                                      </p>
+                                    )}
+                                    {!translation && (
+                                      <button
+                                        onClick={() =>
+                                          handleTranslate(
+                                            sentence.id,
+                                            sentence.text
+                                          )
+                                        }
+                                        disabled={isTranslating}
+                                        className="text-sm text-blue-600 hover:underline disabled:opacity-50"
+                                      >
+                                        {isTranslating
+                                          ? "Translating..."
+                                          : "Translate"}
+                                      </button>
+                                    )}
+                                  </div>
+                                </div>
                               )}
                             </div>
                           </div>
-                        )}
-                        {/* List View */}
-                        {viewMode === "list" && (
-                          <div>
-                            <p className="text-gray-800 dark:text-gray-200 leading-relaxed">
-                              {sentence.text}
-                            </p>
-                            <div className="mt-2">
-                              {translation && (
-                                <p className="text-blue-500 dark:text-blue-400 text-base leading-relaxed pl-2 border-l-2 border-blue-500">
-                                  {translation}
-                                </p>
-                              )}
-                              {!translation && (
-                                <button
-                                  onClick={() =>
-                                    handleTranslate(sentence.id, sentence.text)
-                                  }
-                                  disabled={isTranslating}
-                                  className="text-sm text-blue-600 hover:underline disabled:opacity-50"
-                                >
-                                  {isTranslating
-                                    ? "Translating..."
-                                    : "Translate"}
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                );
-              }}
-            </List>
+                        </div>
+                      </CellMeasurer>
+                    );
+                  }}
+                  overscanRowCount={5}
+                />
+              )}
+            </AutoSizer>
           </div>
         </div>
       </div>

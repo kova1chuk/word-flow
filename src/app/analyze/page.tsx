@@ -9,10 +9,6 @@ import PageLoader from "@/components/PageLoader";
 
 interface AnalysisResult {
   title: string;
-  totalWords: number;
-  uniqueWords: number;
-  knownWords: number;
-  unknownWords: number;
   wordFrequency: { [key: string]: number };
   unknownWordList: string[];
   sentences: string[];
@@ -93,7 +89,22 @@ export default function AnalyzePage() {
           throw new Error(`Upload failed: ${response.statusText}`);
         }
 
-        const result = await response.json();
+        const flatResult = await response.json();
+        const result: AnalysisResult = {
+          title: flatResult.title || file.name,
+          wordFrequency: flatResult.wordFrequency || {},
+          unknownWordList: flatResult.unknownWordList || [],
+          sentences: flatResult.sentences || [],
+          summary: {
+            totalWords: flatResult.totalWords || 0,
+            uniqueWords: flatResult.uniqueWords || 0,
+            knownWords: flatResult.knownWords || 0,
+            unknownWords: flatResult.unknownWords || 0,
+            averageWordLength: flatResult.averageWordLength || 0,
+            readingTime: Math.round(flatResult.readingTime) || 0,
+          },
+        };
+
         setAnalysisResult(result);
         setSuccess("File uploaded and analyzed successfully!");
       } catch (err) {
@@ -126,7 +137,22 @@ export default function AnalyzePage() {
         throw new Error(`Analysis failed: ${response.statusText}`);
       }
 
-      const result = await response.json();
+      const flatResult = await response.json();
+      const result: AnalysisResult = {
+        title: flatResult.title || "Pasted Text",
+        wordFrequency: flatResult.wordFrequency || {},
+        unknownWordList: flatResult.unknownWordList || [],
+        sentences: flatResult.sentences || [],
+        summary: {
+          totalWords: flatResult.totalWords || 0,
+          uniqueWords: flatResult.uniqueWords || 0,
+          knownWords: flatResult.knownWords || 0,
+          unknownWords: flatResult.unknownWords || 0,
+          averageWordLength: flatResult.averageWordLength || 0,
+          readingTime: Math.round(flatResult.readingTime) || 0,
+        },
+      };
+
       setAnalysisResult(result);
       setSuccess("Text analyzed successfully!");
     } catch (err) {

@@ -4,16 +4,42 @@ import Link from "next/link";
 import { useAuth } from "@/lib/auth-context";
 import { signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 
 export default function Header() {
   const { user, loading } = useAuth();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement>(null);
+  const mobileMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        userMenuRef.current &&
+        !userMenuRef.current.contains(event.target as Node)
+      ) {
+        setIsUserMenuOpen(false);
+      }
+      if (
+        mobileMenuRef.current &&
+        !mobileMenuRef.current.contains(event.target as Node)
+      ) {
+        setIsMenuOpen(false);
+      }
+    }
+
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
 
   const handleSignOut = async () => {
     try {
       await signOut(auth);
+      setIsUserMenuOpen(false);
+      setIsMenuOpen(false);
     } catch (error) {
       console.error("Error signing out:", error);
     }
@@ -26,17 +52,22 @@ export default function Header() {
     { href: "/training", label: "Training" },
   ];
 
+  const closeMenus = () => {
+    setIsMenuOpen(false);
+    setIsUserMenuOpen(false);
+  };
+
   if (loading) {
     return (
-      <header className="bg-white shadow-sm border-b">
+      <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex-shrink-0">
-              <span className="text-2xl font-bold text-gray-900">
+              <span className="text-2xl font-bold text-gray-900 dark:text-white">
                 Word Flow
               </span>
             </div>
-            <div className="animate-pulse bg-gray-200 h-8 w-20 rounded-md"></div>
+            <div className="animate-pulse bg-gray-200 dark:bg-gray-700 h-8 w-24 rounded-md"></div>
           </div>
         </div>
       </header>
@@ -44,14 +75,15 @@ export default function Header() {
   }
 
   return (
-    <header className="bg-white shadow-md sticky top-0 z-50">
+    <header className="bg-white dark:bg-gray-800 shadow-md sticky top-0 z-50">
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16">
           <div className="flex items-center">
             <div className="flex-shrink-0">
               <Link
                 href="/"
-                className="text-2xl font-bold text-gray-800 hover:text-blue-600 transition-colors"
+                onClick={closeMenus}
+                className="text-2xl font-bold text-gray-800 dark:text-white hover:text-blue-500 dark:hover:text-blue-400 transition-colors"
               >
                 Word Flow
               </Link>
@@ -59,29 +91,30 @@ export default function Header() {
           </div>
 
           {/* Desktop Menu */}
-          <div className="hidden md:flex items-center space-x-6">
+          <div className="hidden md:flex items-center space-x-2">
             {user ? (
               <>
                 {navLinks.map((link) => (
                   <Link
                     key={link.href}
                     href={link.href}
-                    className="text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+                    onClick={closeMenus}
+                    className="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 px-3 py-2 rounded-md text-sm font-medium transition-colors"
                   >
                     {link.label}
                   </Link>
                 ))}
                 {/* User menu */}
-                <div className="relative">
+                <div className="relative" ref={userMenuRef}>
                   <button
                     onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                    className="flex items-center space-x-2 focus:outline-none"
+                    className="flex items-center space-x-2 focus:outline-none p-2 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700"
                   >
-                    <span className="text-sm font-medium text-gray-700">
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                       {user.email}
                     </span>
                     <svg
-                      className={`w-4 h-4 text-gray-600 transition-transform ${
+                      className={`w-4 h-4 text-gray-600 dark:text-gray-400 transition-transform ${
                         isUserMenuOpen ? "transform rotate-180" : ""
                       }`}
                       fill="none"
@@ -98,10 +131,10 @@ export default function Header() {
                     </svg>
                   </button>
                   {isUserMenuOpen && (
-                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg py-1 ring-1 ring-black ring-opacity-5">
+                    <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 rounded-md shadow-lg py-1 ring-1 ring-black ring-opacity-5">
                       <button
                         onClick={handleSignOut}
-                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
                       >
                         Sign Out
                       </button>
@@ -110,10 +143,10 @@ export default function Header() {
                 </div>
               </>
             ) : (
-              <div className="flex items-center space-x-4">
+              <div className="flex items-center space-x-2">
                 <Link
                   href="/signin"
-                  className="text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors"
+                  className="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors"
                 >
                   Sign In
                 </Link>
@@ -127,11 +160,11 @@ export default function Header() {
             )}
           </div>
 
-          {/* Mobile Menu Button */}
-          <div className="md:hidden flex items-center">
+          {/* Mobile Menu Button and Dropdown */}
+          <div className="md:hidden flex items-center" ref={mobileMenuRef}>
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500"
+              className="inline-flex items-center justify-center p-2 rounded-md text-gray-400 dark:text-gray-200 hover:text-white hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500"
             >
               <span className="sr-only">Open main menu</span>
               {isMenuOpen ? (
@@ -168,56 +201,64 @@ export default function Header() {
                 </svg>
               )}
             </button>
-          </div>
-        </div>
-
-        {/* Mobile Menu */}
-        {isMenuOpen && (
-          <div className="md:hidden">
-            <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
-              {user ? (
-                <>
-                  {navLinks.map((link) => (
+            {/* Mobile Menu Dropdown */}
+            <div
+              className={`absolute top-16 left-0 w-full bg-white dark:bg-gray-800 shadow-lg ${
+                isMenuOpen ? "block" : "hidden"
+              }`}
+            >
+              <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+                {user ? (
+                  <>
+                    {navLinks.map((link) => (
+                      <Link
+                        key={link.href}
+                        href={link.href}
+                        onClick={closeMenus}
+                        className="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 block px-3 py-2 rounded-md text-base font-medium transition-colors"
+                      >
+                        {link.label}
+                      </Link>
+                    ))}
+                    <div className="border-t border-gray-200 dark:border-gray-700 my-2 pt-4">
+                      <div className="px-3 py-2">
+                        <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                          Signed in as
+                        </p>
+                        <p className="text-base font-medium text-gray-800 dark:text-white">
+                          {user.email}
+                        </p>
+                      </div>
+                      <button
+                        onClick={handleSignOut}
+                        className="w-full text-left text-red-600 hover:bg-red-50 dark:hover:bg-red-900/50 block px-3 py-2 rounded-md text-base font-medium transition-colors"
+                      >
+                        Sign Out
+                      </button>
+                    </div>
+                  </>
+                ) : (
+                  <>
                     <Link
-                      key={link.href}
-                      href={link.href}
-                      className="text-gray-600 hover:text-blue-600 hover:bg-gray-50 block px-3 py-2 rounded-md text-base font-medium transition-colors"
+                      href="/signin"
+                      onClick={closeMenus}
+                      className="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 block px-3 py-2 rounded-md text-base font-medium transition-colors"
                     >
-                      {link.label}
+                      Sign In
                     </Link>
-                  ))}
-                  <div className="border-t border-gray-200 my-2"></div>
-                  <div className="px-3 py-2">
-                    <p className="text-sm font-medium text-gray-500">
-                      {user.email}
-                    </p>
-                  </div>
-                  <button
-                    onClick={handleSignOut}
-                    className="w-full text-left text-red-600 hover:bg-red-50 block px-3 py-2 rounded-md text-base font-medium transition-colors"
-                  >
-                    Sign Out
-                  </button>
-                </>
-              ) : (
-                <>
-                  <Link
-                    href="/signin"
-                    className="text-gray-600 hover:text-blue-600 hover:bg-gray-50 block px-3 py-2 rounded-md text-base font-medium transition-colors"
-                  >
-                    Sign In
-                  </Link>
-                  <Link
-                    href="/signup"
-                    className="bg-blue-600 hover:bg-blue-700 text-white block px-3 py-2 rounded-md text-base font-medium transition-colors shadow-sm"
-                  >
-                    Sign Up
-                  </Link>
-                </>
-              )}
+                    <Link
+                      href="/signup"
+                      onClick={closeMenus}
+                      className="bg-blue-600 hover:bg-blue-700 text-white block px-3 py-2 rounded-md text-base font-medium transition-colors shadow-sm"
+                    >
+                      Sign Up
+                    </Link>
+                  </>
+                )}
+              </div>
             </div>
           </div>
-        )}
+        </div>
       </nav>
     </header>
   );

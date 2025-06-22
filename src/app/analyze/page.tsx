@@ -160,65 +160,59 @@ export default function AnalyzePage() {
     setAnalysisResult(null);
     setError("");
 
-    await new Promise((resolve) => setTimeout(resolve, 0));
-
     try {
-      // Step 1: Pre-processing and splitting words
-      setAnalysisProgress(10);
-      const words = text
-        .toLowerCase()
-        .replace(/[^\w\s]/g, " ")
-        .split(/\s+/)
-        .filter((word) => word.length > 0)
-        .filter((word) => isNaN(parseInt(word, 10))); // Exclude numbers
-      await new Promise((resolve) => setTimeout(resolve, 0));
-
-      // Step 2: Counting word frequency
+      // Step 1: Get analysis from the new text analysis service
       setAnalysisProgress(30);
-      const wordFrequency: { [key: string]: number } = {};
-      words.forEach((word) => {
-        wordFrequency[word] = (wordFrequency[word] || 0) + 1;
+      const res = await fetch("/api/text", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text }),
       });
-      await new Promise((resolve) => setTimeout(resolve, 0));
 
-      // Step 3: Getting unique words and user's known words
-      setAnalysisProgress(60);
-      const uniqueWords = Object.keys(wordFrequency);
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.detail || "Text analysis failed");
+      }
+
+      const textResult: SubtitleAnalysisResult = await res.json(); // Re-using the same interface as it matches
+      setAnalysisProgress(70);
+
+      // Step 2: Integrate with user's word list
       const userKnownWords = userWords.map((w) => w.word.toLowerCase().trim());
-      await new Promise((resolve) => setTimeout(resolve, 0));
-
-      // Step 4: Categorizing words
-      setAnalysisProgress(80);
-      const knownWords = uniqueWords.filter((word) =>
+      const knownWords = textResult.unique_words.filter((word) =>
         userKnownWords.includes(word)
       );
-      const unknownWords = uniqueWords.filter(
+      const unknownWords = textResult.unique_words.filter(
         (word) => !userKnownWords.includes(word)
       );
-      await new Promise((resolve) => setTimeout(resolve, 0));
 
-      // Step 5: Finalizing results
-      setAnalysisProgress(95);
+      const wordFrequency: { [key: string]: number } = {};
+      textResult.word_list.forEach((word) => {
+        wordFrequency[word] = (wordFrequency[word] || 0) + 1;
+      });
+
+      // Step 3: Finalize results
       const result: AnalysisResult = {
-        totalWords: words.length,
-        uniqueWords: uniqueWords.length,
+        totalWords: textResult.total_words,
+        uniqueWords: textResult.total_unique_words,
         knownWords: knownWords.length,
         unknownWords: unknownWords.length,
         unknownWordList: unknownWords,
         wordFrequency,
         averageWordLength:
-          words.reduce((sum, word) => sum + word.length, 0) / words.length,
-        readingTime: words.length / 200, // Assuming 200 words per minute
+          textResult.word_list.reduce((sum, word) => sum + word.length, 0) /
+          textResult.total_words,
+        readingTime: textResult.total_words / 200,
       };
 
       setAnalysisResult(result);
-      setText(text);
-      setSentences(text.split("."));
-      setBookMetadata({ title: text.split(".")[0] });
+      setText(text); // Keep original text with punctuation in the textarea
+      setSentences(textResult.sentences);
+      setBookMetadata({ title: textResult.sentences[0] || "Pasted Text" });
       setAnalysisProgress(100);
-    } catch (error) {
-      console.error("Error analyzing text:", error);
-      setError("Failed to analyze text");
+    } catch (err) {
+      console.error("Error analyzing text:", err);
+      setError(err instanceof Error ? err.message : "Failed to analyze text");
     } finally {
       setLoadingAnalysis(false);
     }

@@ -22,6 +22,49 @@ interface AnalysisResult {
   };
 }
 
+interface ApiAnalysisResponse {
+  title?: string;
+  wordFrequency?: { [key: string]: number };
+  unknownWordList?: string[];
+  sentences?: string[];
+  totalWords?: number;
+  uniqueWords?: number;
+  knownWords?: number;
+  unknownWords?: number;
+  averageWordLength?: number;
+  readingTime?: number;
+  summary?: {
+    totalWords: number;
+    uniqueWords: number;
+    knownWords: number;
+    unknownWords: number;
+    averageWordLength: number;
+    readingTime: number;
+  };
+}
+
+const transformApiResult = (
+  apiResponse: ApiAnalysisResponse,
+  fileName: string
+): AnalysisResult => {
+  // Handles both flat and nested summary objects from the API
+  const summaryData = apiResponse.summary || apiResponse;
+  return {
+    title: apiResponse.title || fileName,
+    wordFrequency: apiResponse.wordFrequency || {},
+    unknownWordList: apiResponse.unknownWordList || [],
+    sentences: apiResponse.sentences || [],
+    summary: {
+      totalWords: summaryData.totalWords || 0,
+      uniqueWords: summaryData.uniqueWords || 0,
+      knownWords: summaryData.knownWords || 0,
+      unknownWords: summaryData.unknownWords || 0,
+      averageWordLength: summaryData.averageWordLength || 0,
+      readingTime: Math.round(summaryData.readingTime || 0),
+    },
+  };
+};
+
 export default function AnalyzePage() {
   const { user } = useAuth();
   const [text, setText] = useState("");
@@ -35,6 +78,80 @@ export default function AnalyzePage() {
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  const handleUploadAreaClick = useCallback(() => {
+    fileInputRef.current?.click();
+  }, []);
+
+  const handleSubtitleUpload = useCallback(
+    async (file: File) => {
+      if (!user) return;
+      setError("");
+      setSuccess("");
+      setLoadingAnalysis(true);
+      try {
+        const formData = new FormData();
+        formData.append("file", file);
+        const response = await fetch(config.subtitleAnalysisUrl, {
+          method: "POST",
+          body: formData,
+        });
+        if (!response.ok) {
+          throw new Error(`Subtitle upload failed: ${response.statusText}`);
+        }
+        const apiResponse = await response.json();
+        setAnalysisResult(transformApiResult(apiResponse, file.name));
+        setSuccess("Subtitle file analyzed successfully!");
+      } catch (err) {
+        console.error("Subtitle upload error:", err);
+        setError(err instanceof Error ? err.message : "Subtitle upload failed");
+      } finally {
+        setLoadingAnalysis(false);
+      }
+    },
+    [user]
+  );
+
+  const handleGenericUpload = useCallback(
+    async (file: File) => {
+      if (!user) return;
+      setError("");
+      setSuccess("");
+      setLoadingAnalysis(true);
+      try {
+        const formData = new FormData();
+        formData.append("file", file);
+        const response = await fetch(config.uploadServiceUrl, {
+          method: "POST",
+          body: formData,
+        });
+        if (!response.ok) {
+          throw new Error(`Upload failed: ${response.statusText}`);
+        }
+        const apiResponse = await response.json();
+        setAnalysisResult(transformApiResult(apiResponse, file.name));
+        setSuccess("File uploaded and analyzed successfully!");
+      } catch (err) {
+        console.error("Upload error:", err);
+        setError(err instanceof Error ? err.message : "Upload failed");
+      } finally {
+        setLoadingAnalysis(false);
+      }
+    },
+    [user]
+  );
+
+  const handleFileUpload = useCallback(
+    (file: File) => {
+      const extension = file.name.split(".").pop()?.toLowerCase();
+      if (extension === "srt" || extension === "vtt") {
+        handleSubtitleUpload(file);
+      } else {
+        handleGenericUpload(file);
+      }
+    },
+    [handleSubtitleUpload, handleGenericUpload]
+  );
+
   const handleDragOver = useCallback((e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -47,16 +164,19 @@ export default function AnalyzePage() {
     setIsDragOver(false);
   }, []);
 
-  const handleDrop = useCallback((e: React.DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    setIsDragOver(false);
+  const handleDrop = useCallback(
+    (e: React.DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      setIsDragOver(false);
 
-    const files = Array.from(e.dataTransfer.files);
-    if (files.length > 0) {
-      handleFileUpload(files[0]);
-    }
-  }, []);
+      const files = Array.from(e.dataTransfer.files);
+      if (files.length > 0) {
+        handleFileUpload(files[0]);
+      }
+    },
+    [handleFileUpload]
+  );
 
   const handleFileInput = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -65,56 +185,7 @@ export default function AnalyzePage() {
         handleFileUpload(files[0]);
       }
     },
-    []
-  );
-
-  const handleFileUpload = useCallback(
-    async (file: File) => {
-      if (!user) return;
-
-      setError("");
-      setSuccess("");
-      setLoadingAnalysis(true);
-
-      try {
-        const formData = new FormData();
-        formData.append("file", file);
-
-        const response = await fetch(config.uploadServiceUrl, {
-          method: "POST",
-          body: formData,
-        });
-
-        if (!response.ok) {
-          throw new Error(`Upload failed: ${response.statusText}`);
-        }
-
-        const flatResult = await response.json();
-        const result: AnalysisResult = {
-          title: flatResult.title || file.name,
-          wordFrequency: flatResult.wordFrequency || {},
-          unknownWordList: flatResult.unknownWordList || [],
-          sentences: flatResult.sentences || [],
-          summary: {
-            totalWords: flatResult.totalWords || 0,
-            uniqueWords: flatResult.uniqueWords || 0,
-            knownWords: flatResult.knownWords || 0,
-            unknownWords: flatResult.unknownWords || 0,
-            averageWordLength: flatResult.averageWordLength || 0,
-            readingTime: Math.round(flatResult.readingTime) || 0,
-          },
-        };
-
-        setAnalysisResult(result);
-        setSuccess("File uploaded and analyzed successfully!");
-      } catch (err) {
-        console.error("Upload error:", err);
-        setError(err instanceof Error ? err.message : "Upload failed");
-      } finally {
-        setLoadingAnalysis(false);
-      }
-    },
-    [user]
+    [handleFileUpload]
   );
 
   const analyzeText = useCallback(async () => {
@@ -223,7 +294,8 @@ export default function AnalyzePage() {
             Upload Files
           </h2>
           <div
-            className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors ${
+            onClick={handleUploadAreaClick}
+            className={`border-2 border-dashed rounded-lg p-8 text-center transition-colors cursor-pointer ${
               isDragOver
                 ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
                 : "border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500"
@@ -254,13 +326,13 @@ export default function AnalyzePage() {
                 or drag and drop
               </p>
               <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
-                TXT, EPUB files up to 10MB
+                TXT, EPUB, SRT, VTT files up to 10MB
               </p>
             </div>
             <input
               ref={fileInputRef}
               type="file"
-              accept=".txt,.epub"
+              accept=".txt,.epub,.srt,.vtt"
               onChange={handleFileInput}
               className="hidden"
             />

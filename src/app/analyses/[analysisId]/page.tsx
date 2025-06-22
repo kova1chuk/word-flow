@@ -110,6 +110,15 @@ export default function SingleAnalysisPage() {
     }
   }, [viewMode]);
 
+  // Clear cache when translations change to handle height adjustments
+  useEffect(() => {
+    // When translations are added/removed, clear cache to recalculate heights
+    cache.current.clearAll();
+    if (listRef.current) {
+      listRef.current.forceUpdateGrid();
+    }
+  }, [translatedSentences]);
+
   // Load reading progress
   useEffect(() => {
     if (user && analysisId) {
@@ -213,16 +222,6 @@ export default function SingleAnalysisPage() {
       listRef.current.forceUpdateGrid();
     }
   }, [sentencesPerPage]);
-
-  // Clear cache when view mode changes
-  useEffect(() => {
-    // When view mode changes, clear all cached measurements
-    // and force the list to re-render.
-    cache.current.clearAll();
-    if (listRef.current) {
-      listRef.current.forceUpdateGrid();
-    }
-  }, [viewMode]);
 
   const handleWordClick = async (word: string) => {
     setSelectedWord({ word });
@@ -442,11 +441,13 @@ export default function SingleAnalysisPage() {
       }));
     } finally {
       if (sentenceIndex !== -1) {
-        // Clear the specific row's cache and recompute its height
-        cache.current.clear(sentenceIndex, 0);
-        if (listRef.current) {
-          listRef.current.recomputeRowHeights(sentenceIndex);
-        }
+        // Add a small delay to ensure the DOM has updated before clearing cache
+        setTimeout(() => {
+          cache.current.clearAll();
+          if (listRef.current) {
+            listRef.current.forceUpdateGrid();
+          }
+        }, 50);
       }
       setTranslatingSentenceId(null);
     }

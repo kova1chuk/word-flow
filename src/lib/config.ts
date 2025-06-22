@@ -12,8 +12,13 @@ export const config = {
 
   // Upload service URL - defaults to the current external service
   uploadServiceUrl:
-    process.env.NEXT_UPLOAD_SERVICE_URL ||
-    "https://word-flow-service-261316383596.europe-central2.run.app/upload/",
+    `${process.env.NEXT_BACKEND_URI}/api/upload/` ||
+    "https://word-flow-service-261316383596.europe-central2.run.app/api/upload/",
+
+  // Subtitle analysis service URL
+  subtitleAnalysisUrl:
+    `${process.env.NEXT_BACKEND_URI}/api/subtitle/` ||
+    "https://word-flow-service-261316383596.europe-central2.run.app/api/subtitle/",
 
   // Check if we're using a custom upload service
   isCustomUploadService: !!process.env.NEXT_UPLOAD_SERVICE_URL,

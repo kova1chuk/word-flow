@@ -35,6 +35,15 @@ interface TranslationResult {
   explanation: string;
 }
 
+interface SubtitleAnalysisResult {
+  word_list: string[];
+  unique_words: string[];
+  sentences: string[];
+  total_words: number;
+  total_unique_words: number;
+  total_sentences: number;
+}
+
 interface UserWord {
   id: string;
   word: string;
@@ -55,6 +64,7 @@ export default function AnalyzePage() {
   const [addingWords, setAddingWords] = useState(false);
   const [addWordsProgress, setAddWordsProgress] = useState(0);
   const [error, setError] = useState("");
+  const [analysisMode, setAnalysisMode] = useState<"text" | "file">("text");
   const [translations, setTranslations] = useState<TranslationResult[]>([]);
   const [loadingTranslations, setLoadingTranslations] = useState(false);
   const [activeTooltip, setActiveTooltip] = useState<number | null>(null);
@@ -66,10 +76,7 @@ export default function AnalyzePage() {
   const [allWordsPage, setAllWordsPage] = useState(1);
   const [wellKnownWordsPage, setWellKnownWordsPage] = useState(1);
   const wordsPerPage = 10;
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const [uploading, setUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const [fileName, setFileName] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [dragActive, setDragActive] = useState(false);
   const [bookMetadata, setBookMetadata] = useState<{ title?: string } | null>(
     null
@@ -500,135 +507,70 @@ export default function AnalyzePage() {
     );
   };
 
-  const handleFileUpload = async (file: File) => {
-    if (!file.name.toLowerCase().endsWith(".epub")) {
-      setError("Please upload an EPUB file");
-      return;
-    }
-
-    console.log(
-      "Uploading file:",
-      file.name,
-      "Size:",
-      file.size,
-      "Type:",
-      file.type
-    );
-
-    setUploading(true);
-    setUploadProgress(0);
+  const handleSubtitleUpload = async (file: File) => {
+    setLoadingAnalysis(true);
+    setAnalysisProgress(0);
     setAnalysisResult(null);
     setError("");
-    setFileName(file.name);
-    setBookMetadata(null);
-    setSentences([]);
+    setBookMetadata({ title: file.name });
 
     const formData = new FormData();
     formData.append("file", file);
 
-    console.log(
-      "FormData created, entries:",
-      Array.from(formData.entries()).map(
-        ([key, value]) =>
-          `${key}: ${
-            value instanceof File
-              ? `${value.name} (${value.size} bytes)`
-              : value
-          }`
-      )
-    );
-
-    const progressInterval = setInterval(() => {
-      setUploadProgress((prev) => {
-        if (prev >= 90) {
-          clearInterval(progressInterval);
-          return 90;
-        }
-        return prev + 10;
-      });
-    }, 200);
-
     try {
-      const response = await fetch("/api/upload", {
+      // Step 1: Upload and get analysis from subtitle service
+      setAnalysisProgress(20);
+      const res = await fetch("/api/subtitle", {
         method: "POST",
         body: formData,
       });
 
-      clearInterval(progressInterval);
-
-      console.log("Upload response status:", response.status);
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        console.log("Upload error data:", errorData);
-        throw new Error(errorData.error || "Failed to process EPUB file.");
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.detail || "Subtitle analysis failed");
       }
 
-      const data = await response.json();
-      setUploadProgress(100);
+      const subtitleResult: SubtitleAnalysisResult = await res.json();
+      setAnalysisProgress(60);
 
-      setLoadingAnalysis(true);
-      setAnalysisProgress(0);
-
-      await new Promise((resolve) => setTimeout(resolve, 0));
-
-      const {
-        word_list,
-        unique_words,
-        sentences,
-        total_words,
-        total_unique_words,
-      } = data;
-
-      setAnalysisProgress(25);
-      const wordFrequency: { [key: string]: number } = {};
-      word_list.forEach((word: string) => {
-        wordFrequency[word] = (wordFrequency[word] || 0) + 1;
-      });
-      await new Promise((resolve) => setTimeout(resolve, 0));
-
-      setAnalysisProgress(75);
+      // Step 2: Integrate with existing analysis logic
       const userKnownWords = userWords.map((w) => w.word.toLowerCase().trim());
-      const knownWordsList = unique_words.filter((word: string) =>
+      const knownWords = subtitleResult.unique_words.filter((word) =>
         userKnownWords.includes(word)
       );
-      const unknownWordsList = unique_words.filter(
-        (word: string) => !userKnownWords.includes(word)
+      const unknownWords = subtitleResult.unique_words.filter(
+        (word) => !userKnownWords.includes(word)
       );
-      await new Promise((resolve) => setTimeout(resolve, 0));
 
-      setAnalysisProgress(95);
+      const wordFrequency: { [key: string]: number } = {};
+      subtitleResult.word_list.forEach((word) => {
+        wordFrequency[word] = (wordFrequency[word] || 0) + 1;
+      });
+
       const result: AnalysisResult = {
-        totalWords: total_words,
-        uniqueWords: total_unique_words,
-        knownWords: knownWordsList.length,
-        unknownWords: unknownWordsList.length,
-        unknownWordList: unknownWordsList,
+        totalWords: subtitleResult.total_words,
+        uniqueWords: subtitleResult.total_unique_words,
+        knownWords: knownWords.length,
+        unknownWords: unknownWords.length,
+        unknownWordList: unknownWords,
         wordFrequency,
         averageWordLength:
-          total_words > 0
-            ? word_list.reduce(
-                (sum: number, word: string) => sum + word.length,
-                0
-              ) / total_words
-            : 0,
-        readingTime: total_words / 200,
+          subtitleResult.word_list.reduce((sum, word) => sum + word.length, 0) /
+          subtitleResult.total_words,
+        readingTime: subtitleResult.total_words / 200,
       };
 
       setAnalysisResult(result);
-      setText(sentences.join(" "));
-      setSentences(sentences);
+      setText(subtitleResult.sentences.join(". "));
+      setSentences(subtitleResult.sentences);
       setBookMetadata({ title: file.name });
       setAnalysisProgress(100);
-    } catch (error) {
-      console.error("File upload error:", error);
+    } catch (err) {
+      console.error("Error analyzing subtitle:", err);
       setError(
-        error instanceof Error
-          ? error.message
-          : "Failed to parse EPUB file. Please try again."
+        err instanceof Error ? err.message : "Failed to analyze subtitle file"
       );
     } finally {
-      setUploading(false);
       setLoadingAnalysis(false);
     }
   };
@@ -649,13 +591,13 @@ export default function AnalyzePage() {
     setDragActive(false);
 
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      handleFileUpload(e.dataTransfer.files[0]);
+      handleSubtitleUpload(e.dataTransfer.files[0]);
     }
   };
 
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      handleFileUpload(e.target.files[0]);
+      handleSubtitleUpload(e.target.files[0]);
     }
   };
 
@@ -785,84 +727,83 @@ export default function AnalyzePage() {
                   </div>
                 )}
 
-                <div
-                  className={`border-2 border-dashed rounded-lg p-6 text-center transition-colors ${
-                    dragActive
-                      ? "border-blue-400 bg-blue-50"
-                      : "border-gray-300 hover:border-gray-400"
-                  }`}
-                  onDragEnter={handleDrag}
-                  onDragLeave={handleDrag}
-                  onDragOver={handleDrag}
-                  onDrop={handleDrop}
-                >
-                  {uploading ? (
-                    <div className="space-y-4">
-                      <div className="flex items-center justify-center">
-                        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                      </div>
-                      <div>
-                        <p className="text-sm text-gray-600">
-                          Processing {fileName}...
-                        </p>
-                        <div className="mt-2 w-full bg-gray-200 rounded-full h-2">
-                          <div
-                            className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                            style={{ width: `${uploadProgress}%` }}
-                          ></div>
-                        </div>
-                        <p className="text-xs text-gray-500 mt-1">
-                          {uploadProgress}% complete
-                        </p>
-                      </div>
-                    </div>
-                  ) : (
-                    <div>
-                      <div className="flex justify-center mb-4">
-                        <svg
-                          className="mx-auto h-12 w-12 text-gray-400"
-                          stroke="currentColor"
-                          fill="none"
-                          viewBox="0 0 48 48"
-                          aria-hidden="true"
-                        >
-                          <path
-                            d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02"
-                            strokeWidth={2}
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          />
-                        </svg>
-                      </div>
-                      <p className="text-sm text-gray-600 mb-2">
-                        Drag and drop your EPUB file here, or
-                      </p>
-                      <button
-                        type="button"
-                        onClick={() => fileInputRef.current?.click()}
-                        className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                      >
-                        Choose File
-                      </button>
-                      <p className="text-xs text-gray-500 mt-2">
-                        Supports EPUB format only
-                      </p>
-                    </div>
-                  )}
-
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept=".epub"
-                    onChange={handleFileInput}
-                    className="hidden"
-                  />
+                <div className="flex justify-center mb-6 border-b">
+                  <button
+                    onClick={() => setAnalysisMode("text")}
+                    className={`px-6 py-3 text-lg font-medium ${
+                      analysisMode === "text"
+                        ? "border-b-2 border-blue-600 text-blue-600"
+                        : "text-gray-500"
+                    }`}
+                  >
+                    Paste Text
+                  </button>
+                  <button
+                    onClick={() => setAnalysisMode("file")}
+                    className={`px-6 py-3 text-lg font-medium ${
+                      analysisMode === "file"
+                        ? "border-b-2 border-blue-600 text-blue-600"
+                        : "text-gray-500"
+                    }`}
+                  >
+                    Upload File
+                  </button>
                 </div>
 
-                {fileName && !uploading && (
-                  <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-md">
-                    <p className="text-sm text-green-600">
-                      Successfully processed: {fileName}
+                {analysisMode === "text" ? (
+                  <div>
+                    <textarea
+                      value={text}
+                      onChange={(e) => setText(e.target.value)}
+                      placeholder="Paste your text here for analysis..."
+                      className="w-full h-60 p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow"
+                      disabled={loadingAnalysis}
+                    />
+                    <button
+                      onClick={analyzeText}
+                      disabled={loadingAnalysis}
+                      className="mt-4 w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                    >
+                      {loadingAnalysis ? (
+                        <>
+                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
+                          Analyzing... ({analysisProgress}%)
+                        </>
+                      ) : (
+                        "Analyze Text"
+                      )}
+                    </button>
+                  </div>
+                ) : (
+                  <div
+                    onDragEnter={handleDrag}
+                    onDragLeave={handleDrag}
+                    onDragOver={handleDrag}
+                    onDrop={handleDrop}
+                    className={`border-2 border-dashed rounded-lg p-10 text-center cursor-pointer transition-colors ${
+                      dragActive
+                        ? "border-blue-500 bg-blue-50"
+                        : "border-gray-300"
+                    }`}
+                  >
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      className="hidden"
+                      onChange={handleFileInput}
+                      accept=".srt,.vtt,.txt,.epub"
+                    />
+                    <p className="text-gray-500">
+                      Drag & drop your file here, or{" "}
+                      <span
+                        onClick={() => fileInputRef.current?.click()}
+                        className="text-blue-600 hover:underline"
+                      >
+                        browse to upload
+                      </span>
+                    </p>
+                    <p className="text-sm text-gray-400 mt-2">
+                      Supported formats: SRT, VTT, TXT, EPUB
                     </p>
                   </div>
                 )}

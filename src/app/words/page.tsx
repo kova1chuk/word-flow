@@ -144,66 +144,61 @@ export default function WordsPage() {
 
   const onReloadDefinition = async (word: Word) => {
     setUpdating(word.id);
+    setError("");
     try {
       let definition = "";
       let details: WordDetails | undefined = undefined;
-      console.log(`Reloading definition for word: "${word.word}"`);
 
       const res = await fetch(
         `${config.dictionaryApi}/${encodeURIComponent(word.word)}`
       );
-      console.log(`API response status: ${res.status}`);
 
       if (res.ok) {
         const data: DictionaryApiResponse[] = await res.json();
-        console.log(`API response data:`, data);
 
         if (Array.isArray(data) && data.length > 0) {
           const firstResult = data[0];
-          // Set primary definition
           definition =
             firstResult.meanings?.[0]?.definitions?.[0]?.definition ??
             "No definition found.";
 
-          // Extract detailed information
           details = {
             phonetics: (firstResult.phonetics || [])
               .map((p) => ({ text: p.text, audio: p.audio }))
               .filter((p): p is Phonetic => !!(p.text && p.audio)),
             meanings: (firstResult.meanings || []).map((m) => ({
               partOfSpeech: m.partOfSpeech,
-              definitions: m.definitions.map((d) => ({
-                definition: d.definition,
-                example: d.example,
-                synonyms: d.synonyms,
-                antonyms: d.antonyms,
-              })),
+              definitions: m.definitions.map((d) => {
+                const newDef: {
+                  definition: string;
+                  example?: string;
+                  synonyms?: string[];
+                  antonyms?: string[];
+                } = { definition: d.definition };
+                if (d.example) newDef.example = d.example;
+                if (d.synonyms) newDef.synonyms = d.synonyms;
+                if (d.antonyms) newDef.antonyms = d.antonyms;
+                return newDef;
+              }),
             })),
           };
-          console.log(`Found definition: "${definition}"`, details);
         } else {
           definition = "No definition found.";
-          console.log("No definition found in API response");
         }
       } else {
         definition = "No definition found.";
-        console.log(`API request failed with status: ${res.status}`);
       }
 
-      console.log(`Updating word document with definition and details`);
-      const dataToUpdate = { definition, details };
-
-      // Remove undefined fields before sending to Firestore
-      Object.keys(dataToUpdate).forEach(
-        (key) =>
-          dataToUpdate[key as keyof typeof dataToUpdate] === undefined &&
-          delete dataToUpdate[key as keyof typeof dataToUpdate]
-      );
+      const dataToUpdate: { definition: string; details?: WordDetails } = {
+        definition,
+      };
+      if (details) {
+        dataToUpdate.details = details;
+      }
 
       const wordRef = doc(db, "words", word.id);
       await updateDoc(wordRef, dataToUpdate);
       fetchWords();
-      console.log("Definition reload completed successfully");
     } catch (error) {
       console.error("Error reloading definition:", error);
       setError(

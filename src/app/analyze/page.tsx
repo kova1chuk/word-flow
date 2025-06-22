@@ -503,6 +503,73 @@ export default function AnalyzePage() {
     }
   };
 
+  const handleEpubUpload = async (file: File) => {
+    setLoadingAnalysis(true);
+    setAnalysisProgress(0);
+    setAnalysisResult(null);
+    setError("");
+    setBookMetadata({ title: file.name });
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      // Step 1: Upload and get analysis from EPUB service
+      setAnalysisProgress(20);
+      const res = await fetch("/api/upload", {
+        method: "POST",
+        body: formData,
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.detail || "EPUB analysis failed");
+      }
+
+      const epubResult: SubtitleAnalysisResult = await res.json(); // Re-using the same interface
+      setAnalysisProgress(60);
+
+      // Step 2: Integrate with existing analysis logic (same as subtitles)
+      const userKnownWords = userWords.map((w) => w.word.toLowerCase().trim());
+      const knownWords = epubResult.unique_words.filter((word) =>
+        userKnownWords.includes(word)
+      );
+      const unknownWords = epubResult.unique_words.filter(
+        (word) => !userKnownWords.includes(word)
+      );
+
+      const wordFrequency: { [key: string]: number } = {};
+      epubResult.word_list.forEach((word) => {
+        wordFrequency[word] = (wordFrequency[word] || 0) + 1;
+      });
+
+      const result: AnalysisResult = {
+        totalWords: epubResult.total_words,
+        uniqueWords: epubResult.total_unique_words,
+        knownWords: knownWords.length,
+        unknownWords: unknownWords.length,
+        unknownWordList: unknownWords,
+        wordFrequency,
+        averageWordLength:
+          epubResult.word_list.reduce((sum, word) => sum + word.length, 0) /
+          epubResult.total_words,
+        readingTime: epubResult.total_words / 200,
+      };
+
+      setAnalysisResult(result);
+      setText(epubResult.sentences.join(". "));
+      setSentences(epubResult.sentences);
+      setAnalysisProgress(100);
+    } catch (err) {
+      console.error("Error analyzing EPUB:", err);
+      setError(
+        err instanceof Error ? err.message : "Failed to analyze EPUB file"
+      );
+    } finally {
+      setLoadingAnalysis(false);
+    }
+  };
+
   const handleDrag = (e: React.DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -519,13 +586,23 @@ export default function AnalyzePage() {
     setDragActive(false);
 
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      handleSubtitleUpload(e.dataTransfer.files[0]);
+      const file = e.dataTransfer.files[0];
+      if (file.name.endsWith(".epub")) {
+        handleEpubUpload(file);
+      } else {
+        handleSubtitleUpload(file);
+      }
     }
   };
 
   const handleFileInput = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
-      handleSubtitleUpload(e.target.files[0]);
+      const file = e.target.files[0];
+      if (file.name.endsWith(".epub")) {
+        handleEpubUpload(file);
+      } else {
+        handleSubtitleUpload(file);
+      }
     }
   };
 
@@ -707,7 +784,7 @@ export default function AnalyzePage() {
                   type="file"
                   className="hidden"
                   onChange={handleFileInput}
-                  accept=".srt,.vtt,.txt"
+                  accept=".epub,.srt,.vtt,.txt"
                 />
                 <p className="text-gray-500">
                   Drag & drop your file here, or{" "}
@@ -719,7 +796,7 @@ export default function AnalyzePage() {
                   </span>
                 </p>
                 <p className="text-sm text-gray-400 mt-2">
-                  Supported formats: SRT, VTT, TXT
+                  Supported formats: EPUB, SRT, VTT, TXT
                 </p>
               </div>
             )}

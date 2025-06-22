@@ -84,45 +84,39 @@ export default function WordsPage() {
 
   const handleAddWord = async (e: React.FormEvent) => {
     e.preventDefault();
-
     if (!user) return;
 
     if (!newWord.trim() || !newDefinition.trim()) {
       setError("Word and definition are required");
       return;
     }
-
-    // Check if word already exists
     const wordExists = words.some(
       (word) => word.word.toLowerCase().trim() === newWord.toLowerCase().trim()
     );
-
     if (wordExists) {
       setError("This word already exists in your collection");
       return;
     }
 
+    setSubmitting(true);
+    setError("");
     try {
-      setSubmitting(true);
-      setError("");
-
-      const wordsRef = collection(db, "words");
-      await addDoc(wordsRef, {
+      const newWordData = {
         userId: user.uid,
         word: newWord.trim(),
         definition: newDefinition.trim(),
         example: newExample.trim(),
         createdAt: Timestamp.now(),
-      });
+        status: "to_learn",
+      };
+      const docRef = await addDoc(collection(db, "words"), newWordData);
 
-      // Reset form
+      setWords((prev) => [{ id: docRef.id, ...newWordData } as Word, ...prev]);
+
       setNewWord("");
       setNewDefinition("");
       setNewExample("");
       setShowAddForm(false);
-
-      // Refresh words list
-      await fetchWords();
     } catch (error) {
       console.error("Error adding word:", error);
       setError("Failed to add word");
@@ -135,7 +129,7 @@ export default function WordsPage() {
     if (!user) return;
     try {
       await deleteDoc(doc(db, "words", word.id));
-      await fetchWords();
+      setWords((prev) => prev.filter((w) => w.id !== word.id));
     } catch (error) {
       console.error("Error deleting word:", error);
       setError("Failed to delete word");
@@ -155,13 +149,11 @@ export default function WordsPage() {
 
       if (res.ok) {
         const data: DictionaryApiResponse[] = await res.json();
-
         if (Array.isArray(data) && data.length > 0) {
           const firstResult = data[0];
           definition =
             firstResult.meanings?.[0]?.definitions?.[0]?.definition ??
             "No definition found.";
-
           details = {
             phonetics: (firstResult.phonetics || [])
               .map((p) => ({ text: p.text, audio: p.audio }))
@@ -192,13 +184,12 @@ export default function WordsPage() {
       const dataToUpdate: { definition: string; details?: WordDetails } = {
         definition,
       };
-      if (details) {
-        dataToUpdate.details = details;
-      }
+      if (details) dataToUpdate.details = details;
 
-      const wordRef = doc(db, "words", word.id);
-      await updateDoc(wordRef, dataToUpdate);
-      fetchWords();
+      await updateDoc(doc(db, "words", word.id), dataToUpdate);
+      setWords((prev) =>
+        prev.map((w) => (w.id === word.id ? { ...w, ...dataToUpdate } : w))
+      );
     } catch (error) {
       console.error("Error reloading definition:", error);
       setError(
@@ -213,41 +204,30 @@ export default function WordsPage() {
 
   const onReloadTranslation = async (word: Word) => {
     setUpdating(word.id);
+    setError("");
     try {
       let translation = "";
-      console.log(`Reloading translation for word: "${word.word}"`);
-
-      // Using MyMemory API
-      const langPair = `en|uk`; // English to Ukrainian
+      const langPair = `en|uk`;
       const url = `${config.translationApi.baseUrl}?q=${encodeURIComponent(
         word.word
       )}&langpair=${langPair}`;
 
       const res = await fetch(url);
-      console.log(`Translation API response status: ${res.status}`);
-
       if (res.ok) {
         const data = await res.json();
-        console.log(`Translation API response data:`, data);
         if (data.responseData && data.responseData.translatedText) {
           translation = data.responseData.translatedText;
-          console.log(`Found translation: "${translation}"`);
         } else {
           translation = "No translation found.";
-          console.log(`No translation found in API response.`);
         }
       } else {
         translation = "No translation found.";
-        console.log(
-          `Translation API request failed with status: ${res.status}`
-        );
       }
 
-      console.log(`Updating word document with translation: "${translation}"`);
-      const wordRef = doc(db, "words", word.id);
-      await updateDoc(wordRef, { translation });
-      fetchWords();
-      console.log("Translation reload completed successfully");
+      await updateDoc(doc(db, "words", word.id), { translation });
+      setWords((prev) =>
+        prev.map((w) => (w.id === word.id ? { ...w, translation } : w))
+      );
     } catch (error) {
       console.error("Error reloading translation:", error);
       setError(
@@ -262,10 +242,10 @@ export default function WordsPage() {
 
   const onStatusChange = async (id: string, status: string) => {
     setUpdating(id);
+    setError("");
     try {
-      const wordRef = doc(db, "words", id);
-      await updateDoc(wordRef, { status });
-      fetchWords();
+      await updateDoc(doc(db, "words", id), { status });
+      setWords((prev) => prev.map((w) => (w.id === id ? { ...w, status } : w)));
     } catch (error) {
       console.error("Error updating status:", error);
       setError("Failed to update status");

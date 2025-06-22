@@ -10,6 +10,10 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "No text provided" }, { status: 400 });
     }
 
+    console.log(
+      `Forwarding text analysis request to: ${config.textAnalysisUrl}`
+    );
+
     // Forward the text to the actual analysis service
     const response = await fetch(config.textAnalysisUrl, {
       method: "POST",
@@ -20,8 +24,18 @@ export async function POST(req: NextRequest) {
     });
 
     if (!response.ok) {
-      // Pass the error from the service through
-      const errorData = await response.json();
+      // Pass the error from the service through, handling non-JSON errors
+      const contentType = response.headers.get("content-type");
+      let errorData;
+      if (contentType && contentType.includes("application/json")) {
+        errorData = await response.json();
+      } else {
+        const errorText = await response.text();
+        console.error("Backend service returned non-JSON error:", errorText);
+        errorData = {
+          detail: `Backend service error: ${errorText.substring(0, 200)}...`,
+        };
+      }
       return NextResponse.json(errorData, { status: response.status });
     }
 

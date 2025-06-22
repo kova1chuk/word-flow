@@ -595,10 +595,6 @@ export default function AnalyzePage() {
     }
   };
 
-  const handleAnalyze = () => {
-    analyzeText();
-  };
-
   const saveAnalysis = async () => {
     if (!user || !analysisResult || !bookMetadata) {
       setError("No analysis result to save.");
@@ -678,10 +674,10 @@ export default function AnalyzePage() {
       <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-gray-900 mb-4">
-            Analyze Text
+            Text Analysis
           </h1>
           <p className="text-gray-600">
-            Analyze text to identify known and unknown words
+            Analyze text or subtitle files to identify known and unknown words.
           </p>
         </div>
 
@@ -694,172 +690,105 @@ export default function AnalyzePage() {
         <div className="grid gap-8 lg:grid-cols-2">
           {/* Input Section */}
           <div className="bg-white rounded-lg shadow-md p-6">
-            <h2 className="text-xl font-semibold text-gray-900 mb-4">
-              Enter Text
-            </h2>
-            <div className="space-y-4">
-              {/* EPUB Upload Section */}
-              <div className="mb-8">
-                <h2 className="text-lg font-medium text-gray-900 mb-4">
-                  Upload EPUB File
-                </h2>
+            <div className="flex justify-center mb-6 border-b">
+              <button
+                onClick={() => setAnalysisMode("text")}
+                className={`px-6 py-3 text-lg font-medium ${
+                  analysisMode === "text"
+                    ? "border-b-2 border-blue-600 text-blue-600"
+                    : "text-gray-500"
+                }`}
+              >
+                Paste Text
+              </button>
+              <button
+                onClick={() => setAnalysisMode("file")}
+                className={`px-6 py-3 text-lg font-medium ${
+                  analysisMode === "file"
+                    ? "border-b-2 border-blue-600 text-blue-600"
+                    : "text-gray-500"
+                }`}
+              >
+                Upload File
+              </button>
+            </div>
 
-                {/* Book Metadata Section */}
-                {bookMetadata && (
-                  <div className="mb-6 bg-blue-50 border border-blue-200 rounded-md p-4">
-                    <h3 className="text-md font-medium text-blue-900 mb-2">
-                      Book Information
-                    </h3>
-                    <div className="space-y-2">
-                      {bookMetadata.title && (
-                        <p className="text-sm text-blue-800">
-                          <span className="font-medium">Title:</span>{" "}
-                          {bookMetadata.title}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                )}
-
-                <div className="flex justify-center mb-6 border-b">
-                  <button
-                    onClick={() => setAnalysisMode("text")}
-                    className={`px-6 py-3 text-lg font-medium ${
-                      analysisMode === "text"
-                        ? "border-b-2 border-blue-600 text-blue-600"
-                        : "text-gray-500"
-                    }`}
-                  >
-                    Paste Text
-                  </button>
-                  <button
-                    onClick={() => setAnalysisMode("file")}
-                    className={`px-6 py-3 text-lg font-medium ${
-                      analysisMode === "file"
-                        ? "border-b-2 border-blue-600 text-blue-600"
-                        : "text-gray-500"
-                    }`}
-                  >
-                    Upload File
-                  </button>
-                </div>
-
-                {analysisMode === "text" ? (
-                  <div>
-                    <textarea
-                      value={text}
-                      onChange={(e) => setText(e.target.value)}
-                      placeholder="Paste your text here for analysis..."
-                      className="w-full h-60 p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow"
-                      disabled={loadingAnalysis}
-                    />
-                    <button
-                      onClick={analyzeText}
-                      disabled={loadingAnalysis}
-                      className="mt-4 w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
-                    >
-                      {loadingAnalysis ? (
-                        <>
-                          <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
-                          Analyzing... ({analysisProgress}%)
-                        </>
-                      ) : (
-                        "Analyze Text"
-                      )}
-                    </button>
-                  </div>
-                ) : (
-                  <div
-                    onDragEnter={handleDrag}
-                    onDragLeave={handleDrag}
-                    onDragOver={handleDrag}
-                    onDrop={handleDrop}
-                    className={`border-2 border-dashed rounded-lg p-10 text-center cursor-pointer transition-colors ${
-                      dragActive
-                        ? "border-blue-500 bg-blue-50"
-                        : "border-gray-300"
-                    }`}
-                  >
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      className="hidden"
-                      onChange={handleFileInput}
-                      accept=".srt,.vtt,.txt,.epub"
-                    />
-                    <p className="text-gray-500">
-                      Drag & drop your file here, or{" "}
-                      <span
-                        onClick={() => fileInputRef.current?.click()}
-                        className="text-blue-600 hover:underline"
-                      >
-                        browse to upload
-                      </span>
-                    </p>
-                    <p className="text-sm text-gray-400 mt-2">
-                      Supported formats: SRT, VTT, TXT, EPUB
-                    </p>
-                  </div>
-                )}
+            {bookMetadata && (
+              <div className="mb-6 bg-blue-50 border border-blue-200 rounded-md p-4">
+                <p className="text-sm text-blue-800">
+                  <span className="font-medium">Source:</span>{" "}
+                  {bookMetadata.title}
+                </p>
               </div>
+            )}
 
-              {/* Text Input Section */}
-              <div className="mb-8">
-                <h2 className="text-lg font-medium text-gray-900 mb-4">
-                  Or Enter Text Manually
-                </h2>
+            {analysisMode === "text" ? (
+              <div>
                 <textarea
                   value={text}
                   onChange={(e) => setText(e.target.value)}
-                  placeholder="Paste your text here or upload an EPUB file above..."
-                  className="w-full h-48 p-4 border border-gray-300 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
+                  placeholder="Paste your text here for analysis..."
+                  className="w-full h-60 p-4 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow text-gray-900 placeholder:text-gray-500"
+                  disabled={loadingAnalysis}
                 />
-              </div>
-
-              {/* Analyze Button */}
-              <div className="mb-8">
-                <button
-                  onClick={handleAnalyze}
-                  disabled={!text.trim() || loadingAnalysis}
-                  className="w-full bg-blue-600 text-white py-3 px-6 rounded-md hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
-                >
-                  {loadingAnalysis ? "Analyzing..." : "Analyze Text"}
-                </button>
-              </div>
-
-              {loadingAnalysis && (
-                <div className="mb-4">
-                  <div className="flex justify-between mb-1">
-                    <span className="text-base font-medium text-blue-700">
-                      Processing analysis...
-                    </span>
-                    <span className="text-sm font-medium text-blue-700">
-                      {analysisProgress}%
-                    </span>
-                  </div>
-                  <div className="w-full bg-gray-200 rounded-full h-2.5">
-                    <div
-                      className="bg-blue-600 h-2.5 rounded-full"
-                      style={{ width: `${analysisProgress}%` }}
-                    ></div>
-                  </div>
+                <div className="mt-4 flex flex-col sm:flex-row gap-4">
+                  <button
+                    onClick={analyzeText}
+                    disabled={loadingAnalysis || !text.trim()}
+                    className="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 px-4 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                  >
+                    {loadingAnalysis ? (
+                      <>
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-3"></div>
+                        Analyzing... ({analysisProgress}%)
+                      </>
+                    ) : (
+                      "Analyze Text"
+                    )}
+                  </button>
+                  <button
+                    onClick={() => {
+                      const sampleText = `The quick brown fox jumps over the lazy dog. This is a sample text for testing the word analysis functionality. It contains various words that can be analyzed for frequency and categorization. Some words might be known while others could be unknown depending on your vocabulary.`;
+                      setText(sampleText);
+                      setError("");
+                    }}
+                    className="bg-gray-500 text-white py-2 px-4 rounded-md hover:bg-gray-600 transition-colors text-sm"
+                  >
+                    Load Sample Text
+                  </button>
                 </div>
-              )}
-
-              {/* Sample Text Button for Testing */}
-              <div className="mb-4">
-                <button
-                  onClick={() => {
-                    const sampleText = `The quick brown fox jumps over the lazy dog. This is a sample text for testing the word analysis functionality. It contains various words that can be analyzed for frequency and categorization. Some words might be known while others could be unknown depending on your vocabulary.`;
-                    setText(sampleText);
-                    setError("");
-                  }}
-                  className="w-full bg-gray-500 text-white py-2 px-4 rounded-md hover:bg-gray-600 transition-colors text-sm"
-                >
-                  Load Sample Text (for testing)
-                </button>
               </div>
-            </div>
+            ) : (
+              <div
+                onDragEnter={handleDrag}
+                onDragLeave={handleDrag}
+                onDragOver={handleDrag}
+                onDrop={handleDrop}
+                className={`border-2 border-dashed rounded-lg p-10 text-center cursor-pointer transition-colors ${
+                  dragActive ? "border-blue-500 bg-blue-50" : "border-gray-300"
+                }`}
+              >
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  className="hidden"
+                  onChange={handleFileInput}
+                  accept=".srt,.vtt,.txt"
+                />
+                <p className="text-gray-500">
+                  Drag & drop your file here, or{" "}
+                  <span
+                    onClick={() => fileInputRef.current?.click()}
+                    className="text-blue-600 hover:underline"
+                  >
+                    browse to upload
+                  </span>
+                </p>
+                <p className="text-sm text-gray-400 mt-2">
+                  Supported formats: SRT, VTT, TXT
+                </p>
+              </div>
+            )}
           </div>
 
           {/* Results Section */}

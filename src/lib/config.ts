@@ -2,8 +2,7 @@
 
 // Base URI for backend services. Falls back to production URL if not set.
 const backendUri =
-  process.env.NEXT_PUBLIC_BACKEND_URI ||
-  "https://word-flow-service-261316383596.europe-central2.run.app";
+  process.env.NEXT_PUBLIC_BACKEND_URI || "http://localhost:8000";
 
 export const config = {
   // Translation API using MyMemory
@@ -20,7 +19,7 @@ export const config = {
   // All backend services are derived from a single base URI.
 
   // Upload service for EPUB files
-  uploadServiceUrl: `${backendUri}/upload/`,
+  uploadServiceUrl: `${backendUri}/api/upload/`,
 
   // Subtitle analysis service
   subtitleAnalysisUrl: `${backendUri}/api/subtitle/`,

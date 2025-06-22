@@ -34,6 +34,11 @@ interface DictionaryApiResponse {
   }[];
 }
 
+interface ApiResult {
+  data?: unknown;
+  error?: string;
+}
+
 interface Sentence {
   id: string;
   text: string;
@@ -65,6 +70,32 @@ export default function WordPage() {
   const [translatingSentenceId, setTranslatingSentenceId] = useState<
     string | null
   >(null);
+  const [apiResults, setApiResults] = useState<{
+    freeDictionary: ApiResult;
+    datamuse: ApiResult;
+    oxford: ApiResult;
+    linguaRobot: ApiResult;
+    wordnik: ApiResult;
+  }>({
+    freeDictionary: {},
+    datamuse: {},
+    oxford: {},
+    linguaRobot: {},
+    wordnik: {},
+  });
+  const [loadingApis, setLoadingApis] = useState<{
+    freeDictionary: boolean;
+    datamuse: boolean;
+    oxford: boolean;
+    linguaRobot: boolean;
+    wordnik: boolean;
+  }>({
+    freeDictionary: false,
+    datamuse: false,
+    oxford: false,
+    linguaRobot: false,
+    wordnik: false,
+  });
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
   const fetchWord = useCallback(async () => {
@@ -165,6 +196,18 @@ export default function WordPage() {
       fetchWordExamples();
     }
   }, [word, fetchWordExamples]);
+
+  useEffect(() => {
+    if (word?.word) {
+      // Fetch data from free APIs
+      fetchFreeDictionaryApi();
+      fetchDatamuseApi();
+      fetchOxfordApi();
+      // Note: Oxford, Lingua Robot, and Wordnik require API keys
+      // fetchLinguaRobotApi();
+      // fetchWordnikApi();
+    }
+  }, [word?.word]);
 
   const reloadDefinition = async () => {
     if (!word) return;
@@ -274,6 +317,168 @@ export default function WordPage() {
     if (audioRef.current) {
       audioRef.current.src = audioUrl;
       audioRef.current.play();
+    }
+  };
+
+  const fetchFreeDictionaryApi = async () => {
+    if (!word?.word) return;
+    setLoadingApis((prev) => ({ ...prev, freeDictionary: true }));
+    try {
+      const response = await fetch(
+        `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(
+          word.word
+        )}`
+      );
+      if (response.ok) {
+        const data = await response.json();
+        setApiResults((prev) => ({ ...prev, freeDictionary: { data } }));
+      } else {
+        setApiResults((prev) => ({
+          ...prev,
+          freeDictionary: {
+            error: `HTTP ${response.status}: ${response.statusText}`,
+          },
+        }));
+      }
+    } catch (error) {
+      setApiResults((prev) => ({
+        ...prev,
+        freeDictionary: {
+          error: error instanceof Error ? error.message : "Unknown error",
+        },
+      }));
+    } finally {
+      setLoadingApis((prev) => ({ ...prev, freeDictionary: false }));
+    }
+  };
+
+  const fetchDatamuseApi = async () => {
+    if (!word?.word) return;
+    setLoadingApis((prev) => ({ ...prev, datamuse: true }));
+    try {
+      const response = await fetch(
+        `https://api.datamuse.com/words?rel_syn=${encodeURIComponent(
+          word.word
+        )}&max=10`
+      );
+      if (response.ok) {
+        const data = await response.json();
+        setApiResults((prev) => ({ ...prev, datamuse: { data } }));
+      } else {
+        setApiResults((prev) => ({
+          ...prev,
+          datamuse: {
+            error: `HTTP ${response.status}: ${response.statusText}`,
+          },
+        }));
+      }
+    } catch (error) {
+      setApiResults((prev) => ({
+        ...prev,
+        datamuse: {
+          error: error instanceof Error ? error.message : "Unknown error",
+        },
+      }));
+    } finally {
+      setLoadingApis((prev) => ({ ...prev, datamuse: false }));
+    }
+  };
+
+  const fetchOxfordApi = async () => {
+    if (!word?.word) return;
+    setLoadingApis((prev) => ({ ...prev, oxford: true }));
+    try {
+      const response = await fetch(
+        `/api/oxford?word=${encodeURIComponent(word.word)}`
+      );
+      if (response.ok) {
+        const data = await response.json();
+        setApiResults((prev) => ({ ...prev, oxford: { data } }));
+      } else {
+        const errorData = await response.json();
+        setApiResults((prev) => ({
+          ...prev,
+          oxford: {
+            error:
+              errorData.error ||
+              `HTTP ${response.status}: ${response.statusText}`,
+          },
+        }));
+      }
+    } catch (error) {
+      setApiResults((prev) => ({
+        ...prev,
+        oxford: {
+          error: error instanceof Error ? error.message : "Unknown error",
+        },
+      }));
+    } finally {
+      setLoadingApis((prev) => ({ ...prev, oxford: false }));
+    }
+  };
+
+  const fetchLinguaRobotApi = async () => {
+    if (!word?.word) return;
+    setLoadingApis((prev) => ({ ...prev, linguaRobot: true }));
+    try {
+      const response = await fetch(
+        `https://lingua-robot.p.rapidapi.com/language/v1/entries/en/${encodeURIComponent(
+          word.word
+        )}`
+      );
+      if (response.ok) {
+        const data = await response.json();
+        setApiResults((prev) => ({ ...prev, linguaRobot: { data } }));
+      } else {
+        setApiResults((prev) => ({
+          ...prev,
+          linguaRobot: {
+            error: `HTTP ${response.status}: ${response.statusText} (API key required)`,
+          },
+        }));
+      }
+    } catch (error) {
+      setApiResults((prev) => ({
+        ...prev,
+        linguaRobot: {
+          error: error instanceof Error ? error.message : "Unknown error",
+        },
+      }));
+    } finally {
+      setLoadingApis((prev) => ({ ...prev, linguaRobot: false }));
+    }
+  };
+
+  const fetchWordnikApi = async () => {
+    if (!word?.word) return;
+    setLoadingApis((prev) => ({ ...prev, wordnik: true }));
+    try {
+      // Note: Wordnik API requires an API key, so this will likely fail
+      const response = await fetch(
+        `https://api.wordnik.com/v4/word.json/${encodeURIComponent(
+          word.word
+        )}/definitions`
+      );
+      if (response.ok) {
+        const data = await response.json();
+        setApiResults((prev) => ({ ...prev, wordnik: { data } }));
+      } else {
+        setApiResults((prev) => ({
+          ...prev,
+          wordnik: {
+            error: `HTTP ${response.status}: ${response.statusText} (API key required)`,
+          },
+        }));
+      }
+    } catch (error) {
+      setApiResults((prev) => ({
+        ...prev,
+        wordnik: {
+          error: error instanceof Error ? error.message : "Unknown error",
+        },
+      }));
+    } finally {
+      setLoadingApis((prev) => ({ ...prev, wordnik: false }));
     }
   };
 
@@ -442,6 +647,272 @@ export default function WordPage() {
                 </ol>
               </div>
             ))}
+            {word?.details && (
+              <p className="text-right text-xs text-gray-500 dark:text-gray-400 pt-4 mt-4 border-t border-gray-200 dark:border-gray-700">
+                from WordsAPI
+              </p>
+            )}
+          </div>
+        </div>
+
+        {/* Raw Data Display */}
+        <div className="mb-8">
+          <h2 className="text-2xl font-semibold text-gray-800 dark:text-white mb-4">
+            Raw Data
+          </h2>
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+            <div className="bg-gray-100 dark:bg-gray-900 rounded-lg p-4 overflow-x-auto">
+              <pre className="text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap">
+                {JSON.stringify(word, null, 2)}
+              </pre>
+            </div>
+          </div>
+        </div>
+
+        {/* APIs Information */}
+        <div className="mb-8">
+          <h2 className="text-2xl font-semibold text-gray-800 dark:text-white mb-4">
+            Dictionary APIs
+          </h2>
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 overflow-x-auto">
+            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
+              <thead className="bg-gray-50 dark:bg-gray-700">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    API
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    Features
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    Free Tier?
+                  </th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
+                    Comments
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                <tr>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                    WordsAPI
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-300">
+                    ✅ Lemma lookup, ✅ definitions, ✅ synonyms/antonyms, ✅
+                    examples, ✅ pronunciation
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                    ✅ Yes (2500 req/mo)
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-300">
+                    Broad coverage, clean JSON. Not very context-aware.
+                  </td>
+                </tr>
+                <tr>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                    Oxford Dictionaries API
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-300">
+                    ✅ Lemmatization, ✅ inflections, ✅ definitions, ✅
+                    examples, ✅ usage notes
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                    ✅ Yes (2000 req/mo)
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-300">
+                    Very rich data, but more formal usage.
+                  </td>
+                </tr>
+                <tr>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                    Datamuse
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-300">
+                    ✅ Word similarity, ✅ rhymes, ✅ &quot;means like&quot;, ✅
+                    part-of-speech tagging
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                    ✅ Free
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-300">
+                    Doesn&apos;t give definitions, but amazing for exploring
+                    similar forms.
+                  </td>
+                </tr>
+                <tr>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                    Free Dictionary API
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-300">
+                    ✅ Definitions, ✅ examples, ✅ synonyms, ✅ pronunciation
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                    ✅ Free
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-300">
+                    Not guaranteed to resolve derived words (e.g., inserting
+                    might fail).
+                  </td>
+                </tr>
+                <tr>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                    Lingua Robot API
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-300">
+                    ✅ Full morphological data, ✅ definitions, ✅ examples, ✅
+                    pronunciation
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                    ✅ Free (limited)
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-300">
+                    Structured around parts of speech and word forms.
+                  </td>
+                </tr>
+                <tr>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 dark:text-white">
+                    Wordnik
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-300">
+                    ✅ Definitions, ✅ examples, ✅ related words, ✅ audio
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-300">
+                    ✅ Free (limited)
+                  </td>
+                  <td className="px-6 py-4 text-sm text-gray-500 dark:text-gray-300">
+                    Large dictionary DB, but less curated quality.
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* API Results Comparison */}
+        <div className="mb-8">
+          <h2 className="text-2xl font-semibold text-gray-800 dark:text-white mb-4">
+            API Results Comparison
+          </h2>
+
+          {/* WordsAPI Results */}
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-3">
+              WordsAPI Results
+            </h3>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+              <div className="bg-gray-100 dark:bg-gray-900 rounded-lg p-4 overflow-x-auto">
+                <pre className="text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap">
+                  {word?.details
+                    ? JSON.stringify(word.details, null, 2)
+                    : "No data available"}
+                </pre>
+              </div>
+            </div>
+          </div>
+
+          {/* Free Dictionary API Results */}
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-3">
+              Free Dictionary API Results
+            </h3>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+              <div className="bg-gray-100 dark:bg-gray-900 rounded-lg p-4 overflow-x-auto">
+                {loadingApis.freeDictionary ? (
+                  <div className="flex items-center justify-center py-4">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                    <span className="ml-2 text-sm text-gray-600 dark:text-gray-400">
+                      Loading...
+                    </span>
+                  </div>
+                ) : (
+                  <pre className="text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap">
+                    {apiResults.freeDictionary.data
+                      ? JSON.stringify(apiResults.freeDictionary.data, null, 2)
+                      : "No data available"}
+                  </pre>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Datamuse Results */}
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-3">
+              Datamuse Results
+            </h3>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+              <div className="bg-gray-100 dark:bg-gray-900 rounded-lg p-4 overflow-x-auto">
+                {loadingApis.datamuse ? (
+                  <div className="flex items-center justify-center py-4">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                    <span className="ml-2 text-sm text-gray-600 dark:text-gray-400">
+                      Loading...
+                    </span>
+                  </div>
+                ) : (
+                  <pre className="text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap">
+                    {apiResults.datamuse.data
+                      ? JSON.stringify(apiResults.datamuse.data, null, 2)
+                      : "No data available"}
+                  </pre>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Oxford Dictionaries API Results */}
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-3">
+              Oxford Dictionaries API Results
+            </h3>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+              <div className="bg-gray-100 dark:bg-gray-900 rounded-lg p-4 overflow-x-auto">
+                {loadingApis.oxford ? (
+                  <div className="flex items-center justify-center py-4">
+                    <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600"></div>
+                    <span className="ml-2 text-sm text-gray-600 dark:text-gray-400">
+                      Loading...
+                    </span>
+                  </div>
+                ) : (
+                  <pre className="text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap">
+                    {apiResults.oxford.data
+                      ? JSON.stringify(apiResults.oxford.data, null, 2)
+                      : apiResults.oxford.error || "No data available"}
+                  </pre>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Lingua Robot API Results */}
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-3">
+              Lingua Robot API Results
+            </h3>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+              <div className="bg-gray-100 dark:bg-gray-900 rounded-lg p-4 overflow-x-auto">
+                <pre className="text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap">
+                  {apiResults.linguaRobot.error ||
+                    "API key required. To use this API, you need to sign up at https://rapidapi.com/lingua-robot-lingua-robot-default/api/lingua-robot/"}
+                </pre>
+              </div>
+            </div>
+          </div>
+
+          {/* Wordnik Results */}
+          <div className="mb-6">
+            <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-300 mb-3">
+              Wordnik Results
+            </h3>
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+              <div className="bg-gray-100 dark:bg-gray-900 rounded-lg p-4 overflow-x-auto">
+                <pre className="text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap">
+                  {apiResults.wordnik.error ||
+                    "API key required. To use this API, you need to sign up at https://developer.wordnik.com/"}
+                </pre>
+              </div>
+            </div>
           </div>
         </div>
 

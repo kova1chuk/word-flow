@@ -1,5 +1,5 @@
 import { useRef } from "react";
-import type { Timestamp } from "firebase/firestore";
+import type { Word } from "@/types";
 
 const STATUS_OPTIONS = [
   {
@@ -18,26 +18,6 @@ const STATUS_OPTIONS = [
     color: "bg-blue-600 text-white border-blue-600",
   },
 ];
-
-interface Phonetic {
-  text: string;
-  audio: string;
-}
-
-interface WordDetails {
-  phonetics: Phonetic[];
-}
-
-type Word = {
-  id: string;
-  word: string;
-  definition: string;
-  translation?: string;
-  status?: string;
-  createdAt: Timestamp;
-  example?: string;
-  details?: WordDetails;
-};
 
 export default function WordTrainingCard({
   word,

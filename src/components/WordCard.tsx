@@ -1,5 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
-import type { Timestamp } from "firebase/firestore";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import { db } from "@/lib/firebase";
 import {
   collectionGroup,
@@ -9,6 +8,7 @@ import {
   getDoc,
 } from "firebase/firestore";
 import Link from "next/link";
+import type { Word } from "@/types";
 
 const STATUS_OPTIONS = [
   {
@@ -27,27 +27,6 @@ const STATUS_OPTIONS = [
     color: "bg-blue-600 text-white border-blue-600",
   },
 ];
-
-interface Phonetic {
-  text: string;
-  audio: string;
-}
-
-interface WordDetails {
-  phonetics: Phonetic[];
-  // meanings can be added later if needed for card view
-}
-
-type Word = {
-  id: string;
-  word: string;
-  definition: string;
-  translation?: string;
-  status?: string;
-  createdAt: Timestamp;
-  example?: string;
-  details?: WordDetails;
-};
 
 interface Sentence {
   id: string;
@@ -74,18 +53,7 @@ export default function WordCard({
   const [loadingExamples, setLoadingExamples] = useState(false);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  useEffect(() => {
-    fetchExamples();
-  }, [word.word]);
-
-  const playAudio = (audioUrl: string) => {
-    if (audioRef.current) {
-      audioRef.current.src = audioUrl;
-      audioRef.current.play();
-    }
-  };
-
-  const fetchExamples = async () => {
+  const fetchExamples = useCallback(async () => {
     try {
       setLoadingExamples(true);
       console.log(`Fetching examples for word: "${word.word}"`);
@@ -148,6 +116,17 @@ export default function WordCard({
       console.error("Error fetching examples:", error);
     } finally {
       setLoadingExamples(false);
+    }
+  }, [word.word]);
+
+  useEffect(() => {
+    fetchExamples();
+  }, [fetchExamples]);
+
+  const playAudio = (audioUrl: string) => {
+    if (audioRef.current) {
+      audioRef.current.src = audioUrl;
+      audioRef.current.play();
     }
   };
 

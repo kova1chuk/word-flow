@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { db } from "@/lib/firebase";
 import {
@@ -82,38 +82,7 @@ export default function AnalyzePage() {
     { value: "to_learn", label: "To Learn", color: "bg-blue-600" },
   ];
 
-  useEffect(() => {
-    if (!loading && !user) {
-      router.push("/signin");
-      return;
-    }
-
-    if (user) {
-      fetchUserWords();
-    }
-  }, [user, loading, router]);
-
-  // Close tooltip on outside click
-  useEffect(() => {
-    function handleClickOutside(event: MouseEvent) {
-      if (
-        tooltipRef.current &&
-        !tooltipRef.current.contains(event.target as Node)
-      ) {
-        setActiveTooltip(null);
-      }
-    }
-    if (activeTooltip !== null) {
-      document.addEventListener("mousedown", handleClickOutside);
-    } else {
-      document.removeEventListener("mousedown", handleClickOutside);
-    }
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [activeTooltip]);
-
-  const fetchUserWords = async () => {
+  const fetchUserWords = useCallback(async () => {
     if (!user) return;
 
     try {
@@ -138,7 +107,38 @@ export default function AnalyzePage() {
       console.error("Error fetching user words:", error);
       setError("Failed to load your word collection");
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    if (!loading && !user) {
+      router.push("/signin");
+      return;
+    }
+
+    if (user) {
+      fetchUserWords();
+    }
+  }, [user, loading, router, fetchUserWords]);
+
+  // Close tooltip on outside click
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        tooltipRef.current &&
+        !tooltipRef.current.contains(event.target as Node)
+      ) {
+        setActiveTooltip(null);
+      }
+    }
+    if (activeTooltip !== null) {
+      document.addEventListener("mousedown", handleClickOutside);
+    } else {
+      document.removeEventListener("mousedown", handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, [activeTooltip]);
 
   const analyzeText = async () => {
     if (!text.trim()) {

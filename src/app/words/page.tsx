@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { db } from "@/lib/firebase";
 import {
@@ -14,29 +14,9 @@ import {
   Timestamp,
   updateDoc,
 } from "firebase/firestore";
-import { useRouter } from "next/navigation";
 import WordCard from "@/components/WordCard";
+import type { Word, WordDetails, Phonetic } from "@/types";
 import { config } from "@/lib/config";
-
-interface Phonetic {
-  text: string;
-  audio: string;
-}
-
-interface Meaning {
-  partOfSpeech: string;
-  definitions: {
-    definition: string;
-    example?: string;
-    synonyms?: string[];
-    antonyms?: string[];
-  }[];
-}
-
-interface WordDetails {
-  phonetics: Phonetic[];
-  meanings: Meaning[];
-}
 
 interface DictionaryApiResponse {
   phonetics: { text: string; audio: string }[];
@@ -51,20 +31,8 @@ interface DictionaryApiResponse {
   }[];
 }
 
-interface Word {
-  id: string;
-  word: string;
-  definition: string;
-  example?: string;
-  createdAt: Timestamp;
-  translation?: string;
-  status?: string;
-  details?: WordDetails;
-}
-
 export default function WordsPage() {
   const { user, loading } = useAuth();
-  const router = useRouter();
   const [words, setWords] = useState<Word[]>([]);
   const [loadingWords, setLoadingWords] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -74,12 +42,12 @@ export default function WordsPage() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [updating, setUpdating] = useState<string | null>(null);
-  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [statusFilter, setStatusFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(12);
 
   const STATUS_OPTIONS = [
-    { value: "all", label: "All Words" },
+    { value: "all", label: "All Statuses" },
     { value: "well_known", label: "Well Known" },
     { value: "want_repeat", label: "Want Repeat" },
     { value: "to_learn", label: "To Learn" },
@@ -88,46 +56,30 @@ export default function WordsPage() {
 
   const PAGE_SIZE_OPTIONS = [6, 12, 24, 48];
 
-  useEffect(() => {
-    if (!loading && !user) {
-      router.push("/signin");
-      return;
-    }
-
-    if (user) {
-      fetchWords();
-    }
-  }, [user, loading, router]);
-
-  const fetchWords = async () => {
+  const fetchWords = useCallback(async () => {
     if (!user) return;
-
+    setLoadingWords(true);
     try {
-      setLoadingWords(true);
-      const wordsRef = collection(db, "words");
-      const q = query(wordsRef, where("userId", "==", user.uid));
-
+      const q = query(collection(db, "words"), where("userId", "==", user.uid));
       const querySnapshot = await getDocs(q);
-      const wordsData: Word[] = [];
-
-      querySnapshot.forEach((doc) => {
-        wordsData.push({
-          id: doc.id,
-          ...doc.data(),
-        } as Word);
-      });
-
-      // Sort by createdAt in descending order (newest first)
-      wordsData.sort((a, b) => b.createdAt.toMillis() - a.createdAt.toMillis());
-
+      const wordsData = querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      })) as Word[];
       setWords(wordsData);
-    } catch (error) {
-      console.error("Error fetching words:", error);
+    } catch (err) {
+      console.error("Error fetching words:", err);
       setError("Failed to load words");
     } finally {
       setLoadingWords(false);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      fetchWords();
+    }
+  }, [user, fetchWords]);
 
   const handleAddWord = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -189,57 +141,7 @@ export default function WordsPage() {
     }
   };
 
-  const reloadTranslation = async (word: Word) => {
-    setUpdating(word.id);
-    try {
-      let translation = "";
-      console.log(`Reloading translation for word: "${word.word}"`);
-
-      // Using MyMemory API
-      const langPair = `en|uk`; // English to Ukrainian
-      const url = `${config.translationApi.baseUrl}?q=${encodeURIComponent(
-        word.word
-      )}&langpair=${langPair}`;
-
-      const res = await fetch(url);
-      console.log(`Translation API response status: ${res.status}`);
-
-      if (res.ok) {
-        const data = await res.json();
-        console.log(`Translation API response data:`, data);
-        if (data.responseData && data.responseData.translatedText) {
-          translation = data.responseData.translatedText;
-          console.log(`Found translation: "${translation}"`);
-        } else {
-          translation = "No translation found.";
-          console.log(`No translation found in API response.`);
-        }
-      } else {
-        translation = "No translation found.";
-        console.log(
-          `Translation API request failed with status: ${res.status}`
-        );
-      }
-
-      console.log(`Updating word document with translation: "${translation}"`);
-      await updateDoc(doc(db, "words", word.id), { translation });
-      setWords((prev) =>
-        prev.map((w) => (w.id === word.id ? { ...w, translation } : w))
-      );
-      console.log("Translation reload completed successfully");
-    } catch (error) {
-      console.error("Error reloading translation:", error);
-      setError(
-        `Failed to reload translation: ${
-          error instanceof Error ? error.message : "Unknown error"
-        }`
-      );
-    } finally {
-      setUpdating(null);
-    }
-  };
-
-  const reloadDefinition = async (word: Word) => {
+  const onReloadDefinition = async (word: Word) => {
     setUpdating(word.id);
     try {
       let definition = "";
@@ -297,11 +199,9 @@ export default function WordsPage() {
           delete dataToUpdate[key as keyof typeof dataToUpdate]
       );
 
-      await updateDoc(doc(db, "words", word.id), dataToUpdate);
-
-      setWords((prev) =>
-        prev.map((w) => (w.id === word.id ? { ...w, ...dataToUpdate } : w))
-      );
+      const wordRef = doc(db, "words", word.id);
+      await updateDoc(wordRef, dataToUpdate);
+      fetchWords();
       console.log("Definition reload completed successfully");
     } catch (error) {
       console.error("Error reloading definition:", error);
@@ -315,12 +215,63 @@ export default function WordsPage() {
     }
   };
 
-  const handleStatusChange = async (id: string, status: string) => {
+  const onReloadTranslation = async (word: Word) => {
+    setUpdating(word.id);
+    try {
+      let translation = "";
+      console.log(`Reloading translation for word: "${word.word}"`);
+
+      // Using MyMemory API
+      const langPair = `en|uk`; // English to Ukrainian
+      const url = `${config.translationApi.baseUrl}?q=${encodeURIComponent(
+        word.word
+      )}&langpair=${langPair}`;
+
+      const res = await fetch(url);
+      console.log(`Translation API response status: ${res.status}`);
+
+      if (res.ok) {
+        const data = await res.json();
+        console.log(`Translation API response data:`, data);
+        if (data.responseData && data.responseData.translatedText) {
+          translation = data.responseData.translatedText;
+          console.log(`Found translation: "${translation}"`);
+        } else {
+          translation = "No translation found.";
+          console.log(`No translation found in API response.`);
+        }
+      } else {
+        translation = "No translation found.";
+        console.log(
+          `Translation API request failed with status: ${res.status}`
+        );
+      }
+
+      console.log(`Updating word document with translation: "${translation}"`);
+      const wordRef = doc(db, "words", word.id);
+      await updateDoc(wordRef, { translation });
+      fetchWords();
+      console.log("Translation reload completed successfully");
+    } catch (error) {
+      console.error("Error reloading translation:", error);
+      setError(
+        `Failed to reload translation: ${
+          error instanceof Error ? error.message : "Unknown error"
+        }`
+      );
+    } finally {
+      setUpdating(null);
+    }
+  };
+
+  const onStatusChange = async (id: string, status: string) => {
     setUpdating(id);
     try {
-      await updateDoc(doc(db, "words", id), { status });
-      setWords((prev) => prev.map((w) => (w.id === id ? { ...w, status } : w)));
-    } catch {
+      const wordRef = doc(db, "words", id);
+      await updateDoc(wordRef, { status });
+      fetchWords();
+    } catch (error) {
+      console.error("Error updating status:", error);
       setError("Failed to update status");
     } finally {
       setUpdating(null);
@@ -523,10 +474,10 @@ export default function WordsPage() {
                 <WordCard
                   key={word.id}
                   word={word}
-                  onReloadDefinition={reloadDefinition}
-                  onReloadTranslation={reloadTranslation}
+                  onReloadDefinition={onReloadDefinition}
+                  onReloadTranslation={onReloadTranslation}
                   onDelete={handleDeleteWord}
-                  onStatusChange={handleStatusChange}
+                  onStatusChange={onStatusChange}
                   updating={updating}
                 />
               ))}

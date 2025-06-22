@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { db } from "@/lib/firebase";
 import {
@@ -32,13 +32,7 @@ export default function AnalysesPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  useEffect(() => {
-    if (user) {
-      fetchAnalyses();
-    }
-  }, [user]);
-
-  const fetchAnalyses = async () => {
+  const fetchAnalyses = useCallback(async () => {
     if (!user) return;
 
     try {
@@ -67,7 +61,13 @@ export default function AnalysesPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      fetchAnalyses();
+    }
+  }, [user, fetchAnalyses]);
 
   if (loading) {
     return (

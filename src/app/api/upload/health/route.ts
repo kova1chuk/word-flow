@@ -26,7 +26,7 @@ export async function GET() {
         status: "healthy",
         serviceUrl: externalServiceUrl,
         responseStatus: response.status,
-        isCustomService: config.isCustomUploadService,
+        isCustomService: config.isCustomBackend,
       });
     } catch (fetchError) {
       clearTimeout(timeoutId);
@@ -37,7 +37,7 @@ export async function GET() {
           serviceUrl: externalServiceUrl,
           error:
             fetchError instanceof Error ? fetchError.message : "Unknown error",
-          isCustomService: config.isCustomUploadService,
+          isCustomService: config.isCustomBackend,
         },
         { status: 503 }
       );

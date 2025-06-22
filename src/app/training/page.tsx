@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { db } from "@/lib/firebase";
 import {
@@ -8,32 +8,12 @@ import {
   query,
   where,
   getDocs,
-  updateDoc,
   doc,
-  Timestamp,
+  updateDoc,
 } from "firebase/firestore";
 import WordTrainingCard from "@/components/WordTrainingCard";
+import type { Word, WordDetails, Phonetic } from "@/types";
 import { config } from "@/lib/config";
-
-interface Phonetic {
-  text: string;
-  audio: string;
-}
-
-interface Meaning {
-  partOfSpeech: string;
-  definitions: {
-    definition: string;
-    example?: string;
-    synonyms?: string[];
-    antonyms?: string[];
-  }[];
-}
-
-interface WordDetails {
-  phonetics: Phonetic[];
-  meanings: Meaning[];
-}
 
 interface DictionaryApiResponse {
   phonetics: { text: string; audio: string }[];
@@ -46,16 +26,6 @@ interface DictionaryApiResponse {
       antonyms?: string[];
     }[];
   }[];
-}
-
-interface Word {
-  id: string;
-  word: string;
-  definition: string;
-  translation?: string;
-  status?: string;
-  createdAt: Timestamp;
-  details?: WordDetails;
 }
 
 export default function TrainingPage() {
@@ -80,37 +50,50 @@ export default function TrainingPage() {
     { value: "unset", label: "No Status", color: "bg-gray-500" },
   ];
 
-  useEffect(() => {
-    if (!loading && !user) {
-      return;
-    }
-    if (user) {
-      fetchWords();
-    }
-  }, [user, loading]);
-
-  const fetchWords = async () => {
+  const fetchWords = useCallback(async () => {
     if (!user) return;
-    setLoadingWords(true);
     try {
-      const wordsRef = collection(db, "words");
-      const q = query(wordsRef, where("userId", "==", user.uid));
+      setLoadingWords(true);
+      setError("");
+      const q = query(collection(db, "words"), where("userId", "==", user.uid));
       const querySnapshot = await getDocs(q);
-      const wordsData: Word[] = [];
-      querySnapshot.forEach((doc) => {
-        wordsData.push({
-          id: doc.id,
-          ...doc.data(),
-        } as Word);
+      const userWords = querySnapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      })) as Word[];
+
+      // Sort words: 'to_learn' first, then 'want_repeat', then by creation date
+      userWords.sort((a, b) => {
+        const statusOrder: Record<string, number> = {
+          to_learn: 1,
+          want_repeat: 2,
+        };
+        const statusA = statusOrder[a.status || "unset"] || 3;
+        const statusB = statusOrder[b.status || "unset"] || 3;
+
+        if (statusA !== statusB) {
+          return statusA - statusB;
+        }
+
+        const dateA = a.createdAt?.toDate?.() || new Date(0);
+        const dateB = b.createdAt?.toDate?.() || new Date(0);
+        return dateB.getTime() - dateA.getTime();
       });
-      setWords(wordsData);
-      setCurrent(0);
-    } catch {
-      setError("Failed to load words");
+
+      setWords(userWords);
+    } catch (err) {
+      console.error("Error fetching words:", err);
+      setError("Failed to fetch words. Please try again.");
     } finally {
       setLoadingWords(false);
     }
-  };
+  }, [user]);
+
+  useEffect(() => {
+    if (user) {
+      fetchWords();
+    }
+  }, [user, fetchWords]);
 
   const handleStatusChange = async (wordId: string, status: string) => {
     setUpdating(wordId);

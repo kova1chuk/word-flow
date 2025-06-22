@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { db } from "@/lib/firebase";
 import {
@@ -13,33 +13,13 @@ import {
   getDoc,
   doc,
   updateDoc,
-  Timestamp,
 } from "firebase/firestore";
 import { useParams } from "next/navigation";
 import Link from "next/link";
 import { config } from "@/lib/config";
+import type { Word, WordDetails, Phonetic } from "@/types";
 
 // --- Data Interfaces ---
-interface Phonetic {
-  text: string;
-  audio: string;
-}
-
-interface Meaning {
-  partOfSpeech: string;
-  definitions: {
-    definition: string;
-    example?: string;
-    synonyms?: string[];
-    antonyms?: string[];
-  }[];
-}
-
-interface WordDetails {
-  phonetics: Phonetic[];
-  meanings: Meaning[];
-}
-
 interface DictionaryApiResponse {
   phonetics: { text: string; audio: string }[];
   meanings: {
@@ -64,27 +44,17 @@ interface Sentence {
   analysisTitle: string;
 }
 
-interface Word {
-  id: string;
-  word: string;
-  definition: string;
-  translation?: string;
-  status?: string;
-  createdAt: Timestamp;
-  details?: WordDetails;
-}
-
 // --- Component ---
 export default function WordPage() {
   const { user } = useAuth();
   const params = useParams();
-  const wordParam = params.word as string;
+  const wordParam = Array.isArray(params.word) ? params.word[0] : params.word;
 
   const [word, setWord] = useState<Word | null>(null);
   const [sentences, setSentences] = useState<Sentence[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingSentences, setLoadingSentences] = useState(true);
-  const [error, setError] = useState("");
+  const [error, setError] = useState<string | null>(null);
   const [updating, setUpdating] = useState<"definition" | "translation" | null>(
     null
   );
@@ -96,37 +66,104 @@ export default function WordPage() {
   >(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
 
-  useEffect(() => {
-    if (user && wordParam) {
-      fetchWord();
-      fetchWordExamples();
-    }
-  }, [user, wordParam]);
-
-  const fetchWord = async () => {
-    if (!user) return;
+  const fetchWord = useCallback(async () => {
+    if (!user || !wordParam) return;
+    setLoading(true);
     try {
-      setLoading(true);
-      const wordsRef = collection(db, "words");
       const q = query(
-        wordsRef,
+        collection(db, "words"),
         where("userId", "==", user.uid),
         where("word", "==", wordParam.toLowerCase())
       );
       const querySnapshot = await getDocs(q);
+
       if (!querySnapshot.empty) {
         const doc = querySnapshot.docs[0];
         setWord({ id: doc.id, ...doc.data() } as Word);
       } else {
-        setError("Word not found in your collection");
+        setError("Word not found or you do not have permission to view it.");
       }
-    } catch (error) {
-      console.error("Error fetching word:", error);
-      setError("Failed to load word information");
+    } catch (err) {
+      console.error("Error fetching word:", err);
+      setError("Failed to load word data.");
     } finally {
       setLoading(false);
     }
-  };
+  }, [user, wordParam]);
+
+  const fetchWordExamples = useCallback(async () => {
+    if (!word || !wordParam) return;
+    setLoadingSentences(true);
+    try {
+      // Get all sentences from all analyses
+      const sentencesQuery = query(
+        collectionGroup(db, "sentences"),
+        limit(1000) // Get more sentences to find examples
+      );
+
+      const querySnapshot = await getDocs(sentencesQuery);
+      const allSentences: Sentence[] = [];
+
+      // Process sentences and find those containing the word
+      for (const doc of querySnapshot.docs) {
+        const data = doc.data();
+        const sentenceText = data.text.toLowerCase();
+        const wordLower = wordParam.toLowerCase();
+
+        // Check if sentence contains the word (more flexible search)
+        if (sentenceText.includes(wordLower)) {
+          // Get the analysis title
+          const analysisRef = doc.ref.parent.parent;
+          let analysisTitle = "Unknown Analysis";
+          if (analysisRef) {
+            try {
+              const analysisDoc = await getDoc(analysisRef);
+              if (analysisDoc.exists()) {
+                analysisTitle = analysisDoc.data().title || "Unknown Analysis";
+              }
+            } catch (error) {
+              console.error("Error getting analysis title:", error);
+            }
+          }
+
+          allSentences.push({
+            id: doc.id,
+            text: data.text,
+            index: data.index,
+            wordCount: data.wordCount,
+            chapter: data.chapter,
+            hasUnknownWords: data.hasUnknownWords,
+            analysisId: doc.ref.parent.parent?.id || "",
+            analysisTitle: analysisTitle,
+          });
+        }
+      }
+
+      // Sort by analysis title and limit to 20 examples
+      const sortedSentences = allSentences
+        .sort((a, b) => a.analysisTitle.localeCompare(b.analysisTitle))
+        .slice(0, 20);
+
+      setSentences(sortedSentences);
+    } catch (error) {
+      console.error("Error fetching word examples:", error);
+      setError("Failed to load word examples");
+    } finally {
+      setLoadingSentences(false);
+    }
+  }, [word, wordParam]);
+
+  useEffect(() => {
+    if (user && wordParam) {
+      fetchWord();
+    }
+  }, [user, wordParam, fetchWord]);
+
+  useEffect(() => {
+    if (word) {
+      fetchWordExamples();
+    }
+  }, [word, fetchWordExamples]);
 
   const reloadDefinition = async () => {
     if (!word) return;
@@ -236,70 +273,6 @@ export default function WordPage() {
     if (audioRef.current) {
       audioRef.current.src = audioUrl;
       audioRef.current.play();
-    }
-  };
-
-  const fetchWordExamples = async () => {
-    if (!user) return;
-
-    try {
-      setLoadingSentences(true);
-
-      // Get all sentences from all analyses
-      const sentencesQuery = query(
-        collectionGroup(db, "sentences"),
-        limit(1000) // Get more sentences to find examples
-      );
-
-      const querySnapshot = await getDocs(sentencesQuery);
-      const allSentences: Sentence[] = [];
-
-      // Process sentences and find those containing the word
-      for (const doc of querySnapshot.docs) {
-        const data = doc.data();
-        const sentenceText = data.text.toLowerCase();
-        const wordLower = wordParam.toLowerCase();
-
-        // Check if sentence contains the word (more flexible search)
-        if (sentenceText.includes(wordLower)) {
-          // Get the analysis title
-          const analysisRef = doc.ref.parent.parent;
-          let analysisTitle = "Unknown Analysis";
-          if (analysisRef) {
-            try {
-              const analysisDoc = await getDoc(analysisRef);
-              if (analysisDoc.exists()) {
-                analysisTitle = analysisDoc.data().title || "Unknown Analysis";
-              }
-            } catch (error) {
-              console.error("Error getting analysis title:", error);
-            }
-          }
-
-          allSentences.push({
-            id: doc.id,
-            text: data.text,
-            index: data.index,
-            wordCount: data.wordCount,
-            chapter: data.chapter,
-            hasUnknownWords: data.hasUnknownWords,
-            analysisId: doc.ref.parent.parent?.id || "",
-            analysisTitle: analysisTitle,
-          });
-        }
-      }
-
-      // Sort by analysis title and limit to 20 examples
-      const sortedSentences = allSentences
-        .sort((a, b) => a.analysisTitle.localeCompare(b.analysisTitle))
-        .slice(0, 20);
-
-      setSentences(sortedSentences);
-    } catch (error) {
-      console.error("Error fetching word examples:", error);
-      setError("Failed to load word examples");
-    } finally {
-      setLoadingSentences(false);
     }
   };
 
@@ -499,7 +472,10 @@ export default function WordPage() {
                   <p
                     className="text-gray-900 leading-relaxed mb-2"
                     dangerouslySetInnerHTML={{
-                      __html: highlightWord(sentence.text, wordParam),
+                      __html: highlightWord(
+                        sentence.text,
+                        wordParam || (word ? word.word : "")
+                      ),
                     }}
                   />
 

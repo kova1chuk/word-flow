@@ -13,6 +13,7 @@ import {
   Timestamp,
 } from "firebase/firestore";
 import Link from "next/link";
+import { useParams } from "next/navigation";
 import {
   AutoSizer,
   List,
@@ -40,13 +41,10 @@ interface Sentence {
   index: number;
 }
 
-export default function SingleAnalysisPage({
-  params,
-}: {
-  params: { analysisId: string };
-}) {
+export default function SingleAnalysisPage() {
   const { user } = useAuth();
-  const { analysisId } = params;
+  const params = useParams();
+  const analysisId = params.analysisId as string;
 
   const [analysis, setAnalysis] = useState<Analysis | null>(null);
   const [sentences, setSentences] = useState<Sentence[]>([]);

@@ -267,7 +267,7 @@ export default function AnalyzePage() {
         </div>
 
         {/* Analysis Results */}
-        {analysisResult && (
+        {analysisResult && analysisResult.summary && (
           <div className="mt-8 bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
               Analysis Results

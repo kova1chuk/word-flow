@@ -309,34 +309,13 @@ export default function WordsPage() {
           </div>
         )}
 
-        <div className="mb-6 flex justify-between items-center">
+        <div className="mb-6">
           <button
             onClick={() => setShowAddForm(!showAddForm)}
             className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
           >
             {showAddForm ? "Cancel" : "+ Add New Word"}
           </button>
-
-          <div className="flex items-center gap-2">
-            <span className="text-sm font-medium text-gray-700">
-              Filter by status:
-            </span>
-            <div className="flex gap-1">
-              {STATUS_OPTIONS.map((option) => (
-                <button
-                  key={option.value}
-                  onClick={() => setStatusFilter(option.value)}
-                  className={`px-3 py-1 rounded-md text-sm font-medium transition-colors ${
-                    statusFilter === option.value
-                      ? "bg-blue-600 text-white"
-                      : "bg-gray-200 text-gray-700 hover:bg-gray-300"
-                  }`}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
-          </div>
         </div>
 
         {showAddForm && (

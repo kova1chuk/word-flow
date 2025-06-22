@@ -197,17 +197,111 @@ export default function WordPage() {
     }
   }, [word, fetchWordExamples]);
 
+  const fetchFreeDictionaryApi = useCallback(async () => {
+    if (!word?.word) return;
+    setLoadingApis((prev) => ({ ...prev, freeDictionary: true }));
+    try {
+      const response = await fetch(
+        `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(
+          word.word
+        )}`
+      );
+      if (response.ok) {
+        const data = await response.json();
+        setApiResults((prev) => ({ ...prev, freeDictionary: { data } }));
+      } else {
+        setApiResults((prev) => ({
+          ...prev,
+          freeDictionary: {
+            error: `HTTP ${response.status}: ${response.statusText}`,
+          },
+        }));
+      }
+    } catch (error) {
+      setApiResults((prev) => ({
+        ...prev,
+        freeDictionary: {
+          error: error instanceof Error ? error.message : "Unknown error",
+        },
+      }));
+    } finally {
+      setLoadingApis((prev) => ({ ...prev, freeDictionary: false }));
+    }
+  }, [word?.word]);
+
+  const fetchDatamuseApi = useCallback(async () => {
+    if (!word?.word) return;
+    setLoadingApis((prev) => ({ ...prev, datamuse: true }));
+    try {
+      const response = await fetch(
+        `https://api.datamuse.com/words?rel_syn=${encodeURIComponent(
+          word.word
+        )}&max=10`
+      );
+      if (response.ok) {
+        const data = await response.json();
+        setApiResults((prev) => ({ ...prev, datamuse: { data } }));
+      } else {
+        setApiResults((prev) => ({
+          ...prev,
+          datamuse: {
+            error: `HTTP ${response.status}: ${response.statusText}`,
+          },
+        }));
+      }
+    } catch (error) {
+      setApiResults((prev) => ({
+        ...prev,
+        datamuse: {
+          error: error instanceof Error ? error.message : "Unknown error",
+        },
+      }));
+    } finally {
+      setLoadingApis((prev) => ({ ...prev, datamuse: false }));
+    }
+  }, [word?.word]);
+
+  const fetchOxfordApi = useCallback(async () => {
+    if (!word?.word) return;
+    setLoadingApis((prev) => ({ ...prev, oxford: true }));
+    try {
+      const response = await fetch(
+        `/api/oxford?word=${encodeURIComponent(word.word)}`
+      );
+      if (response.ok) {
+        const data = await response.json();
+        setApiResults((prev) => ({ ...prev, oxford: { data } }));
+      } else {
+        const errorData = await response.json();
+        setApiResults((prev) => ({
+          ...prev,
+          oxford: {
+            error:
+              errorData.message ||
+              `HTTP ${response.status}: ${response.statusText}`,
+          },
+        }));
+      }
+    } catch (error) {
+      setApiResults((prev) => ({
+        ...prev,
+        oxford: {
+          error: error instanceof Error ? error.message : "Unknown error",
+        },
+      }));
+    } finally {
+      setLoadingApis((prev) => ({ ...prev, oxford: false }));
+    }
+  }, [word?.word]);
+
   useEffect(() => {
     if (word?.word) {
       // Fetch data from free APIs
       fetchFreeDictionaryApi();
       fetchDatamuseApi();
       fetchOxfordApi();
-      // Note: Oxford, Lingua Robot, and Wordnik require API keys
-      // fetchLinguaRobotApi();
-      // fetchWordnikApi();
     }
-  }, [word?.word]);
+  }, [word?.word, fetchFreeDictionaryApi, fetchDatamuseApi, fetchOxfordApi]);
 
   const reloadDefinition = async () => {
     if (!word) return;
@@ -317,168 +411,6 @@ export default function WordPage() {
     if (audioRef.current) {
       audioRef.current.src = audioUrl;
       audioRef.current.play();
-    }
-  };
-
-  const fetchFreeDictionaryApi = async () => {
-    if (!word?.word) return;
-    setLoadingApis((prev) => ({ ...prev, freeDictionary: true }));
-    try {
-      const response = await fetch(
-        `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(
-          word.word
-        )}`
-      );
-      if (response.ok) {
-        const data = await response.json();
-        setApiResults((prev) => ({ ...prev, freeDictionary: { data } }));
-      } else {
-        setApiResults((prev) => ({
-          ...prev,
-          freeDictionary: {
-            error: `HTTP ${response.status}: ${response.statusText}`,
-          },
-        }));
-      }
-    } catch (error) {
-      setApiResults((prev) => ({
-        ...prev,
-        freeDictionary: {
-          error: error instanceof Error ? error.message : "Unknown error",
-        },
-      }));
-    } finally {
-      setLoadingApis((prev) => ({ ...prev, freeDictionary: false }));
-    }
-  };
-
-  const fetchDatamuseApi = async () => {
-    if (!word?.word) return;
-    setLoadingApis((prev) => ({ ...prev, datamuse: true }));
-    try {
-      const response = await fetch(
-        `https://api.datamuse.com/words?rel_syn=${encodeURIComponent(
-          word.word
-        )}&max=10`
-      );
-      if (response.ok) {
-        const data = await response.json();
-        setApiResults((prev) => ({ ...prev, datamuse: { data } }));
-      } else {
-        setApiResults((prev) => ({
-          ...prev,
-          datamuse: {
-            error: `HTTP ${response.status}: ${response.statusText}`,
-          },
-        }));
-      }
-    } catch (error) {
-      setApiResults((prev) => ({
-        ...prev,
-        datamuse: {
-          error: error instanceof Error ? error.message : "Unknown error",
-        },
-      }));
-    } finally {
-      setLoadingApis((prev) => ({ ...prev, datamuse: false }));
-    }
-  };
-
-  const fetchOxfordApi = async () => {
-    if (!word?.word) return;
-    setLoadingApis((prev) => ({ ...prev, oxford: true }));
-    try {
-      const response = await fetch(
-        `/api/oxford?word=${encodeURIComponent(word.word)}`
-      );
-      if (response.ok) {
-        const data = await response.json();
-        setApiResults((prev) => ({ ...prev, oxford: { data } }));
-      } else {
-        const errorData = await response.json();
-        setApiResults((prev) => ({
-          ...prev,
-          oxford: {
-            error:
-              errorData.error ||
-              `HTTP ${response.status}: ${response.statusText}`,
-          },
-        }));
-      }
-    } catch (error) {
-      setApiResults((prev) => ({
-        ...prev,
-        oxford: {
-          error: error instanceof Error ? error.message : "Unknown error",
-        },
-      }));
-    } finally {
-      setLoadingApis((prev) => ({ ...prev, oxford: false }));
-    }
-  };
-
-  const fetchLinguaRobotApi = async () => {
-    if (!word?.word) return;
-    setLoadingApis((prev) => ({ ...prev, linguaRobot: true }));
-    try {
-      const response = await fetch(
-        `https://lingua-robot.p.rapidapi.com/language/v1/entries/en/${encodeURIComponent(
-          word.word
-        )}`
-      );
-      if (response.ok) {
-        const data = await response.json();
-        setApiResults((prev) => ({ ...prev, linguaRobot: { data } }));
-      } else {
-        setApiResults((prev) => ({
-          ...prev,
-          linguaRobot: {
-            error: `HTTP ${response.status}: ${response.statusText} (API key required)`,
-          },
-        }));
-      }
-    } catch (error) {
-      setApiResults((prev) => ({
-        ...prev,
-        linguaRobot: {
-          error: error instanceof Error ? error.message : "Unknown error",
-        },
-      }));
-    } finally {
-      setLoadingApis((prev) => ({ ...prev, linguaRobot: false }));
-    }
-  };
-
-  const fetchWordnikApi = async () => {
-    if (!word?.word) return;
-    setLoadingApis((prev) => ({ ...prev, wordnik: true }));
-    try {
-      // Note: Wordnik API requires an API key, so this will likely fail
-      const response = await fetch(
-        `https://api.wordnik.com/v4/word.json/${encodeURIComponent(
-          word.word
-        )}/definitions`
-      );
-      if (response.ok) {
-        const data = await response.json();
-        setApiResults((prev) => ({ ...prev, wordnik: { data } }));
-      } else {
-        setApiResults((prev) => ({
-          ...prev,
-          wordnik: {
-            error: `HTTP ${response.status}: ${response.statusText} (API key required)`,
-          },
-        }));
-      }
-    } catch (error) {
-      setApiResults((prev) => ({
-        ...prev,
-        wordnik: {
-          error: error instanceof Error ? error.message : "Unknown error",
-        },
-      }));
-    } finally {
-      setLoadingApis((prev) => ({ ...prev, wordnik: false }));
     }
   };
 

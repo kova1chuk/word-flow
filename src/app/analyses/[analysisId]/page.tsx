@@ -83,6 +83,8 @@ export default function SingleAnalysisPage() {
   const [selectedWord, setSelectedWord] = useState<WordInfo | null>(null);
   const [wordInfoLoading, setWordInfoLoading] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [reloadingDefinition, setReloadingDefinition] = useState(false);
+  const [reloadingTranslation, setReloadingTranslation] = useState(false);
 
   const listRef = useRef<List | null>(null);
 
@@ -249,20 +251,32 @@ export default function SingleAnalysisPage() {
         freeDictResponse.status === "fulfilled" &&
         freeDictResponse.value.ok
       ) {
-        const freeDictData = await freeDictResponse.value.json();
-        if (freeDictData && freeDictData.length > 0) {
-          definition =
-            freeDictData[0].meanings?.[0]?.definitions?.[0]?.definition || "";
-          details = { freeDictionary: freeDictData };
+        try {
+          const freeDictData = await freeDictResponse.value.json();
+          if (freeDictData && freeDictData.length > 0) {
+            definition =
+              freeDictData[0].meanings?.[0]?.definitions?.[0]?.definition || "";
+            details = { freeDictionary: freeDictData };
+          }
+        } catch (error) {
+          console.error("Error parsing Free Dictionary API response:", error);
         }
+      } else if (freeDictResponse.status === "fulfilled") {
+        console.log(
+          `Free Dictionary API returned ${freeDictResponse.value.status} for word "${word}"`
+        );
       }
 
       if (
         datamuseResponse.status === "fulfilled" &&
         datamuseResponse.value.ok
       ) {
-        const datamuseData = await datamuseResponse.value.json();
-        details = { ...details, datamuse: datamuseData };
+        try {
+          const datamuseData = await datamuseResponse.value.json();
+          details = { ...details, datamuse: datamuseData };
+        } catch (error) {
+          console.error("Error parsing Datamuse API response:", error);
+        }
       }
 
       // Try to get translation
@@ -280,15 +294,122 @@ export default function SingleAnalysisPage() {
 
       setSelectedWord({
         word,
-        definition,
+        definition: definition || "No definition found",
         translation,
         details,
       });
     } catch (error) {
       console.error("Error fetching word info:", error);
-      setSelectedWord({ word, definition: "Failed to load definition" });
+      setSelectedWord({
+        word,
+        definition: "Failed to load definition",
+        details: {
+          error: error instanceof Error ? error.message : "Unknown error",
+        },
+      });
     } finally {
       setWordInfoLoading(false);
+    }
+  };
+
+  const reloadDefinition = async () => {
+    if (!selectedWord) return;
+    setReloadingDefinition(true);
+
+    try {
+      const [freeDictResponse, datamuseResponse] = await Promise.allSettled([
+        fetch(
+          `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(
+            selectedWord.word
+          )}`
+        ),
+        fetch(
+          `https://api.datamuse.com/words?rel_syn=${encodeURIComponent(
+            selectedWord.word
+          )}&max=5`
+        ),
+      ]);
+
+      let definition = "";
+      let details = { ...selectedWord.details };
+
+      if (
+        freeDictResponse.status === "fulfilled" &&
+        freeDictResponse.value.ok
+      ) {
+        try {
+          const freeDictData = await freeDictResponse.value.json();
+          if (freeDictData && freeDictData.length > 0) {
+            definition =
+              freeDictData[0].meanings?.[0]?.definitions?.[0]?.definition || "";
+            details = { ...details, freeDictionary: freeDictData };
+          }
+        } catch (error) {
+          console.error("Error parsing Free Dictionary API response:", error);
+        }
+      } else if (freeDictResponse.status === "fulfilled") {
+        console.log(
+          `Free Dictionary API returned ${freeDictResponse.value.status} for word "${selectedWord.word}"`
+        );
+      }
+
+      if (
+        datamuseResponse.status === "fulfilled" &&
+        datamuseResponse.value.ok
+      ) {
+        try {
+          const datamuseData = await datamuseResponse.value.json();
+          details = { ...details, datamuse: datamuseData };
+        } catch (error) {
+          console.error("Error parsing Datamuse API response:", error);
+        }
+      }
+
+      setSelectedWord({
+        ...selectedWord,
+        definition: definition || "No definition found",
+        details,
+      });
+    } catch (error) {
+      console.error("Error reloading definition:", error);
+      setSelectedWord({
+        ...selectedWord,
+        definition: "Failed to reload definition",
+        details: {
+          ...selectedWord.details,
+          error: error instanceof Error ? error.message : "Unknown error",
+        },
+      });
+    } finally {
+      setReloadingDefinition(false);
+    }
+  };
+
+  const reloadTranslation = async () => {
+    if (!selectedWord) return;
+    setReloadingTranslation(true);
+
+    try {
+      const translationResponse = await fetch(
+        `${config.translationApi.baseUrl}?q=${encodeURIComponent(
+          selectedWord.word
+        )}&langpair=en|uk`
+      );
+      const translationData = await translationResponse.json();
+      const translation = translationData.responseData?.translatedText || "";
+
+      setSelectedWord({
+        ...selectedWord,
+        translation,
+      });
+    } catch (error) {
+      console.error("Error reloading translation:", error);
+      setSelectedWord({
+        ...selectedWord,
+        translation: "Failed to reload translation",
+      });
+    } finally {
+      setReloadingTranslation(false);
     }
   };
 
@@ -747,9 +868,18 @@ export default function SingleAnalysisPage() {
                 <div className="space-y-4">
                   {selectedWord.definition && (
                     <div>
-                      <h4 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2">
-                        Definition
-                      </h4>
+                      <div className="flex justify-between items-center mb-2">
+                        <h4 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
+                          Definition
+                        </h4>
+                        <button
+                          onClick={reloadDefinition}
+                          disabled={reloadingDefinition}
+                          className="text-sm bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {reloadingDefinition ? "Reloading..." : "Reload"}
+                        </button>
+                      </div>
                       <p className="text-gray-700 dark:text-gray-300">
                         {selectedWord.definition}
                       </p>
@@ -758,25 +888,21 @@ export default function SingleAnalysisPage() {
 
                   {selectedWord.translation && (
                     <div>
-                      <h4 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2">
-                        Translation
-                      </h4>
+                      <div className="flex justify-between items-center mb-2">
+                        <h4 className="text-lg font-semibold text-gray-800 dark:text-gray-200">
+                          Translation
+                        </h4>
+                        <button
+                          onClick={reloadTranslation}
+                          disabled={reloadingTranslation}
+                          className="text-sm bg-green-600 hover:bg-green-700 text-white px-3 py-1 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                          {reloadingTranslation ? "Reloading..." : "Reload"}
+                        </button>
+                      </div>
                       <p className="text-blue-600 dark:text-blue-400">
                         {selectedWord.translation}
                       </p>
-                    </div>
-                  )}
-
-                  {selectedWord.details && (
-                    <div>
-                      <h4 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-2">
-                        API Data
-                      </h4>
-                      <div className="bg-gray-100 dark:bg-gray-900 rounded-lg p-4 overflow-x-auto">
-                        <pre className="text-sm text-gray-800 dark:text-gray-200 whitespace-pre-wrap">
-                          {JSON.stringify(selectedWord.details, null, 2)}
-                        </pre>
-                      </div>
                     </div>
                   )}
                 </div>

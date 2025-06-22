@@ -16,7 +16,6 @@ import {
 } from "firebase/firestore";
 import { useRouter } from "next/navigation";
 import { FixedSizeList as List } from "react-window";
-import { config } from "@/lib/config";
 
 interface AnalysisResult {
   totalWords: number;
@@ -27,12 +26,6 @@ interface AnalysisResult {
   wordFrequency: { [key: string]: number };
   averageWordLength: number;
   readingTime: number;
-}
-
-interface TranslationResult {
-  word: string;
-  translation: string;
-  explanation: string;
 }
 
 interface SubtitleAnalysisResult {
@@ -65,8 +58,6 @@ export default function AnalyzePage() {
   const [addWordsProgress, setAddWordsProgress] = useState(0);
   const [error, setError] = useState("");
   const [analysisMode, setAnalysisMode] = useState<"text" | "file">("text");
-  const [translations, setTranslations] = useState<TranslationResult[]>([]);
-  const [loadingTranslations, setLoadingTranslations] = useState(false);
   const [activeTooltip, setActiveTooltip] = useState<number | null>(null);
   const tooltipRef = useRef<HTMLDivElement | null>(null);
   const [addingWord, setAddingWord] = useState<string | null>(null);
@@ -227,16 +218,11 @@ export default function AnalyzePage() {
       setError("");
 
       const wordsRef = collection(db, "words");
-      const explanationMap: Record<string, string> = {};
-      translations.forEach((t) => {
-        explanationMap[t.word.toLowerCase()] = t.explanation;
-      });
 
       const wordsToAdd = analysisResult.unknownWordList.map((word) => ({
         userId: user.uid,
         word: word.toLowerCase().trim(),
-        definition:
-          explanationMap[word.toLowerCase()] || "No definition available",
+        definition: "No definition available",
         example: "",
         status: "to_learn",
         createdAt: Timestamp.now(),
@@ -254,57 +240,10 @@ export default function AnalyzePage() {
       setText(text);
       analyzeText();
     } catch (error) {
-      console.error("Error adding words:", error);
-      setError("Failed to add words to your collection");
+      console.error("Error adding unknown words:", error);
+      setError("Failed to add words");
     } finally {
       setAddingWords(false);
-      setAddWordsProgress(0);
-    }
-  };
-
-  const fetchTranslations = async () => {
-    if (!analysisResult || analysisResult.unknownWords === 0) return;
-
-    try {
-      setLoadingTranslations(true);
-      setError("");
-
-      const results: TranslationResult[] = [];
-      for (const word of analysisResult.unknownWordList.slice(0, 20)) {
-        try {
-          const response = await fetch(`${config.dictionaryApi}/${word}`);
-          if (response.ok) {
-            const data = await response.json();
-            const definition =
-              data[0]?.meanings?.[0]?.definitions?.[0]?.definition ||
-              "No definition found.";
-            results.push({
-              word,
-              translation: word, // English word, so translation is the same
-              explanation: definition,
-            });
-          } else {
-            results.push({
-              word,
-              translation: word,
-              explanation: "No definition found.",
-            });
-          }
-        } catch {
-          results.push({
-            word,
-            translation: word,
-            explanation: "No definition found.",
-          });
-        }
-      }
-
-      setTranslations(results);
-    } catch {
-      console.error("Error fetching translations");
-      setError("Failed to fetch translations");
-    } finally {
-      setLoadingTranslations(false);
     }
   };
 
@@ -316,16 +255,11 @@ export default function AnalyzePage() {
       setError("");
 
       const wordsRef = collection(db, "words");
-      const explanationMap: Record<string, string> = {};
-      translations.forEach((t) => {
-        explanationMap[t.word.toLowerCase()] = t.explanation;
-      });
 
       const wordData = {
         userId: user.uid,
         word: word.toLowerCase().trim(),
-        definition:
-          explanationMap[word.toLowerCase()] || "No definition available",
+        definition: "No definition available",
         example: "",
         status: status || "to_learn",
         createdAt: Timestamp.now(),
@@ -1293,61 +1227,32 @@ export default function AnalyzePage() {
           </div>
         )}
 
-        {/* Translations Section */}
-        {analysisResult && analysisResult.unknownWords > 0 && (
-          <div className="mt-12">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-2xl font-bold text-gray-900">
-                Unknown Word Translations & Explanations
-              </h2>
-              <button
-                onClick={fetchTranslations}
-                disabled={loadingTranslations}
-                className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {loadingTranslations ? "Translating..." : "Fetch Translations"}
-              </button>
-            </div>
-            {translations.length > 0 && (
-              <div className="overflow-x-auto">
-                <table className="min-w-full bg-white rounded shadow">
-                  <thead>
-                    <tr>
-                      <th className="px-4 py-2 text-left text-sm font-semibold text-gray-700">
-                        Word
-                      </th>
-                      <th className="px-4 py-2 text-left text-sm font-semibold text-gray-700">
-                        Translation
-                      </th>
-                      <th className="px-4 py-2 text-left text-sm font-semibold text-gray-700">
-                        Explanation
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {translations.map((t) => (
-                      <tr key={t.word}>
-                        <td className="px-4 py-2 text-gray-900 font-medium">
-                          {t.word}
-                        </td>
-                        <td className="px-4 py-2 text-green-700">
-                          {t.translation}
-                        </td>
-                        <td className="px-4 py-2 text-gray-600">
-                          {t.explanation}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-            {loadingTranslations && (
-              <div className="text-gray-500 mt-4">Fetching translations...</div>
-            )}
-            {!loadingTranslations && translations.length === 0 && (
-              <div className="text-gray-500 mt-4">
-                No translations fetched yet.
+        {/* Action Buttons */}
+        {analysisResult && (
+          <div className="mt-6 flex gap-4">
+            <button
+              onClick={saveAnalysis}
+              disabled={isSaving}
+              className="bg-purple-600 text-white py-2 px-4 rounded-md hover:bg-purple-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
+            >
+              {isSaving ? "Saving..." : "Save Analysis"}
+            </button>
+            {isSaving && (
+              <div className="w-full">
+                <div className="flex justify-between mb-1">
+                  <span className="text-base font-medium text-purple-700">
+                    Saving analysis...
+                  </span>
+                  <span className="text-sm font-medium text-purple-700">
+                    {savingProgress}%
+                  </span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2.5">
+                  <div
+                    className="bg-purple-600 h-2.5 rounded-full"
+                    style={{ width: `${savingProgress}%` }}
+                  ></div>
+                </div>
               </div>
             )}
           </div>

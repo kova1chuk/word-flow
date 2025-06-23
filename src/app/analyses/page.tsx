@@ -16,7 +16,11 @@ import PageLoader from "@/components/PageLoader";
 interface Analysis {
   id: string;
   title: string;
-  createdAt: Timestamp;
+  createdAt: {
+    seconds: number;
+    nanoseconds: number;
+    dateString: string;
+  };
   summary: {
     totalWords: number;
     uniqueWords: number;
@@ -26,6 +30,15 @@ interface Analysis {
     readingTime: number;
   };
 }
+
+// Helper function to convert Firestore Timestamp to serializable format
+const convertTimestamp = (timestamp: Timestamp) => {
+  return {
+    seconds: timestamp.seconds,
+    nanoseconds: timestamp.nanoseconds,
+    dateString: timestamp.toDate().toISOString(),
+  };
+};
 
 export default function AnalysesPage() {
   const { user } = useAuth();
@@ -44,15 +57,20 @@ export default function AnalysesPage() {
       const querySnapshot = await getDocs(q);
       const analysesData: Analysis[] = [];
       querySnapshot.forEach((doc) => {
+        const data = doc.data();
         analysesData.push({
           id: doc.id,
-          ...doc.data(),
+          title: data.title,
+          createdAt: convertTimestamp(data.createdAt),
+          summary: data.summary,
         } as Analysis);
       });
 
       // Sort by creation date, newest first
       analysesData.sort(
-        (a, b) => b.createdAt.toMillis() - a.createdAt.toMillis()
+        (a, b) =>
+          new Date(b.createdAt.dateString).getTime() -
+          new Date(a.createdAt.dateString).getTime()
       );
 
       setAnalyses(analysesData);
@@ -140,7 +158,9 @@ export default function AnalysesPage() {
                   </h3>
                   <p className="text-xs sm:text-sm text-gray-500 dark:text-gray-400 mb-4">
                     Analyzed on{" "}
-                    {analysis.createdAt.toDate().toLocaleDateString()}
+                    {new Date(
+                      analysis.createdAt.dateString
+                    ).toLocaleDateString()}
                   </p>
                 </div>
                 <div className="grid grid-cols-2 gap-3 sm:gap-4 text-xs sm:text-sm">

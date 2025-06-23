@@ -130,9 +130,13 @@ export const analysesApi = {
   // Update analysis statistics
   async updateAnalysisStats(analysisId: string, userId: string): Promise<void> {
     try {
-      // Fetch all words for the user
+      // Fetch only words for this analysis and user
       const wordsRef = collection(db, "words");
-      const wordsQuery = query(wordsRef, where("userId", "==", userId));
+      const wordsQuery = query(
+        wordsRef,
+        where("userId", "==", userId),
+        where("analysisId", "==", analysisId)
+      );
       const wordsSnapshot = await getDocs(wordsQuery);
       const words = wordsSnapshot.docs.map((doc) => doc.data() as WordData);
 

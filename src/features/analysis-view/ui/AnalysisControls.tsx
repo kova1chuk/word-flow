@@ -27,29 +27,67 @@ export const AnalysisControls: React.FC<AnalysisControlsProps> = ({
       <div className="flex items-center gap-2">
         <button
           onClick={() => onViewModeChange("list")}
-          className={`px-3 py-1.5 text-sm rounded-md ${
+          className={`px-3 py-1.5 text-sm rounded-md flex items-center justify-center ${
             viewMode === "list"
               ? "bg-blue-600 text-white"
               : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
           }`}
+          aria-label="List View"
+          title="List View"
         >
-          List
+          <svg
+            className="w-5 h-5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M4 6h16M4 12h16M4 18h16"
+            />
+          </svg>
         </button>
         <button
           onClick={() => onViewModeChange("columns")}
-          className={`px-3 py-1.5 text-sm rounded-md ${
+          className={`px-3 py-1.5 text-sm rounded-md flex items-center justify-center ${
             viewMode === "columns"
               ? "bg-blue-600 text-white"
               : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
           }`}
+          aria-label="Columns View"
+          title="Columns View"
         >
-          Columns
+          <svg
+            className="w-5 h-5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <rect x="4" y="6" width="5" height="12" rx="1" />
+            <rect x="15" y="6" width="5" height="12" rx="1" />
+          </svg>
         </button>
         <button
           onClick={onFullScreenToggle}
-          className="px-3 py-1.5 text-sm rounded-md bg-green-600 text-white hover:bg-green-700"
+          className="px-3 py-1.5 text-sm rounded-md flex items-center justify-center bg-green-600 text-white hover:bg-green-700"
+          aria-label={isFullScreen ? "Exit Full Screen" : "Full Screen"}
+          title={isFullScreen ? "Exit Full Screen" : "Full Screen"}
         >
-          {isFullScreen ? "Exit Full Screen" : "Full Screen"}
+          <svg
+            className="w-5 h-5"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M4 8V6a2 2 0 012-2h2M20 8V6a2 2 0 00-2-2h-2M4 16v2a2 2 0 002 2h2M20 16v2a2 2 0 01-2 2h-2"
+            />
+          </svg>
         </button>
         <button
           onClick={onSettingsToggle}

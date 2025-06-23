@@ -10,7 +10,6 @@ import Link from "next/link";
 // Import analysis view components
 import {
   useAnalysisView,
-  AnalysisSummary,
   AnalysisHeader,
   AnalysisControls,
   SentenceList,
@@ -287,7 +286,6 @@ export default function SingleAnalysisPage() {
         }`}
       >
         {!isFullScreen && <AnalysisHeader analysis={analysis} />}
-        {!isFullScreen && <AnalysisSummary analysis={analysis} />}
 
         {/* Sentences List */}
         <div

@@ -1,10 +1,15 @@
-import { Timestamp } from "firebase/firestore";
+// Serializable timestamp interface
+export interface SerializableTimestamp {
+  seconds: number;
+  nanoseconds: number;
+  dateString: string; // ISO string for serialization
+}
 
 export interface Analysis {
   id: string;
   title: string;
   userId: string;
-  createdAt: Timestamp;
+  createdAt: SerializableTimestamp;
   summary: {
     totalWords: number;
     uniqueWords: number;
@@ -29,7 +34,7 @@ export interface WordInfo {
 export interface ReadingProgress {
   currentPage: number;
   currentSentenceIndex: number;
-  lastReadAt: Timestamp;
+  lastReadAt: SerializableTimestamp;
 }
 
 export interface UserSettings {

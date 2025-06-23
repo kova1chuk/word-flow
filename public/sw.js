@@ -4,8 +4,6 @@ const urlsToCache = [
   "/analyses",
   "/words",
   "/training",
-  "/static/css/app.css",
-  "/static/js/app.js",
   "/favicon/favicon-16x16.png",
   "/favicon/favicon-32x32.png",
   "/favicon/apple-touch-icon.png",
@@ -19,7 +17,15 @@ self.addEventListener("install", (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       console.log("Opened cache");
-      return cache.addAll(urlsToCache);
+      // Use addAll with error handling for individual failures
+      return Promise.allSettled(
+        urlsToCache.map((url) =>
+          cache.add(url).catch((error) => {
+            console.warn(`Failed to cache ${url}:`, error);
+            return null;
+          })
+        )
+      );
     })
   );
 });

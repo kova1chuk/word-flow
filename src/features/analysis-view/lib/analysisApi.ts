@@ -17,6 +17,16 @@ import {
 } from "@/entities/analysis";
 import { API_ENDPOINTS } from "@/shared/config/api";
 
+// Helper function to convert Firestore Timestamp to serializable format
+const convertTimestamp = (timestamp: Timestamp) => {
+  return {
+    seconds: timestamp.seconds,
+    nanoseconds: timestamp.nanoseconds,
+    // Store the date as a string for serialization
+    dateString: timestamp.toDate().toISOString(),
+  };
+};
+
 export const fetchAnalysisDetails = async (
   analysisId: string,
   userId: string
@@ -34,18 +44,38 @@ export const fetchAnalysisDetails = async (
     );
   }
 
-  const analysis = {
+  const analysisData = analysisSnap.data();
+  const analysis: Analysis = {
     id: analysisSnap.id,
-    ...analysisSnap.data(),
-  } as Analysis;
+    title: analysisData.title,
+    userId: analysisData.userId,
+    summary: analysisData.summary,
+    createdAt: convertTimestamp(analysisData.createdAt),
+  };
 
   // Fetch sentences subcollection
   const sentencesRef = collection(analysisRef, "sentences");
   const q = query(sentencesRef, orderBy("index"));
   const sentencesSnap = await getDocs(q);
-  const sentences = sentencesSnap.docs.map(
-    (doc) => ({ id: doc.id, ...doc.data() } as Sentence)
-  );
+  const sentences = sentencesSnap.docs.map((doc) => {
+    const data = doc.data();
+    // Convert any timestamp fields to serializable format
+    const serializedData = { ...data };
+    Object.keys(serializedData).forEach((key) => {
+      const value = serializedData[key];
+      if (
+        value &&
+        typeof value === "object" &&
+        "seconds" in value &&
+        "nanoseconds" in value &&
+        "toDate" in value &&
+        typeof value.toDate === "function"
+      ) {
+        serializedData[key] = convertTimestamp(value);
+      }
+    });
+    return { id: doc.id, ...serializedData } as Sentence;
+  });
 
   return { analysis, sentences };
 };
@@ -73,7 +103,12 @@ export const loadReadingProgress = async (
   const progressSnap = await getDoc(progressRef);
 
   if (progressSnap.exists()) {
-    return progressSnap.data() as ReadingProgress;
+    const data = progressSnap.data();
+    return {
+      currentPage: data.currentPage,
+      currentSentenceIndex: data.currentSentenceIndex,
+      lastReadAt: convertTimestamp(data.lastReadAt),
+    } as ReadingProgress;
   }
 
   return null;

@@ -6,6 +6,10 @@ interface AnalysisHeaderProps {
 }
 
 export const AnalysisHeader: React.FC<AnalysisHeaderProps> = ({ analysis }) => {
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString();
+  };
+
   return (
     <div className="mb-8">
       <Link href="/analyses">
@@ -17,7 +21,7 @@ export const AnalysisHeader: React.FC<AnalysisHeaderProps> = ({ analysis }) => {
         {analysis.title}
       </h1>
       <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-        Analyzed on {analysis.createdAt.toDate().toLocaleDateString()}
+        Analyzed on {formatDate(analysis.createdAt.dateString)}
       </p>
     </div>
   );

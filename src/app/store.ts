@@ -4,11 +4,13 @@ import { TypedUseSelectorHook, useDispatch, useSelector } from "react-redux";
 // Import slices
 import authSlice from "@/entities/user/model/authSlice";
 import wordSlice from "@/entities/word/model/wordSlice";
+import analysisSlice from "@/entities/analysis/model/analysisSlice";
 
 export const store = configureStore({
   reducer: {
     auth: authSlice,
     word: wordSlice,
+    analysis: analysisSlice,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

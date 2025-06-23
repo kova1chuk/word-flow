@@ -51,6 +51,37 @@ export default function WordTrainingCard({
               <span className="text-gray-400 dark:text-gray-500">(none)</span>
             )}
           </div>
+          {/* Synonyms/Antonyms */}
+          {(() => {
+            const synonyms =
+              word.details?.meanings?.[0]?.definitions?.[0]?.synonyms ?? [];
+            const antonyms =
+              word.details?.meanings?.[0]?.definitions?.[0]?.antonyms ?? [];
+            return (
+              <>
+                {synonyms.length > 0 && (
+                  <div className="mt-2">
+                    <span className="font-semibold text-blue-600 dark:text-blue-400 text-xs mr-2">
+                      Synonyms:
+                    </span>
+                    <span className="text-xs text-gray-700 dark:text-gray-300">
+                      {synonyms.join(", ")}
+                    </span>
+                  </div>
+                )}
+                {antonyms.length > 0 && (
+                  <div className="mt-1">
+                    <span className="font-semibold text-pink-600 dark:text-pink-400 text-xs mr-2">
+                      Antonyms:
+                    </span>
+                    <span className="text-xs text-gray-700 dark:text-gray-300">
+                      {antonyms.join(", ")}
+                    </span>
+                  </div>
+                )}
+              </>
+            );
+          })()}
         </div>
 
         {/* Translation Section */}

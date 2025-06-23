@@ -146,13 +146,13 @@ export default function Header() {
             ) : (
               <div className="flex items-center space-x-2">
                 <Link
-                  href="/signin"
+                  href="/auth/signin"
                   className="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors"
                 >
                   Sign In
                 </Link>
                 <Link
-                  href="/signup"
+                  href="/auth/signup"
                   className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors shadow-sm"
                 >
                   Sign Up
@@ -241,14 +241,14 @@ export default function Header() {
                 ) : (
                   <>
                     <Link
-                      href="/signin"
+                      href="/auth/signin"
                       onClick={closeMenus}
                       className="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 block px-3 py-2 rounded-md text-base font-medium transition-colors"
                     >
                       Sign In
                     </Link>
                     <Link
-                      href="/signup"
+                      href="/auth/signup"
                       onClick={closeMenus}
                       className="bg-blue-600 hover:bg-blue-700 text-white block px-3 py-2 rounded-md text-base font-medium transition-colors shadow-sm"
                     >

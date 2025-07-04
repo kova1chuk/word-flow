@@ -87,10 +87,11 @@ export const saveReadingProgress = async (
   sentenceIndex: number = 0
 ): Promise<void> => {
   const progressRef = doc(db, "readingProgress", `${userId}_${analysisId}`);
+  const timestamp = Timestamp.now();
   const progress: ReadingProgress = {
     currentPage: page,
     currentSentenceIndex: sentenceIndex,
-    lastReadAt: Timestamp.now(),
+    lastReadAt: convertTimestamp(timestamp),
   };
   await setDoc(progressRef, progress);
 };

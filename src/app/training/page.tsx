@@ -11,11 +11,10 @@ import {
   doc,
   updateDoc,
 } from "firebase/firestore";
-import WordTrainingCard from "@/components/WordTrainingCard";
 import type { Word, WordDetails, Phonetic } from "@/types";
 import { config } from "@/lib/config";
-import Link from "next/link";
 import PageLoader from "@/components/PageLoader";
+import WordTrainingCard from "@/components/WordTrainingCard";
 
 interface DictionaryApiResponse {
   phonetics: { text: string; audio: string }[];
@@ -32,8 +31,10 @@ interface DictionaryApiResponse {
 
 export default function TrainingPage() {
   const { user, loading } = useAuth();
+  const [trainingMode, setTrainingMode] = useState<"word" | "sentence">("word");
+
+  // Word training state (only used when trainingMode === 'word')
   const [words, setWords] = useState<Word[]>([]);
-  const [loadingWords, setLoadingWords] = useState(true);
   const [updating, setUpdating] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [current, setCurrent] = useState(0);
@@ -44,7 +45,6 @@ export default function TrainingPage() {
     "unset",
   ]);
   const [trainingWords, setTrainingWords] = useState<Word[]>([]);
-  const [trainingMode, setTrainingMode] = useState<"word" | "sentence">("word");
 
   const STATUS_OPTIONS = [
     { value: "to_learn", label: "To Learn", color: "bg-blue-600" },
@@ -56,7 +56,6 @@ export default function TrainingPage() {
   const fetchWords = useCallback(async () => {
     if (!user) return;
     try {
-      setLoadingWords(true);
       setError("");
       const q = query(collection(db, "words"), where("userId", "==", user.uid));
       const querySnapshot = await getDocs(q);
@@ -87,16 +86,14 @@ export default function TrainingPage() {
     } catch (err) {
       console.error("Error fetching words:", err);
       setError("Failed to fetch words. Please try again.");
-    } finally {
-      setLoadingWords(false);
     }
   }, [user]);
 
   useEffect(() => {
-    if (user) {
+    if (user && trainingMode === "word") {
       fetchWords();
     }
-  }, [user, fetchWords]);
+  }, [user, fetchWords, trainingMode]);
 
   const handleStatusChange = async (wordId: string, status: string) => {
     setUpdating(wordId);
@@ -200,35 +197,24 @@ export default function TrainingPage() {
         word.word
       )}&langpair=${langPair}`;
 
-      const res = await fetch(url);
-      console.log(`Translation API response status: ${res.status}`);
-
-      if (res.ok) {
-        const data = await res.json();
-        console.log(`Translation API response data:`, data);
+      const response = await fetch(url);
+      if (response.ok) {
+        const data = await response.json();
         if (data.responseData && data.responseData.translatedText) {
           translation = data.responseData.translatedText;
-          console.log(`Found translation: "${translation}"`);
         } else {
-          translation = "No translation found.";
-          console.log(`No translation found in API response.`);
+          translation = "Translation not found";
         }
       } else {
-        translation = "No translation found.";
-        console.log(
-          `Translation API request failed with status: ${res.status}`
-        );
+        translation = "Translation not found";
       }
 
-      console.log(`Updating word document with translation: "${translation}"`);
       await updateDoc(doc(db, "words", word.id), { translation });
-      setWords((prev) =>
-        prev.map((w) => (w.id === word.id ? { ...w, translation } : w))
-      );
-      setTrainingWords((prev) =>
-        prev.map((w) => (w.id === word.id ? { ...w, translation } : w))
-      );
-      console.log("Translation reload completed successfully");
+
+      const updateWordState = (prev: Word[]) =>
+        prev.map((w) => (w.id === word.id ? { ...w, translation } : w));
+      setWords(updateWordState);
+      setTrainingWords(updateWordState);
     } catch (error) {
       console.error("Error reloading translation:", error);
       setError(
@@ -250,26 +236,12 @@ export default function TrainingPage() {
   };
 
   const startTraining = () => {
-    const filteredWords = words.filter((word) => {
-      if (selectedStatuses.includes("unset")) {
-        return selectedStatuses.includes(word.status || "unset");
-      }
-      return selectedStatuses.includes(word.status || "");
-    });
-
-    if (filteredWords.length === 0) {
-      setError(
-        "No words match the selected statuses. Please select different statuses."
-      );
-      return;
-    }
-
-    // Shuffle the words for random order
-    const shuffledWords = [...filteredWords].sort(() => Math.random() - 0.5);
-    setTrainingWords(shuffledWords);
+    const filteredWords = words.filter((word) =>
+      selectedStatuses.includes(word.status || "unset")
+    );
+    setTrainingWords(filteredWords);
     setCurrent(0);
     setTrainingStarted(true);
-    setError("");
   };
 
   const stopTraining = () => {
@@ -279,9 +251,6 @@ export default function TrainingPage() {
   };
 
   const getStatusCount = (status: string) => {
-    if (status === "unset") {
-      return words.filter((word) => !word.status).length;
-    }
     return words.filter((word) => word.status === status).length;
   };
 
@@ -320,7 +289,7 @@ export default function TrainingPage() {
       setShuffled(shuffleArray(words));
       setAnswer([]);
       setChecked(null);
-    }, [current]);
+    }, [current, sentences]);
 
     const handleWordClick = (word: string) => {
       if (checked) return;
@@ -408,6 +377,120 @@ export default function TrainingPage() {
   }
 
   if (loading) {
-    return <PageLoader text="Loading training words..." />;
+    return <PageLoader text="Loading..." />;
   }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+            Please sign in to access training
+          </h1>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="max-w-2xl mx-auto py-8 px-4">
+      <div className="flex justify-center mb-6 gap-2">
+        <button
+          className={`px-4 py-2 rounded-lg font-semibold transition-colors duration-200 ${
+            trainingMode === "word"
+              ? "bg-blue-600 text-white"
+              : "bg-gray-700 text-gray-300"
+          }`}
+          onClick={() => setTrainingMode("word")}
+        >
+          Word Training
+        </button>
+        <button
+          className={`px-4 py-2 rounded-lg font-semibold transition-colors duration-200 ${
+            trainingMode === "sentence"
+              ? "bg-blue-600 text-white"
+              : "bg-gray-700 text-gray-300"
+          }`}
+          onClick={() => setTrainingMode("sentence")}
+        >
+          Sentence Training
+        </button>
+      </div>
+
+      {trainingMode === "word" ? (
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+          <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+            <div className="flex justify-between items-center mb-6">
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+                Training Session
+              </h1>
+              <button
+                onClick={stopTraining}
+                className="text-gray-500 hover:text-gray-700 text-sm font-medium"
+              >
+                Stop Training
+              </button>
+            </div>
+
+            {error && (
+              <div className="mb-6 bg-red-100 dark:bg-red-900/20 border border-red-400 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-md">
+                <p>{error}</p>
+              </div>
+            )}
+
+            {trainingStarted && trainingWords.length > 0 ? (
+              <div>
+                <WordTrainingCard
+                  word={trainingWords[current]}
+                  onReloadDefinition={reloadDefinition}
+                  onReloadTranslation={reloadTranslation}
+                  onStatusChange={handleStatusChange}
+                  updating={updating}
+                  current={current}
+                  total={trainingWords.length}
+                  onPrev={() => setCurrent(Math.max(0, current - 1))}
+                  onNext={() =>
+                    setCurrent(Math.min(trainingWords.length - 1, current + 1))
+                  }
+                />
+              </div>
+            ) : (
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+                  Select Word Statuses to Train
+                </h2>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                  {STATUS_OPTIONS.map((option) => (
+                    <button
+                      key={option.value}
+                      onClick={() => toggleStatusSelection(option.value)}
+                      className={`p-4 rounded-lg border-2 transition-colors ${
+                        selectedStatuses.includes(option.value)
+                          ? `${option.color} text-white border-transparent`
+                          : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600"
+                      }`}
+                    >
+                      <div className="text-2xl font-bold">
+                        {getStatusCount(option.value)}
+                      </div>
+                      <div className="text-sm">{option.label}</div>
+                    </button>
+                  ))}
+                </div>
+                <button
+                  onClick={startTraining}
+                  disabled={selectedStatuses.length === 0}
+                  className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  Start Training
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+      ) : (
+        <SentenceTraining />
+      )}
+    </div>
+  );
 }

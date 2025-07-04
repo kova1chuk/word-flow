@@ -66,8 +66,9 @@ export const PWAProvider: React.FC<PWAProviderProps> = ({ children }) => {
           <div className="flex items-center justify-between">
             <div>
               <h3 className="font-semibold">Install Word Flow</h3>
-              <p className="text-sm opacity-90">
-                Add to home screen for quick access
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Install this app on your device for quick and easy access when
+                you&apos;re on the go.
               </p>
             </div>
             <button
@@ -109,7 +110,7 @@ export const PWAProvider: React.FC<PWAProviderProps> = ({ children }) => {
                 d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z"
               />
             </svg>
-            <span className="text-sm font-medium">You're offline</span>
+            <span className="text-sm font-medium">You&apos;re offline</span>
           </div>
         </div>
       )}

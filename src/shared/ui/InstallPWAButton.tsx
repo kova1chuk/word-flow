@@ -1,18 +1,24 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { getPWAInstallPrompt, isPWAInstalled } from "@/shared/lib/pwa";
+import { isPWAInstalled } from "@/shared/lib/pwa";
 
 interface InstallPWAButtonProps {
   className?: string;
   children?: React.ReactNode;
 }
 
+interface BeforeInstallPromptEvent extends Event {
+  prompt(): Promise<void>;
+  userChoice: Promise<{ outcome: "accepted" | "dismissed" }>;
+}
+
 export const InstallPWAButton: React.FC<InstallPWAButtonProps> = ({
   className = "",
   children,
 }) => {
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [deferredPrompt, setDeferredPrompt] =
+    useState<BeforeInstallPromptEvent | null>(null);
   const [isInstalled, setIsInstalled] = useState(false);
 
   useEffect(() => {
@@ -22,7 +28,7 @@ export const InstallPWAButton: React.FC<InstallPWAButtonProps> = ({
     // Listen for install prompt
     const handleBeforeInstallPrompt = (e: Event) => {
       e.preventDefault();
-      setDeferredPrompt(e);
+      setDeferredPrompt(e as BeforeInstallPromptEvent);
     };
 
     window.addEventListener("beforeinstallprompt", handleBeforeInstallPrompt);

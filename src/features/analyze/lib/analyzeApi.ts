@@ -17,11 +17,8 @@ export interface AnalysisResult {
   summary: {
     totalWords: number;
     uniqueWords: number;
-    wordsInDictionary: number;
     learnerWords: number;
     unknownWords: number;
-    averageWordLength?: number;
-    readingTime?: number;
   };
 }
 
@@ -70,14 +67,12 @@ const transformApiResult = (
   } else if (Array.isArray(apiResponse.uniqueWords)) {
     uniqueWords = apiResponse.uniqueWords;
   }
-  let wordsInDictionary = 0;
   let learnerWords = 0;
   let unknownWords = 0;
 
   uniqueWords.forEach((word: string) => {
     const status = userWordMap.get(word.toLowerCase());
     if (status !== undefined) {
-      wordsInDictionary++;
       if (status === "to_learn" || status === "want_repeat") {
         learnerWords++;
       }
@@ -107,11 +102,8 @@ const transformApiResult = (
     summary: {
       totalWords,
       uniqueWords: totalUniqueWords,
-      wordsInDictionary,
       learnerWords,
       unknownWords,
-      averageWordLength: apiResponse.averageWordLength || 0,
-      readingTime: Math.round(apiResponse.readingTime || 0),
     },
   };
 };
@@ -177,11 +169,8 @@ export const analyzeApi = {
         totalWords: flatResult.totalWords || flatResult.total_words || 0,
         uniqueWords:
           flatResult.uniqueWords || flatResult.total_unique_words || 0,
-        wordsInDictionary: 0,
         learnerWords: 0,
         unknownWords: flatResult.unknownWords || 0,
-        averageWordLength: flatResult.averageWordLength || 0,
-        readingTime: Math.round(flatResult.readingTime) || 0,
       },
     };
   },
@@ -197,7 +186,6 @@ export const analyzeApi = {
       title: analysisResult.title,
       createdAt: Timestamp.now(),
       summary: analysisResult.summary,
-      unknownWords: analysisResult.unknownWordList,
     });
 
     // Save each sentence as a document in the 'sentences' subcollection

@@ -11,8 +11,11 @@ async function fetchStatusesForWords(
   userId: string,
   words: string[]
 ): Promise<UserWord[]> {
-  const chunkSize = 10;
+  if (words.length === 0) return [];
+
+  const chunkSize = 10; // Firestore 'in' operator limit
   let results: UserWord[] = [];
+
   for (let i = 0; i < words.length; i += chunkSize) {
     const chunk = words.slice(i, i + chunkSize);
     const q = query(

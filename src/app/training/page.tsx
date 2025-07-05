@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useMemo } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { db } from "@/lib/firebase";
 import {
@@ -264,21 +264,24 @@ export default function TrainingPage() {
   }
 
   function SentenceTraining() {
-    // Mock data for demo
-    const sentences = [
-      {
-        english: "I am learning English",
-        translation: "Я вивчаю англійську",
-      },
-      {
-        english: "The cat is on the table",
-        translation: "Кіт на столі",
-      },
-      {
-        english: "She likes to read books",
-        translation: "Вона любить читати книги",
-      },
-    ];
+    // Mock data for demo - moved outside to prevent recreation on every render
+    const sentences = useMemo(
+      () => [
+        {
+          english: "I am learning English",
+          translation: "Я вивчаю англійську",
+        },
+        {
+          english: "The cat is on the table",
+          translation: "Кіт на столі",
+        },
+        {
+          english: "She likes to read books",
+          translation: "Вона любить читати книги",
+        },
+      ],
+      []
+    );
     const [current, setCurrent] = useState(0);
     const [shuffled, setShuffled] = useState<string[]>([]);
     const [answer, setAnswer] = useState<string[]>([]);
@@ -289,7 +292,7 @@ export default function TrainingPage() {
       setShuffled(shuffleArray(words));
       setAnswer([]);
       setChecked(null);
-    }, [current, sentences]);
+    }, [current]);
 
     const handleWordClick = (word: string) => {
       if (checked) return;

@@ -9,6 +9,10 @@ import analysesSlice from "@/features/analyses/model/analysesSlice";
 import analysisWordsSlice from "@/features/analysis-words/model/analysisWordsSlice";
 import trainingStatsSlice from "@/features/analysis-view/model/trainingStatsSlice";
 import analyzeSlice from "@/features/analyze/model/analyzeSlice";
+import uiSlice from "@/shared/model/uiSlice";
+import formSlice from "@/shared/model/formSlice";
+import notificationSlice from "@/shared/model/notificationSlice";
+import trainingSlice from "@/features/training/model/trainingSlice";
 
 export const store = configureStore({
   reducer: {
@@ -19,6 +23,10 @@ export const store = configureStore({
     analysisWords: analysisWordsSlice,
     trainingStats: trainingStatsSlice,
     analyze: analyzeSlice,
+    ui: uiSlice,
+    form: formSlice,
+    notification: notificationSlice,
+    training: trainingSlice,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

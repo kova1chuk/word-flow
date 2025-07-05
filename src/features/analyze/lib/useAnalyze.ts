@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
 import { useAuth } from "@/lib/auth-context";
+import { useNotifications } from "@/providers/NotificationProvider";
 import { analyzeApi, AnalysisResult } from "./analyzeApi";
 import { getDocs, collection, query, where } from "firebase/firestore";
 import { db } from "@/lib/firebase";
@@ -33,19 +34,13 @@ async function fetchStatusesForWords(
 
 export const useAnalyze = () => {
   const { user } = useAuth();
+  const { showSuccess, showError, clearMessages } = useNotifications();
   const [text, setText] = useState("");
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(
     null
   );
   const [loadingAnalysis, setLoadingAnalysis] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
-
-  const clearMessages = useCallback(() => {
-    setError("");
-    setSuccess("");
-  }, []);
 
   const handleSubtitleUpload = useCallback(
     async (file: File) => {
@@ -71,10 +66,12 @@ export const useAnalyze = () => {
         setAnalysisResult(
           transformApiResult(apiResponse, file.name, userWords)
         );
-        setSuccess("Subtitle file analyzed successfully!");
+        showSuccess("Subtitle file analyzed successfully!");
       } catch (err) {
         console.error("Subtitle upload error:", err);
-        setError(err instanceof Error ? err.message : "Subtitle upload failed");
+        showError(
+          err instanceof Error ? err.message : "Subtitle upload failed"
+        );
       } finally {
         setLoadingAnalysis(false);
       }
@@ -106,10 +103,10 @@ export const useAnalyze = () => {
         setAnalysisResult(
           transformApiResult(apiResponse, file.name, userWords)
         );
-        setSuccess("File uploaded and analyzed successfully!");
+        showSuccess("File uploaded and analyzed successfully!");
       } catch (err) {
         console.error("Upload error:", err);
-        setError(err instanceof Error ? err.message : "Upload failed");
+        showError(err instanceof Error ? err.message : "Upload failed");
       } finally {
         setLoadingAnalysis(false);
       }
@@ -153,10 +150,10 @@ export const useAnalyze = () => {
       setAnalysisResult(
         transformApiResult(apiResponse, "Pasted Text", userWords)
       );
-      setSuccess("Text analyzed successfully!");
+      showSuccess("Text analyzed successfully!");
     } catch (err) {
       console.error("Analysis error:", err);
-      setError(err instanceof Error ? err.message : "Analysis failed");
+      showError(err instanceof Error ? err.message : "Analysis failed");
     } finally {
       setLoadingAnalysis(false);
     }
@@ -168,10 +165,10 @@ export const useAnalyze = () => {
     setSaving(true);
     try {
       await analyzeApi.saveAnalysis(user.uid, analysisResult);
-      setSuccess("Analysis saved successfully!");
+      showSuccess("Analysis saved successfully!");
     } catch (err) {
       console.error("Save error:", err);
-      setError("Failed to save analysis");
+      showError("Failed to save analysis");
     } finally {
       setSaving(false);
     }
@@ -183,8 +180,6 @@ export const useAnalyze = () => {
     analysisResult,
     loadingAnalysis,
     saving,
-    error,
-    success,
 
     // Actions
     setText,

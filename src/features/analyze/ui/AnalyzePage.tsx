@@ -2,7 +2,6 @@ import { useAnalyze } from "../lib/useAnalyze";
 import { FileUpload } from "./FileUpload";
 import { TextInput } from "./TextInput";
 import { AnalysisResults } from "./AnalysisResults";
-import { StatusMessages } from "./StatusMessages";
 import PageLoader from "@/components/PageLoader";
 
 export const AnalyzePage: React.FC = () => {
@@ -11,8 +10,6 @@ export const AnalyzePage: React.FC = () => {
     analysisResult,
     loadingAnalysis,
     saving,
-    error,
-    success,
     setText,
     handleFileUpload,
     analyzeText,
@@ -26,8 +23,6 @@ export const AnalyzePage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-        <StatusMessages error={error} success={success} />
-
         {!analysisResult && (
           <>
             <FileUpload onFileUpload={handleFileUpload} />

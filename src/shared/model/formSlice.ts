@@ -12,11 +12,12 @@ export interface FormState {
 
   // Word forms
   word: {
-    newWord: string;
-    newDefinition: string;
-    newExample: string;
-    submitting: boolean;
-    error: string;
+    selectedStatuses: number[];
+    searchQuery: string;
+    sortBy: string;
+    sortOrder: string;
+    pageSize: number;
+    currentPage: number;
   };
 
   // Analysis forms
@@ -52,11 +53,12 @@ const initialState: FormState = {
 
   // Word forms
   word: {
-    newWord: "",
-    newDefinition: "",
-    newExample: "",
-    submitting: false,
-    error: "",
+    selectedStatuses: [1, 2, 3, 4, 5],
+    searchQuery: "",
+    sortBy: "createdAt",
+    sortOrder: "desc",
+    pageSize: 12,
+    currentPage: 1,
   },
 
   // Analysis forms

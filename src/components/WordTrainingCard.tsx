@@ -17,7 +17,7 @@ export default function WordTrainingCard({
   word: Word;
   onReloadDefinition: (word: Word) => void;
   onReloadTranslation: (word: Word) => void;
-  onStatusChange: (id: string, status: string) => void;
+  onStatusChange: (id: string, status: 1 | 2 | 3 | 4 | 5 | 6 | 7) => void;
   updating?: string | null;
   current: number;
   total: number;

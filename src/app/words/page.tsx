@@ -49,10 +49,13 @@ export default function WordsPage() {
 
   const STATUS_OPTIONS = [
     { value: "all", label: "All Statuses" },
-    { value: "well_known", label: "Well Known" },
-    { value: "want_repeat", label: "Want Repeat" },
-    { value: "to_learn", label: "To Learn" },
-    { value: "unset", label: "No Status" },
+    { value: "1", label: "Not Learned" },
+    { value: "2", label: "Beginner" },
+    { value: "3", label: "Basic" },
+    { value: "4", label: "Intermediate" },
+    { value: "5", label: "Advanced" },
+    { value: "6", label: "Well Known" },
+    { value: "7", label: "Mastered" },
   ];
 
   const PAGE_SIZE_OPTIONS = [6, 12, 24, 48];
@@ -107,7 +110,7 @@ export default function WordsPage() {
         definition: newDefinition.trim(),
         example: newExample.trim(),
         createdAt: Timestamp.now(),
-        status: "to_learn",
+        status: 1, // Default to "Not Learned"
       };
       const docRef = await addDoc(collection(db, "words"), newWordData);
 
@@ -240,15 +243,18 @@ export default function WordsPage() {
     }
   };
 
-  const onStatusChange = async (id: string, status: string) => {
+  const onStatusChange = async (
+    id: string,
+    status: 1 | 2 | 3 | 4 | 5 | 6 | 7
+  ) => {
     setUpdating(id);
     setError("");
     try {
       await updateDoc(doc(db, "words", id), { status });
       setWords((prev) => prev.map((w) => (w.id === id ? { ...w, status } : w)));
     } catch (error) {
-      console.error("Error updating status:", error);
-      setError("Failed to update status");
+      console.error("Error updating word status:", error);
+      setError("Failed to update word status");
     } finally {
       setUpdating(null);
     }
@@ -257,7 +263,7 @@ export default function WordsPage() {
   const filteredWords = words.filter((word) => {
     if (statusFilter === "all") return true;
     if (statusFilter === "unset") return !word.status;
-    return word.status === statusFilter;
+    return word.status === parseInt(statusFilter);
   });
 
   // Pagination logic

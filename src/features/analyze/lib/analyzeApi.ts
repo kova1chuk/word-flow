@@ -77,7 +77,8 @@ const transformApiResult = (
   uniqueWords.forEach((word: string) => {
     const status = userWordMap.get(word.toLowerCase());
     if (status !== undefined) {
-      if (status === "to_learn" || status === "want_repeat") {
+      const statusNum = parseInt(status as string);
+      if (statusNum >= 1 && statusNum <= 5) {
         learnerWords++;
       }
     } else {

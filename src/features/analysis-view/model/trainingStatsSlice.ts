@@ -50,12 +50,15 @@ export const fetchTrainingStats = createAsyncThunk<
   }
 
   // Compute stats
-  let learned = 0;
-  let notLearned = 0;
-  for (const w of words) {
-    if (w.status === "well_known") learned++;
-    else notLearned++;
-  }
+  const learned = words.filter((w) => {
+    const status = w.status as number | undefined;
+    return status && status >= 6;
+  }).length;
+
+  const notLearned = words.filter((w) => {
+    const status = w.status as number | undefined;
+    return !status || status < 6;
+  }).length;
 
   return { learned, notLearned, total: words.length };
 });

@@ -39,18 +39,23 @@ export default function TrainingPage() {
   const [error, setError] = useState("");
   const [current, setCurrent] = useState(0);
   const [trainingStarted, setTrainingStarted] = useState(false);
-  const [selectedStatuses, setSelectedStatuses] = useState<string[]>([
-    "to_learn",
-    "want_repeat",
-    "unset",
+  const [selectedStatuses, setSelectedStatuses] = useState<number[]>([
+    1,
+    2,
+    3,
+    4,
+    5, // Include all statuses except mastered for training
   ]);
   const [trainingWords, setTrainingWords] = useState<Word[]>([]);
 
   const STATUS_OPTIONS = [
-    { value: "to_learn", label: "To Learn", color: "bg-blue-600" },
-    { value: "want_repeat", label: "Want Repeat", color: "bg-orange-400" },
-    { value: "well_known", label: "Well Known", color: "bg-green-500" },
-    { value: "unset", label: "No Status", color: "bg-gray-500" },
+    { value: 1, label: "Not Learned", color: "bg-gray-500" },
+    { value: 2, label: "Beginner", color: "bg-red-500" },
+    { value: 3, label: "Basic", color: "bg-orange-500" },
+    { value: 4, label: "Intermediate", color: "bg-yellow-500" },
+    { value: 5, label: "Advanced", color: "bg-blue-500" },
+    { value: 6, label: "Well Known", color: "bg-green-500" },
+    { value: 7, label: "Mastered", color: "bg-purple-500" },
   ];
 
   const fetchWords = useCallback(async () => {
@@ -95,7 +100,10 @@ export default function TrainingPage() {
     }
   }, [user, fetchWords, trainingMode]);
 
-  const handleStatusChange = async (wordId: string, status: string) => {
+  const handleStatusChange = async (
+    wordId: string,
+    status: 1 | 2 | 3 | 4 | 5 | 6 | 7
+  ) => {
     setUpdating(wordId);
     try {
       await updateDoc(doc(db, "words", wordId), { status });
@@ -227,7 +235,7 @@ export default function TrainingPage() {
     }
   };
 
-  const toggleStatusSelection = (status: string) => {
+  const toggleStatusSelection = (status: number) => {
     setSelectedStatuses((prev) =>
       prev.includes(status)
         ? prev.filter((s) => s !== status)
@@ -237,7 +245,7 @@ export default function TrainingPage() {
 
   const startTraining = () => {
     const filteredWords = words.filter((word) =>
-      selectedStatuses.includes(word.status || "unset")
+      selectedStatuses.includes(word.status || 1)
     );
     setTrainingWords(filteredWords);
     setCurrent(0);
@@ -250,7 +258,7 @@ export default function TrainingPage() {
     setCurrent(0);
   };
 
-  const getStatusCount = (status: string) => {
+  const getStatusCount = (status: number) => {
     return words.filter((word) => word.status === status).length;
   };
 

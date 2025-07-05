@@ -27,8 +27,12 @@ export interface Word {
   word: string;
   definition: string;
   translation?: string;
-  status?: string;
+  status?: 1 | 2 | 3 | 4 | 5 | 6 | 7; // 1 = not learned, 7 = very well learned
   createdAt: Timestamp;
   example?: string;
   details?: WordDetails;
+  isLearned?: boolean; // For backward compatibility
+  isInDictionary?: boolean; // For backward compatibility
+  usages?: string[];
+  analysisIds?: string[];
 }

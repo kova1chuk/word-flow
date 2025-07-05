@@ -36,7 +36,7 @@ export interface Analysis {
 
 interface WordData {
   word: string;
-  status: string;
+  status?: 1 | 2 | 3 | 4 | 5 | 6 | 7;
 }
 
 // Helper function to convert Firestore Timestamp to serializable format
@@ -59,16 +59,15 @@ const calculateWordStats = (words: WordData[]) => {
   };
 
   words.forEach((word) => {
-    switch (word.status) {
-      case "to_learn":
+    const status = word.status;
+    if (status) {
+      if (status >= 1 && status <= 3) {
         stats.toLearn++;
-        break;
-      case "want_repeat":
+      } else if (status >= 4 && status <= 5) {
         stats.toRepeat++;
-        break;
-      case "well_known":
+      } else if (status >= 6 && status <= 7) {
         stats.learned++;
-        break;
+      }
     }
   });
 

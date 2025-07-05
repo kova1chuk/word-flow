@@ -1,219 +1,130 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import type { Timestamp } from "firebase/firestore";
 
-export interface TrainingWord {
+interface TrainingState {
+  mode: "word" | "sentence";
+  isStarted: boolean;
+  currentIndex: number;
+  words: Word[];
+  selectedStatuses: number[]; // 1-7 status values
+  settings: {
+    autoAdvance: boolean;
+    showTranslation: boolean;
+    showDefinition: boolean;
+  };
+}
+
+interface Word {
   id: string;
   word: string;
   definition?: string;
   translation?: string;
-  status: "well_known" | "want_repeat" | "to_learn" | "unset";
-}
-
-export interface TrainingSentence {
-  id: string;
-  text: string;
-  translation?: string;
-  wordIds: string[];
-}
-
-export interface TrainingState {
-  // Training mode and settings
-  trainingMode: "word" | "sentence";
-  selectedStatuses: string[];
-
-  // Word training
-  words: TrainingWord[];
-  currentWordIndex: number;
-  trainingStarted: boolean;
-  trainingCompleted: boolean;
-
-  // Sentence training
-  sentences: TrainingSentence[];
-  currentSentenceIndex: number;
-  shuffledWords: string[];
-  userAnswer: string[];
-  isAnswerChecked: boolean | null;
-
-  // Progress tracking
-  totalWords: number;
-  completedWords: number;
-  correctAnswers: number;
-  incorrectAnswers: number;
-
-  // Loading states
-  loading: boolean;
-  updating: string | null; // word ID being updated
-  error: string | null;
+  example?: string;
+  status?: 1 | 2 | 3 | 4 | 5 | 6 | 7; // 1 = not learned, 7 = very well learned
+  createdAt: Timestamp;
+  details?: {
+    phonetics: Array<{ text: string; audio: string }>;
+    meanings: Array<{
+      partOfSpeech: string;
+      definitions: Array<{
+        definition: string;
+        example?: string;
+        synonyms?: string[];
+        antonyms?: string[];
+      }>;
+    }>;
+  };
+  isLearned?: boolean;
+  isInDictionary?: boolean;
+  usages?: string[];
+  analysisIds?: string[];
 }
 
 const initialState: TrainingState = {
-  // Training mode and settings
-  trainingMode: "word",
-  selectedStatuses: ["to_learn", "want_repeat", "unset"],
-
-  // Word training
+  mode: "word",
+  isStarted: false,
+  currentIndex: 0,
   words: [],
-  currentWordIndex: 0,
-  trainingStarted: false,
-  trainingCompleted: false,
-
-  // Sentence training
-  sentences: [],
-  currentSentenceIndex: 0,
-  shuffledWords: [],
-  userAnswer: [],
-  isAnswerChecked: null,
-
-  // Progress tracking
-  totalWords: 0,
-  completedWords: 0,
-  correctAnswers: 0,
-  incorrectAnswers: 0,
-
-  // Loading states
-  loading: false,
-  updating: null,
-  error: null,
+  selectedStatuses: [1, 2, 3, 4, 5], // Default to all statuses except mastered
+  settings: {
+    autoAdvance: false,
+    showTranslation: true,
+    showDefinition: true,
+  },
 };
 
 const trainingSlice = createSlice({
   name: "training",
   initialState,
   reducers: {
-    // Training mode and settings
-    setTrainingMode: (state, action: PayloadAction<"word" | "sentence">) => {
-      state.trainingMode = action.payload;
-      // Reset training state when mode changes
-      state.currentWordIndex = 0;
-      state.currentSentenceIndex = 0;
-      state.trainingStarted = false;
-      state.trainingCompleted = false;
-      state.completedWords = 0;
-      state.correctAnswers = 0;
-      state.incorrectAnswers = 0;
+    setMode: (state, action: PayloadAction<"word" | "sentence">) => {
+      state.mode = action.payload;
     },
-
-    setSelectedStatuses: (state, action: PayloadAction<string[]>) => {
-      state.selectedStatuses = action.payload;
-    },
-
-    // Word training
-    setWords: (state, action: PayloadAction<TrainingWord[]>) => {
+    startTraining: (state, action: PayloadAction<Word[]>) => {
       state.words = action.payload;
-      state.totalWords = action.payload.length;
-      state.currentWordIndex = 0;
-      state.trainingStarted = false;
-      state.trainingCompleted = false;
-      state.completedWords = 0;
-      state.correctAnswers = 0;
-      state.incorrectAnswers = 0;
+      state.isStarted = true;
+      state.currentIndex = 0;
     },
-
-    setCurrentWordIndex: (state, action: PayloadAction<number>) => {
-      state.currentWordIndex = action.payload;
-      if (action.payload >= state.words.length) {
-        state.trainingCompleted = true;
+    stopTraining: (state) => {
+      state.isStarted = false;
+      state.words = [];
+      state.currentIndex = 0;
+    },
+    nextWord: (state) => {
+      if (state.currentIndex < state.words.length - 1) {
+        state.currentIndex += 1;
       }
     },
-
-    setTrainingStarted: (state, action: PayloadAction<boolean>) => {
-      state.trainingStarted = action.payload;
+    previousWord: (state) => {
+      if (state.currentIndex > 0) {
+        state.currentIndex -= 1;
+      }
     },
-
-    setTrainingCompleted: (state, action: PayloadAction<boolean>) => {
-      state.trainingCompleted = action.payload;
+    setCurrentIndex: (state, action: PayloadAction<number>) => {
+      state.currentIndex = action.payload;
     },
-
-    // Sentence training
-    setSentences: (state, action: PayloadAction<TrainingSentence[]>) => {
-      state.sentences = action.payload;
-      state.currentSentenceIndex = 0;
+    updateWordStatus: (
+      state,
+      action: PayloadAction<{ id: string; status: 1 | 2 | 3 | 4 | 5 | 6 | 7 }>
+    ) => {
+      const { id, status } = action.payload;
+      const wordIndex = state.words.findIndex((w) => w.id === id);
+      if (wordIndex !== -1) {
+        state.words[wordIndex].status = status;
+      }
     },
-
-    setCurrentSentenceIndex: (state, action: PayloadAction<number>) => {
-      state.currentSentenceIndex = action.payload;
+    toggleStatusSelection: (state, action: PayloadAction<number>) => {
+      const status = action.payload;
+      const index = state.selectedStatuses.indexOf(status);
+      if (index > -1) {
+        state.selectedStatuses.splice(index, 1);
+      } else {
+        state.selectedStatuses.push(status);
+      }
     },
-
-    setShuffledWords: (state, action: PayloadAction<string[]>) => {
-      state.shuffledWords = action.payload;
+    setSelectedStatuses: (state, action: PayloadAction<number[]>) => {
+      state.selectedStatuses = action.payload;
     },
-
-    setUserAnswer: (state, action: PayloadAction<string[]>) => {
-      state.userAnswer = action.payload;
-    },
-
-    setIsAnswerChecked: (state, action: PayloadAction<boolean | null>) => {
-      state.isAnswerChecked = action.payload;
-    },
-
-    // Progress tracking
-    incrementCompletedWords: (state) => {
-      state.completedWords += 1;
-    },
-
-    incrementCorrectAnswers: (state) => {
-      state.correctAnswers += 1;
-    },
-
-    incrementIncorrectAnswers: (state) => {
-      state.incorrectAnswers += 1;
-    },
-
-    // Loading states
-    setLoading: (state, action: PayloadAction<boolean>) => {
-      state.loading = action.payload;
-    },
-
-    setUpdating: (state, action: PayloadAction<string | null>) => {
-      state.updating = action.payload;
-    },
-
-    setError: (state, action: PayloadAction<string | null>) => {
-      state.error = action.payload;
-    },
-
-    // Reset training
-    resetTraining: (state) => {
-      state.currentWordIndex = 0;
-      state.currentSentenceIndex = 0;
-      state.trainingStarted = false;
-      state.trainingCompleted = false;
-      state.completedWords = 0;
-      state.correctAnswers = 0;
-      state.incorrectAnswers = 0;
-      state.shuffledWords = [];
-      state.userAnswer = [];
-      state.isAnswerChecked = null;
-      state.error = null;
-    },
-
-    // Complete training session
-    completeTraining: (state) => {
-      state.trainingCompleted = true;
-      state.trainingStarted = false;
+    updateSettings: (
+      state,
+      action: PayloadAction<Partial<TrainingState["settings"]>>
+    ) => {
+      state.settings = { ...state.settings, ...action.payload };
     },
   },
 });
 
 export const {
-  setTrainingMode,
+  setMode,
+  startTraining,
+  stopTraining,
+  nextWord,
+  previousWord,
+  setCurrentIndex,
+  updateWordStatus,
+  toggleStatusSelection,
   setSelectedStatuses,
-  setWords,
-  setCurrentWordIndex,
-  setTrainingStarted,
-  setTrainingCompleted,
-  setSentences,
-  setCurrentSentenceIndex,
-  setShuffledWords,
-  setUserAnswer,
-  setIsAnswerChecked,
-  incrementCompletedWords,
-  incrementCorrectAnswers,
-  incrementIncorrectAnswers,
-  setLoading,
-  setUpdating,
-  setError,
-  resetTraining,
-  completeTraining,
+  updateSettings,
 } = trainingSlice.actions;
 
 export default trainingSlice.reducer;

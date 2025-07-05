@@ -2,25 +2,45 @@ import type { Word } from "@/types";
 
 const STATUS_OPTIONS = [
   {
-    value: "well_known",
-    label: "Well known",
+    value: 1,
+    label: "Not Learned",
+    color: "bg-gray-500 text-white border-gray-500",
+  },
+  {
+    value: 2,
+    label: "Beginner",
+    color: "bg-red-500 text-white border-red-500",
+  },
+  {
+    value: 3,
+    label: "Basic",
+    color: "bg-orange-500 text-white border-orange-500",
+  },
+  {
+    value: 4,
+    label: "Intermediate",
+    color: "bg-yellow-500 text-white border-yellow-500",
+  },
+  {
+    value: 5,
+    label: "Advanced",
+    color: "bg-blue-500 text-white border-blue-500",
+  },
+  {
+    value: 6,
+    label: "Well Known",
     color: "bg-green-500 text-white border-green-500",
   },
   {
-    value: "want_repeat",
-    label: "Want repeat",
-    color: "bg-orange-400 text-white border-orange-400",
-  },
-  {
-    value: "to_learn",
-    label: "To learn",
-    color: "bg-blue-600 text-white border-blue-600",
+    value: 7,
+    label: "Mastered",
+    color: "bg-purple-500 text-white border-purple-500",
   },
 ];
 
 interface StatusSelectorProps {
   word: Word;
-  onStatusChange: (id: string, status: string) => void;
+  onStatusChange: (id: string, status: number) => void;
   updating?: string | null;
   className?: string;
   buttonClassName?: string;

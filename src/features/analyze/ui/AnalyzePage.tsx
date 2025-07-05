@@ -1,7 +1,9 @@
+import { useState } from "react";
 import { useAnalyze } from "../lib/useAnalyze";
 import { FileUpload } from "./FileUpload";
 import { TextInput } from "./TextInput";
 import { AnalysisResults } from "./AnalysisResults";
+import { AnalysisResult } from "../lib/analyzeApi";
 
 export const AnalyzePage: React.FC = () => {
   const {
@@ -9,11 +11,15 @@ export const AnalyzePage: React.FC = () => {
     analysisResult,
     loadingAnalysis,
     saving,
+    savedAnalysisId,
     setText,
+    setAnalysisResult,
     handleFileUpload,
     analyzeText,
     handleSaveAnalysis,
   } = useAnalyze();
+
+  const [isSaved, setIsSaved] = useState(false);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -38,8 +44,19 @@ export const AnalyzePage: React.FC = () => {
         {analysisResult && (
           <AnalysisResults
             analysisResult={analysisResult}
-            onSave={handleSaveAnalysis}
+            onSave={async () => {
+              await handleSaveAnalysis();
+              setIsSaved(true);
+            }}
             saving={saving}
+            isSaved={isSaved}
+            analysisId={savedAnalysisId}
+            onTitleChange={(newTitle) => {
+              // Update the analysis result title
+              setAnalysisResult((prev: AnalysisResult | null) =>
+                prev ? { ...prev, title: newTitle } : null
+              );
+            }}
           />
         )}
       </div>

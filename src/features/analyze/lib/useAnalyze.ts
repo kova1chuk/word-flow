@@ -41,6 +41,7 @@ export const useAnalyze = () => {
   );
   const [loadingAnalysis, setLoadingAnalysis] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [savedAnalysisId, setSavedAnalysisId] = useState<string | null>(null);
 
   const handleSubtitleUpload = useCallback(
     async (file: File) => {
@@ -209,7 +210,11 @@ export const useAnalyze = () => {
 
     setSaving(true);
     try {
-      await analyzeApi.saveAnalysis(user.uid, analysisResult);
+      const analysisId = await analyzeApi.saveAnalysis(
+        user.uid,
+        analysisResult
+      );
+      setSavedAnalysisId(analysisId);
       showSuccess("Analysis saved successfully!");
     } catch (err) {
       console.error("Save error:", err);
@@ -225,9 +230,11 @@ export const useAnalyze = () => {
     analysisResult,
     loadingAnalysis,
     saving,
+    savedAnalysisId,
 
     // Actions
     setText,
+    setAnalysisResult,
     handleFileUpload,
     analyzeText,
     handleSaveAnalysis,

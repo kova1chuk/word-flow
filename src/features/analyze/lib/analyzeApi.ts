@@ -180,7 +180,7 @@ export const analyzeApi = {
   async saveAnalysis(
     userId: string,
     analysisResult: AnalysisResult
-  ): Promise<void> {
+  ): Promise<string> {
     // Save the analysis document (without sentences field)
     const analysisRef = await addDoc(collection(db, "analyses"), {
       userId,
@@ -264,6 +264,8 @@ export const analyzeApi = {
         usages: usageIndexes,
       });
     }
+
+    return analysisRef.id;
   },
 };
 

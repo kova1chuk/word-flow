@@ -75,6 +75,7 @@ export function useAnalysisWords(analysisId: string) {
         collection(db, "analyses", analysisId, "words")
       );
       const analysisWordsSnapshot = await getDocs(analysisWordsQuery);
+      console.log("analysisWordsSnapshot", analysisWordsSnapshot);
 
       // Get all word IDs from the analysis
       const wordIds = analysisWordsSnapshot.docs.map(

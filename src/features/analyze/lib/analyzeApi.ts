@@ -6,6 +6,9 @@ import {
   setDoc,
   doc,
   getDoc,
+  DocumentReference,
+  CollectionReference,
+  DocumentSnapshot,
 } from "firebase/firestore";
 import { config } from "@/lib/config";
 
@@ -176,96 +179,251 @@ export const analyzeApi = {
     };
   },
 
-  // Save analysis to Firestore
+  /**
+   * Save analysis to Firestore
+   *
+   * This function is split into 3 main steps for better understanding:
+   *
+   * Step 1: Create the main analysis document
+   * - Creates a document in the 'analyses' collection
+   * - Stores basic analysis info (title, summary, metadata)
+   *
+   * Step 2: Save all sentences
+   * - Creates a 'sentences' subcollection in the analysis document
+   * - Stores each sentence with its index for ordering
+   *
+   * Step 3: Process and save words
+   * - Extracts all unique words from the analysis
+   * - For each word:
+   *   - Finds all sentence indexes where the word appears
+   *   - Updates or creates word documents in the 'words' collection
+   *   - Links words to the analysis via analysisIds
+   *   - Creates references in the analysis 'words' subcollection
+   *
+   * @param userId - The user ID who owns this analysis
+   * @param analysisResult - The analysis result to save
+   * @returns The ID of the created analysis document
+   */
   async saveAnalysis(
     userId: string,
     analysisResult: AnalysisResult
   ): Promise<string> {
-    // Save the analysis document (without sentences field)
-    const analysisRef = await addDoc(collection(db, "analyses"), {
+    // Step 1: Create the main analysis document
+    const analysisRef = await this.createAnalysisDocument(
+      userId,
+      analysisResult
+    );
+
+    // Step 2: Save all sentences
+    await this.saveSentences(analysisRef, analysisResult.sentences);
+
+    // Step 3: Process and save words
+    await this.processAndSaveWords(userId, analysisRef, analysisResult);
+
+    return analysisRef.id;
+  },
+
+  /**
+   * Step 1: Create the main analysis document
+   *
+   * Creates a new document in the 'analyses' collection with:
+   * - User ID for ownership
+   * - Analysis title
+   * - Creation timestamp
+   * - Analysis summary (word counts, etc.)
+   *
+   * @param userId - The user ID who owns this analysis
+   * @param analysisResult - The analysis result containing title and summary
+   * @returns DocumentReference to the created analysis document
+   */
+  async createAnalysisDocument(userId: string, analysisResult: AnalysisResult) {
+    return await addDoc(collection(db, "analyses"), {
       userId,
       title: analysisResult.title,
       createdAt: Timestamp.now(),
       summary: analysisResult.summary,
     });
+  },
 
-    // Save each sentence as a document in the 'sentences' subcollection
-    const sentences = analysisResult.sentences || [];
-    for (let i = 0; i < sentences.length; i++) {
+  /**
+   * Step 2: Save all sentences to the sentences subcollection
+   *
+   * Creates a 'sentences' subcollection in the analysis document.
+   * Each sentence is stored as a separate document with:
+   * - The sentence text
+   * - Its index for maintaining order
+   *
+   * @param analysisRef - Reference to the analysis document
+   * @param sentences - Array of sentences to save
+   */
+  async saveSentences(analysisRef: DocumentReference, sentences: string[]) {
+    const sentencesToSave = sentences || [];
+    for (let i = 0; i < sentencesToSave.length; i++) {
       await addDoc(collection(analysisRef, "sentences"), {
-        text: sentences[i],
+        text: sentencesToSave[i],
         index: i,
       });
     }
+  },
 
-    // Create words subcollection in the analysis document
+  // Step 3: Process and save all words
+  async processAndSaveWords(
+    userId: string,
+    analysisRef: DocumentReference,
+    analysisResult: AnalysisResult
+  ) {
+    const allWords = this.extractAllWords(analysisResult);
+    const sentences = analysisResult.sentences || [];
     const wordsCollection = collection(analysisRef, "words");
 
-    // For each word in the analysis, save or update the word document with usages
-    const allWords = Array.from(
+    if (allWords.length === 0) {
+      console.warn(
+        "No words to save for analysis",
+        analysisRef.id,
+        analysisResult
+      );
+    } else {
+      console.log(
+        `Saving ${allWords.length} words for analysis ${analysisRef.id}`
+      );
+    }
+
+    for (const word of allWords) {
+      try {
+        const usageIndexes = this.findWordUsages(word, sentences);
+        await this.saveOrUpdateWord(userId, word, usageIndexes, analysisRef.id);
+        await this.addWordToAnalysis(
+          userId,
+          word,
+          usageIndexes,
+          wordsCollection
+        );
+      } catch (err) {
+        console.error(
+          `Failed to save word '${word}' for analysis ${analysisRef.id}:`,
+          err
+        );
+      }
+    }
+  },
+
+  // Extract all unique words from the analysis
+  extractAllWords(analysisResult: AnalysisResult): string[] {
+    return Array.from(
       new Set([
         ...Object.keys(analysisResult.wordFrequency || {}),
         ...(analysisResult.unknownWordList || []),
       ])
     );
-    for (const word of allWords) {
-      // Find all sentence indexes where the word appears
-      const usageIndexes = sentences
-        .map((sentence, idx) =>
-          sentence.toLowerCase().includes(word.toLowerCase()) ? idx : -1
-        )
-        .filter((idx) => idx !== -1);
+  },
 
-      // Get existing word document to merge analysisId properly
-      const wordDocRef = doc(db, "words", `${userId}_${word}`);
-      const wordDoc = await getDoc(wordDocRef);
+  // Find all sentence indexes where a word appears
+  findWordUsages(word: string, sentences: string[]): number[] {
+    return sentences
+      .map((sentence, idx) =>
+        sentence.toLowerCase().includes(word.toLowerCase()) ? idx : -1
+      )
+      .filter((idx) => idx !== -1);
+  },
 
-      if (wordDoc.exists()) {
-        // Word exists, update with new analysisId and merge usages
-        const existingData = wordDoc.data();
-        const existingUsages = existingData.usages || [];
-        const existingAnalysisIds = existingData.analysisIds || [];
+  // Save or update a word document
+  async saveOrUpdateWord(
+    userId: string,
+    word: string,
+    usageIndexes: number[],
+    analysisId: string
+  ) {
+    const wordDocRef = doc(db, "words", `${userId}_${word}`);
+    const wordDoc = await getDoc(wordDocRef);
 
-        // Add new analysisId if not already present
-        if (!existingAnalysisIds.includes(analysisRef.id)) {
-          existingAnalysisIds.push(analysisRef.id);
-        }
+    if (wordDoc.exists()) {
+      await this.updateExistingWord(
+        wordDoc,
+        wordDocRef,
+        userId,
+        word,
+        usageIndexes,
+        analysisId
+      );
+    } else {
+      await this.createNewWord(
+        wordDocRef,
+        userId,
+        word,
+        usageIndexes,
+        analysisId
+      );
+    }
+  },
 
-        // Merge usages
-        const mergedUsages = [...new Set([...existingUsages, ...usageIndexes])];
+  // Update an existing word document
+  async updateExistingWord(
+    wordDoc: DocumentSnapshot,
+    wordDocRef: DocumentReference,
+    userId: string,
+    word: string,
+    usageIndexes: number[],
+    analysisId: string
+  ) {
+    const existingData = wordDoc.data();
+    if (!existingData) {
+      throw new Error("Word document data is undefined");
+    }
+    const existingUsages = existingData.usages || [];
+    const existingAnalysisIds = existingData.analysisIds || [];
 
-        await setDoc(
-          wordDocRef,
-          {
-            userId,
-            word,
-            analysisIds: existingAnalysisIds,
-            analysisId: analysisRef.id, // Keep for backward compatibility
-            usages: mergedUsages,
-          },
-          { merge: true }
-        );
-      } else {
-        // New word, create with analysisId
-        await setDoc(wordDocRef, {
-          userId,
-          word,
-          analysisIds: [analysisRef.id],
-          analysisId: analysisRef.id,
-          usages: usageIndexes,
-        });
-      }
-
-      // Add word reference to analysis words subcollection
-      await setDoc(doc(wordsCollection, wordDocRef.id), {
-        wordId: wordDocRef.id,
-        word: word,
-        userId: userId,
-        usages: usageIndexes,
-      });
+    // Add new analysisId if not already present
+    if (!existingAnalysisIds.includes(analysisId)) {
+      existingAnalysisIds.push(analysisId);
     }
 
-    return analysisRef.id;
+    // Merge usages
+    const mergedUsages = [...new Set([...existingUsages, ...usageIndexes])];
+
+    await setDoc(
+      wordDocRef,
+      {
+        userId,
+        word,
+        analysisIds: existingAnalysisIds,
+        analysisId: analysisId, // Keep for backward compatibility
+        usages: mergedUsages,
+      },
+      { merge: true }
+    );
+  },
+
+  // Create a new word document
+  async createNewWord(
+    wordDocRef: DocumentReference,
+    userId: string,
+    word: string,
+    usageIndexes: number[],
+    analysisId: string
+  ) {
+    await setDoc(wordDocRef, {
+      userId,
+      word,
+      analysisIds: [analysisId],
+      analysisId: analysisId,
+      usages: usageIndexes,
+    });
+  },
+
+  // Add word reference to analysis words subcollection
+  async addWordToAnalysis(
+    userId: string,
+    word: string,
+    usageIndexes: number[],
+    wordsCollection: CollectionReference
+  ) {
+    const wordDocRef = doc(db, "words", `${userId}_${word}`);
+    await setDoc(doc(wordsCollection, wordDocRef.id), {
+      wordId: wordDocRef.id,
+      word: word,
+      userId: userId,
+      usages: usageIndexes,
+    });
   },
 };
 

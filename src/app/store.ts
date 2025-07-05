@@ -5,12 +5,20 @@ import { TypedUseSelectorHook, useDispatch, useSelector } from "react-redux";
 import authSlice from "@/entities/user/model/authSlice";
 import wordSlice from "@/entities/word/model/wordSlice";
 import analysisSlice from "@/entities/analysis/model/analysisSlice";
+import analysesSlice from "@/features/analyses/model/analysesSlice";
+import analysisWordsSlice from "@/features/analysis-words/model/analysisWordsSlice";
+import trainingStatsSlice from "@/features/analysis-view/model/trainingStatsSlice";
+import analyzeSlice from "@/features/analyze/model/analyzeSlice";
 
 export const store = configureStore({
   reducer: {
     auth: authSlice,
     word: wordSlice,
     analysis: analysisSlice,
+    analyses: analysesSlice,
+    analysisWords: analysisWordsSlice,
+    trainingStats: trainingStatsSlice,
+    analyze: analyzeSlice,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

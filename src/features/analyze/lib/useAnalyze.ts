@@ -1,6 +1,32 @@
 import { useState, useCallback } from "react";
 import { useAuth } from "@/lib/auth-context";
 import { analyzeApi, AnalysisResult } from "./analyzeApi";
+import { getDocs, collection, query, where } from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import { config } from "./analyzeApi";
+import { transformApiResult } from "./analyzeApi";
+import type { UserWord } from "./analyzeApi";
+
+async function fetchStatusesForWords(
+  userId: string,
+  words: string[]
+): Promise<UserWord[]> {
+  const chunkSize = 10;
+  let results: UserWord[] = [];
+  for (let i = 0; i < words.length; i += chunkSize) {
+    const chunk = words.slice(i, i + chunkSize);
+    const q = query(
+      collection(db, "words"),
+      where("userId", "==", userId),
+      where("word", "in", chunk)
+    );
+    const snapshot = await getDocs(q);
+    results = results.concat(
+      snapshot.docs.map((doc) => doc.data() as UserWord)
+    );
+  }
+  return results;
+}
 
 export const useAnalyze = () => {
   const { user } = useAuth();
@@ -26,8 +52,22 @@ export const useAnalyze = () => {
       setLoadingAnalysis(true);
 
       try {
-        const result = await analyzeApi.analyzeSubtitle(file);
-        setAnalysisResult(result);
+        const formData = new FormData();
+        formData.append("file", file);
+        const response = await fetch(config.subtitleAnalysisUrl, {
+          method: "POST",
+          body: formData,
+        });
+        if (!response.ok) {
+          throw new Error(`Subtitle upload failed: ${response.statusText}`);
+        }
+        const apiResponse = await response.json();
+        const uniqueWords =
+          apiResponse.unique_words || apiResponse.uniqueWords || [];
+        const userWords = await fetchStatusesForWords(user.uid, uniqueWords);
+        setAnalysisResult(
+          transformApiResult(apiResponse, file.name, userWords)
+        );
         setSuccess("Subtitle file analyzed successfully!");
       } catch (err) {
         console.error("Subtitle upload error:", err);
@@ -47,8 +87,22 @@ export const useAnalyze = () => {
       setLoadingAnalysis(true);
 
       try {
-        const result = await analyzeApi.analyzeFile(file);
-        setAnalysisResult(result);
+        const formData = new FormData();
+        formData.append("file", file);
+        const response = await fetch(config.uploadServiceUrl, {
+          method: "POST",
+          body: formData,
+        });
+        if (!response.ok) {
+          throw new Error(`Upload failed: ${response.statusText}`);
+        }
+        const apiResponse = await response.json();
+        const uniqueWords =
+          apiResponse.unique_words || apiResponse.uniqueWords || [];
+        const userWords = await fetchStatusesForWords(user.uid, uniqueWords);
+        setAnalysisResult(
+          transformApiResult(apiResponse, file.name, userWords)
+        );
         setSuccess("File uploaded and analyzed successfully!");
       } catch (err) {
         console.error("Upload error:", err);
@@ -79,8 +133,23 @@ export const useAnalyze = () => {
     setLoadingAnalysis(true);
 
     try {
-      const result = await analyzeApi.analyzeText(text);
-      setAnalysisResult(result);
+      const response = await fetch(config.textAnalysisUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ text: text.trim() }),
+      });
+      if (!response.ok) {
+        throw new Error(`Analysis failed: ${response.statusText}`);
+      }
+      const apiResponse = await response.json();
+      const uniqueWords =
+        apiResponse.unique_words || apiResponse.uniqueWords || [];
+      const userWords = await fetchStatusesForWords(user.uid, uniqueWords);
+      setAnalysisResult(
+        transformApiResult(apiResponse, "Pasted Text", userWords)
+      );
       setSuccess("Text analyzed successfully!");
     } catch (err) {
       console.error("Analysis error:", err);

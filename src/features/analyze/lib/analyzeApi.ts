@@ -1,5 +1,12 @@
 import { db } from "@/lib/firebase";
-import { collection, addDoc, Timestamp } from "firebase/firestore";
+import {
+  collection,
+  addDoc,
+  Timestamp,
+  setDoc,
+  doc,
+  getDoc,
+} from "firebase/firestore";
 import { config } from "@/lib/config";
 
 export interface AnalysisResult {
@@ -10,10 +17,11 @@ export interface AnalysisResult {
   summary: {
     totalWords: number;
     uniqueWords: number;
-    knownWords: number;
+    wordsInDictionary: number;
+    learnerWords: number;
     unknownWords: number;
-    averageWordLength: number;
-    readingTime: number;
+    averageWordLength?: number;
+    readingTime?: number;
   };
 }
 
@@ -36,26 +44,74 @@ export interface ApiAnalysisResponse {
     averageWordLength: number;
     readingTime: number;
   };
+  unique_words?: string[];
+  total_words?: number;
+  total_unique_words?: number;
 }
+
+type UserWord = {
+  word: string;
+  status?: string;
+};
+
+export type { UserWord };
 
 const transformApiResult = (
   apiResponse: ApiAnalysisResponse,
-  fileName: string
+  fileName: string,
+  userWords: UserWord[]
 ): AnalysisResult => {
-  // Handles both flat and nested summary objects from the API
-  const summaryData = apiResponse.summary || apiResponse;
+  const userWordMap = new Map(
+    userWords.map((w) => [w.word.toLowerCase(), w.status])
+  );
+  let uniqueWords: string[] = [];
+  if (Array.isArray(apiResponse.unique_words)) {
+    uniqueWords = apiResponse.unique_words;
+  } else if (Array.isArray(apiResponse.uniqueWords)) {
+    uniqueWords = apiResponse.uniqueWords;
+  }
+  let wordsInDictionary = 0;
+  let learnerWords = 0;
+  let unknownWords = 0;
+
+  uniqueWords.forEach((word: string) => {
+    const status = userWordMap.get(word.toLowerCase());
+    if (status !== undefined) {
+      wordsInDictionary++;
+      if (status === "to_learn" || status === "want_repeat") {
+        learnerWords++;
+      }
+    } else {
+      unknownWords++;
+    }
+  });
+
+  let totalWords = 0;
+  if (typeof apiResponse.total_words === "number") {
+    totalWords = apiResponse.total_words;
+  } else if (typeof apiResponse.totalWords === "number") {
+    totalWords = apiResponse.totalWords;
+  }
+  let totalUniqueWords = 0;
+  if (typeof apiResponse.total_unique_words === "number") {
+    totalUniqueWords = apiResponse.total_unique_words;
+  } else if (typeof apiResponse.uniqueWords === "number") {
+    totalUniqueWords = apiResponse.uniqueWords;
+  }
+
   return {
     title: apiResponse.title || fileName,
     wordFrequency: apiResponse.wordFrequency || {},
     unknownWordList: apiResponse.unknownWordList || [],
     sentences: apiResponse.sentences || [],
     summary: {
-      totalWords: summaryData.totalWords || 0,
-      uniqueWords: summaryData.uniqueWords || 0,
-      knownWords: summaryData.knownWords || 0,
-      unknownWords: summaryData.unknownWords || 0,
-      averageWordLength: summaryData.averageWordLength || 0,
-      readingTime: Math.round(summaryData.readingTime || 0),
+      totalWords,
+      uniqueWords: totalUniqueWords,
+      wordsInDictionary,
+      learnerWords,
+      unknownWords,
+      averageWordLength: apiResponse.averageWordLength || 0,
+      readingTime: Math.round(apiResponse.readingTime || 0),
     },
   };
 };
@@ -76,7 +132,7 @@ export const analyzeApi = {
     }
 
     const apiResponse = await response.json();
-    return transformApiResult(apiResponse, file.name);
+    return transformApiResult(apiResponse, file.name, []);
   },
 
   // Analyze generic files (TXT, EPUB)
@@ -94,7 +150,7 @@ export const analyzeApi = {
     }
 
     const apiResponse = await response.json();
-    return transformApiResult(apiResponse, file.name);
+    return transformApiResult(apiResponse, file.name, []);
   },
 
   // Analyze pasted text
@@ -118,9 +174,11 @@ export const analyzeApi = {
       unknownWordList: flatResult.unknownWordList || [],
       sentences: flatResult.sentences || [],
       summary: {
-        totalWords: flatResult.totalWords || 0,
-        uniqueWords: flatResult.uniqueWords || 0,
-        knownWords: flatResult.knownWords || 0,
+        totalWords: flatResult.totalWords || flatResult.total_words || 0,
+        uniqueWords:
+          flatResult.uniqueWords || flatResult.total_unique_words || 0,
+        wordsInDictionary: 0,
+        learnerWords: 0,
         unknownWords: flatResult.unknownWords || 0,
         averageWordLength: flatResult.averageWordLength || 0,
         readingTime: Math.round(flatResult.readingTime) || 0,
@@ -133,12 +191,91 @@ export const analyzeApi = {
     userId: string,
     analysisResult: AnalysisResult
   ): Promise<void> {
-    await addDoc(collection(db, "analyses"), {
+    // Save the analysis document (without sentences field)
+    const analysisRef = await addDoc(collection(db, "analyses"), {
       userId,
       title: analysisResult.title,
       createdAt: Timestamp.now(),
       summary: analysisResult.summary,
-      sentences: analysisResult.sentences,
+      unknownWords: analysisResult.unknownWordList,
     });
+
+    // Save each sentence as a document in the 'sentences' subcollection
+    const sentences = analysisResult.sentences || [];
+    for (let i = 0; i < sentences.length; i++) {
+      await addDoc(collection(analysisRef, "sentences"), {
+        text: sentences[i],
+        index: i,
+      });
+    }
+
+    // Create words subcollection in the analysis document
+    const wordsCollection = collection(analysisRef, "words");
+
+    // For each word in the analysis, save or update the word document with usages
+    const allWords = Array.from(
+      new Set([
+        ...Object.keys(analysisResult.wordFrequency || {}),
+        ...(analysisResult.unknownWordList || []),
+      ])
+    );
+    for (const word of allWords) {
+      // Find all sentence indexes where the word appears
+      const usageIndexes = sentences
+        .map((sentence, idx) =>
+          sentence.toLowerCase().includes(word.toLowerCase()) ? idx : -1
+        )
+        .filter((idx) => idx !== -1);
+
+      // Get existing word document to merge analysisId properly
+      const wordDocRef = doc(db, "words", `${userId}_${word}`);
+      const wordDoc = await getDoc(wordDocRef);
+
+      if (wordDoc.exists()) {
+        // Word exists, update with new analysisId and merge usages
+        const existingData = wordDoc.data();
+        const existingUsages = existingData.usages || [];
+        const existingAnalysisIds = existingData.analysisIds || [];
+
+        // Add new analysisId if not already present
+        if (!existingAnalysisIds.includes(analysisRef.id)) {
+          existingAnalysisIds.push(analysisRef.id);
+        }
+
+        // Merge usages
+        const mergedUsages = [...new Set([...existingUsages, ...usageIndexes])];
+
+        await setDoc(
+          wordDocRef,
+          {
+            userId,
+            word,
+            analysisIds: existingAnalysisIds,
+            analysisId: analysisRef.id, // Keep for backward compatibility
+            usages: mergedUsages,
+          },
+          { merge: true }
+        );
+      } else {
+        // New word, create with analysisId
+        await setDoc(wordDocRef, {
+          userId,
+          word,
+          analysisIds: [analysisRef.id],
+          analysisId: analysisRef.id,
+          usages: usageIndexes,
+        });
+      }
+
+      // Add word reference to analysis words subcollection
+      await setDoc(doc(wordsCollection, wordDocRef.id), {
+        wordId: wordDocRef.id,
+        word: word,
+        userId: userId,
+        usages: usageIndexes,
+      });
+    }
   },
 };
+
+export { config, transformApiResult };

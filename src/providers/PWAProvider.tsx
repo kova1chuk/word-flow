@@ -28,9 +28,12 @@ export const PWAProvider: React.FC<PWAProviderProps> = ({ children }) => {
     // Set up online status listener
     const cleanup = addOnlineStatusListener(setIsOnline);
 
+    // Check if user previously closed the install prompt
+    const dismissed = localStorage.getItem("pwaInstallPromptDismissed");
+
     // Get install prompt
     getPWAInstallPrompt().then((prompt) => {
-      if (prompt) {
+      if (prompt && !dismissed) {
         setShowInstallPrompt(true);
       }
     });
@@ -56,6 +59,11 @@ export const PWAProvider: React.FC<PWAProviderProps> = ({ children }) => {
     }
   }, [isOnline]);
 
+  const handleCloseInstallPrompt = () => {
+    setShowInstallPrompt(false);
+    localStorage.setItem("pwaInstallPromptDismissed", "1");
+  };
+
   return (
     <>
       {children}
@@ -72,7 +80,7 @@ export const PWAProvider: React.FC<PWAProviderProps> = ({ children }) => {
               </p>
             </div>
             <button
-              onClick={() => setShowInstallPrompt(false)}
+              onClick={handleCloseInstallPrompt}
               className="text-white hover:text-gray-200"
             >
               <svg

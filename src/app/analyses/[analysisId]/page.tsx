@@ -1,11 +1,13 @@
 "use client";
 
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { useAppDispatch } from "@/app/store";
 import { useAuth } from "@/lib/auth-context";
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useState } from "react";
 import PageLoader from "@/components/PageLoader";
 import Link from "next/link";
+import { getDocs, collection, query, where } from "firebase/firestore";
+import { db } from "@/lib/firebase";
 
 // Import analysis view components
 import {
@@ -24,7 +26,6 @@ import {
   setSentencesPerPage,
   addTranslation,
   setTranslatingSentenceId,
-  setWordInfoLoading,
   setReloadingDefinition,
   setReloadingTranslation,
 } from "@/entities/analysis";
@@ -44,6 +45,7 @@ export default function SingleAnalysisPage() {
   const params = useParams();
   const analysisId = params.analysisId as string;
   const dispatch = useAppDispatch();
+  const router = useRouter();
 
   const {
     analysis,
@@ -68,6 +70,13 @@ export default function SingleAnalysisPage() {
     setShowSettings,
     setSelectedWord,
   } = useAnalysisView(analysisId);
+
+  const [trainingLoading, setTrainingLoading] = useState(false);
+  const [trainingStats, setTrainingStats] = useState<{
+    learned: number;
+    notLearned: number;
+    total: number;
+  } | null>(null);
 
   // Load reading progress
   useEffect(() => {
@@ -148,34 +157,10 @@ export default function SingleAnalysisPage() {
   );
 
   // Handle word click
-  const handleWordClick = useCallback(
-    async (word: string) => {
-      setSelectedWord({ word });
-      dispatch(setWordInfoLoading(true));
-
-      try {
-        const { definition, translation, details } = await fetchWordInfo(word);
-        setSelectedWord({
-          word,
-          definition,
-          translation,
-          details,
-        });
-      } catch (error) {
-        console.error("Error fetching word info:", error);
-        setSelectedWord({
-          word,
-          definition: "Failed to load definition",
-          details: {
-            error: error instanceof Error ? error.message : "Unknown error",
-          },
-        });
-      } finally {
-        dispatch(setWordInfoLoading(false));
-      }
-    },
-    [setSelectedWord, dispatch]
-  );
+  const handleWordClick = useCallback(async () => {
+    // Navigate to the words list page for this analysis
+    router.push(`/analyses/${analysisId}/words`);
+  }, [router, analysisId]);
 
   // Reload definition
   const reloadDefinition = useCallback(async () => {
@@ -247,6 +232,68 @@ export default function SingleAnalysisPage() {
     [translatedSentences, dispatch]
   );
 
+  // Fetch words for this analysis and compute stats
+  const fetchWordsForAnalysis = useCallback(async () => {
+    if (!user || !analysisId) return [];
+
+    // Fetch words from the analysis words subcollection
+    const analysisWordsQuery = query(
+      collection(db, "analyses", analysisId, "words")
+    );
+    const analysisWordsSnapshot = await getDocs(analysisWordsQuery);
+
+    // Get all word IDs from the analysis
+    const wordIds = analysisWordsSnapshot.docs.map((doc) => doc.data().wordId);
+
+    if (wordIds.length === 0) {
+      setTrainingStats({ learned: 0, notLearned: 0, total: 0 });
+      return [];
+    }
+
+    // Fetch the actual word documents
+    const words: Record<string, unknown>[] = [];
+
+    // Process words in chunks to avoid query limits
+    const chunkSize = 10;
+    for (let i = 0; i < wordIds.length; i += chunkSize) {
+      const chunk = wordIds.slice(i, i + chunkSize);
+      const wordsQuery = query(
+        collection(db, "words"),
+        where("__name__", "in", chunk)
+      );
+      const wordsSnapshot = await getDocs(wordsQuery);
+
+      wordsSnapshot.forEach((doc) => {
+        words.push(doc.data());
+      });
+    }
+
+    // Compute stats
+    let learned = 0;
+    let notLearned = 0;
+    for (const w of words) {
+      if (w.status === "well_known") learned++;
+      else notLearned++;
+    }
+    setTrainingStats({ learned, notLearned, total: words.length });
+    return words;
+  }, [user, analysisId]);
+
+  // Start training handler
+  const handleStartTraining = useCallback(async () => {
+    setTrainingLoading(true);
+    const words = await fetchWordsForAnalysis();
+    // Save words to localStorage for the training page to pick up
+    localStorage.setItem("trainingWords", JSON.stringify(words));
+    setTrainingLoading(false);
+    window.location.href = "/training?fromAnalysis=" + analysisId;
+  }, [fetchWordsForAnalysis, analysisId]);
+
+  // Fetch stats on mount
+  useEffect(() => {
+    fetchWordsForAnalysis();
+  }, [fetchWordsForAnalysis]);
+
   if (loading) {
     return <PageLoader text="Loading analysis..." />;
   }
@@ -286,6 +333,38 @@ export default function SingleAnalysisPage() {
         }`}
       >
         {!isFullScreen && <AnalysisHeader analysis={analysis} />}
+
+        {/* Training stats and button */}
+        {!isFullScreen && trainingStats && (
+          <div className="mb-6 flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div className="flex gap-6">
+              <div className="text-green-600 font-semibold">
+                Learned: {trainingStats.learned}
+              </div>
+              <div className="text-red-600 font-semibold">
+                Not learned: {trainingStats.notLearned}
+              </div>
+              <div className="text-gray-600 font-semibold">
+                Total: {trainingStats.total}
+              </div>
+            </div>
+            <div className="flex flex-col gap-2 items-end">
+              <button
+                onClick={handleStartTraining}
+                disabled={trainingLoading || trainingStats.total === 0}
+                className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-lg font-bold disabled:opacity-50"
+              >
+                {trainingLoading ? "Preparing..." : "Start Training"}
+              </button>
+              <button
+                onClick={() => router.push(`/analyses/${analysisId}/words`)}
+                className="mt-2 bg-gray-700 hover:bg-gray-800 text-white px-6 py-2 rounded-lg font-bold"
+              >
+                Words Statistic
+              </button>
+            </div>
+          </div>
+        )}
 
         {/* Sentences List */}
         <div

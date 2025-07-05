@@ -40,14 +40,23 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({
 
         <div className="bg-green-50 dark:bg-green-900/20 rounded-lg p-4">
           <div className="text-2xl font-bold text-green-600 dark:text-green-400">
-            {summary.knownWords.toLocaleString()}
+            {summary.wordsInDictionary.toLocaleString()}
           </div>
           <div className="text-sm text-green-600 dark:text-green-400">
-            Known Words
+            In My Dictionary
           </div>
         </div>
 
-        <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-4">
+        <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
+          <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+            {summary.learnerWords.toLocaleString()}
+          </div>
+          <div className="text-sm text-blue-600 dark:text-blue-400">
+            Learner Words
+          </div>
+        </div>
+
+        <div className="bg-red-50 dark:bg-red-900/20 rounded-lg p-4 col-span-1 md:col-span-2 lg:col-span-4">
           <div className="text-2xl font-bold text-red-600 dark:text-red-400">
             {summary.unknownWords.toLocaleString()}
           </div>
@@ -58,9 +67,6 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({
       </div>
 
       <div className="flex justify-between items-center">
-        <div className="text-sm text-gray-600 dark:text-gray-400">
-          Reading time: ~{summary.readingTime} minutes
-        </div>
         <button
           onClick={onSave}
           disabled={saving}

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
-import { useAuth } from "@/lib/auth-context";
+import { useSelector } from "react-redux";
+import { selectUser } from "@/entities/user/model/selectors";
 import { getDocs, collection, query, where } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
@@ -9,8 +10,8 @@ interface TrainingStats {
   total: number;
 }
 
-export const useTrainingStats = (analysisId: string) => {
-  const { user } = useAuth();
+export function useTrainingStats(analysisId: string) {
+  const user = useSelector(selectUser);
   const [trainingLoading, setTrainingLoading] = useState(false);
   const [trainingStats, setTrainingStats] = useState<TrainingStats | null>(
     null
@@ -83,4 +84,4 @@ export const useTrainingStats = (analysisId: string) => {
     trainingStats,
     handleStartTraining,
   };
-};
+}

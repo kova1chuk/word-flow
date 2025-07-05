@@ -1,19 +1,19 @@
 "use client";
 
-import { useState, useEffect, useCallback, useMemo } from "react";
-import { useAuth } from "@/lib/auth-context";
+import { useState, useEffect, useCallback } from "react";
+import { useSelector } from "react-redux";
+import { selectUser } from "@/entities/user/model/selectors";
 import { db } from "@/lib/firebase";
 import {
   collection,
   query,
   where,
   getDocs,
-  doc,
   updateDoc,
+  doc,
 } from "firebase/firestore";
 import type { Word, WordDetails, Phonetic } from "@/types";
 import { config } from "@/lib/config";
-import PageLoader from "@/components/PageLoader";
 import WordTrainingCard from "@/components/WordTrainingCard";
 
 interface DictionaryApiResponse {
@@ -30,7 +30,7 @@ interface DictionaryApiResponse {
 }
 
 export default function TrainingPage() {
-  const { user, loading } = useAuth();
+  const user = useSelector(selectUser);
   const [trainingMode, setTrainingMode] = useState<"word" | "sentence">("word");
 
   // Word training state (only used when trainingMode === 'word')
@@ -272,24 +272,21 @@ export default function TrainingPage() {
   }
 
   function SentenceTraining() {
-    // Mock data for demo - moved outside to prevent recreation on every render
-    const sentences = useMemo(
-      () => [
-        {
-          english: "I am learning English",
-          translation: "Я вивчаю англійську",
-        },
-        {
-          english: "The cat is on the table",
-          translation: "Кіт на столі",
-        },
-        {
-          english: "She likes to read books",
-          translation: "Вона любить читати книги",
-        },
-      ],
-      []
-    );
+    const [sentences] = useState([
+      {
+        english: "I love learning new languages",
+        translation: "Я люблю вивчати нові мови",
+      },
+      {
+        english: "The weather is beautiful today",
+        translation: "Сьогодні гарна погода",
+      },
+      {
+        english: "Can you help me with this?",
+        translation: "Чи можете ви допомогти мені з цим?",
+      },
+    ]);
+
     const [current, setCurrent] = useState(0);
     const [shuffled, setShuffled] = useState<string[]>([]);
     const [answer, setAnswer] = useState<string[]>([]);
@@ -300,7 +297,7 @@ export default function TrainingPage() {
       setShuffled(shuffleArray(words));
       setAnswer([]);
       setChecked(null);
-    }, [current]);
+    }, [current, sentences]);
 
     const handleWordClick = (word: string) => {
       if (checked) return;
@@ -385,10 +382,6 @@ export default function TrainingPage() {
         )}
       </div>
     );
-  }
-
-  if (loading) {
-    return <PageLoader text="Loading..." />;
   }
 
   if (!user) {

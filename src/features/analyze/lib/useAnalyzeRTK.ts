@@ -1,6 +1,7 @@
 import { useCallback } from "react";
 import { useAppDispatch, useAppSelector } from "@/app/store";
-import { useAuth } from "@/lib/auth-context";
+import { useSelector } from "react-redux";
+import { selectUser } from "@/entities/user/model/selectors";
 import { useNotifications } from "@/providers/NotificationProvider";
 import { AnalysisResult } from "../lib/analyzeApi";
 import {
@@ -27,7 +28,7 @@ import {
 
 export const useAnalyzeRTK = () => {
   const dispatch = useAppDispatch();
-  const { user } = useAuth();
+  const user = useSelector(selectUser);
   const { showSuccess, showError, clearMessages } = useNotifications();
 
   // Selectors
@@ -147,13 +148,13 @@ export const useAnalyzeRTK = () => {
     uniqueWords,
 
     // Actions
-    setText: handleSetText,
-    setAnalysisResult: handleSetAnalysisResult,
-    analyzeText: handleAnalyzeText,
+    handleSetText,
+    handleSetAnalysisResult,
+    handleAnalyzeText,
     handleFileUpload,
     handleSaveAnalysis,
-    clearError: handleClearError,
-    clearAnalysis: handleClearAnalysis,
+    handleClearError,
+    handleClearAnalysis,
     clearMessages,
   };
 };

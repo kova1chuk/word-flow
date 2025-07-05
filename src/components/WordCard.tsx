@@ -30,7 +30,7 @@ export default function WordCard({
   onReloadDefinition: (word: Word) => void;
   onReloadTranslation: (word: Word) => void;
   onDelete?: (word: Word) => void;
-  onStatusChange: (id: string, status: string) => void;
+  onStatusChange: (id: string, status: 1 | 2 | 3 | 4 | 5 | 6 | 7) => void;
   updating?: string | null;
 }) {
   const [examples, setExamples] = useState<Sentence[]>([]);

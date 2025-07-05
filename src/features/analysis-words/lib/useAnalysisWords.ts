@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
-import { useAuth } from "@/lib/auth-context";
+import { useSelector } from "react-redux";
+import { selectUser } from "@/entities/user/model/selectors";
 import {
   collection,
   query,
@@ -35,7 +36,7 @@ export interface Analysis {
 }
 
 export function useAnalysisWords(analysisId: string) {
-  const { user } = useAuth();
+  const user = useSelector(selectUser);
   const [words, setWords] = useState<AnalysisWord[]>([]);
   const [analysis, setAnalysis] = useState<Analysis | null>(null);
   const [loading, setLoading] = useState(true);

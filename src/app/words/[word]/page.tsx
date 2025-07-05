@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useAuth } from "@/lib/auth-context";
+import { useSelector } from "react-redux";
+import { selectUser } from "@/entities/user/model/selectors";
 import { db } from "@/lib/firebase";
 import {
   collection,
@@ -52,7 +53,7 @@ interface Sentence {
 
 // --- Component ---
 export default function WordPage() {
-  const { user } = useAuth();
+  const user = useSelector(selectUser);
   const params = useParams();
   const wordParam = Array.isArray(params.word) ? params.word[0] : params.word;
 

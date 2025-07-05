@@ -1,5 +1,6 @@
 import { useState, useCallback } from "react";
-import { useAuth } from "@/lib/auth-context";
+import { useSelector } from "react-redux";
+import { selectUser } from "@/entities/user/model/selectors";
 import { useNotifications } from "@/providers/NotificationProvider";
 import { analyzeApi, AnalysisResult } from "./analyzeApi";
 import { getDocs, collection, query, where } from "firebase/firestore";
@@ -33,7 +34,7 @@ async function fetchStatusesForWords(
 }
 
 export const useAnalyze = () => {
-  const { user } = useAuth();
+  const user = useSelector(selectUser);
   const { showSuccess, showError, clearMessages } = useNotifications();
   const [text, setText] = useState("");
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(
@@ -92,7 +93,7 @@ export const useAnalyze = () => {
         setLoadingAnalysis(false);
       }
     },
-    [user, clearMessages]
+    [user, clearMessages, showSuccess, showError]
   );
 
   const handleGenericUpload = useCallback(
@@ -142,7 +143,7 @@ export const useAnalyze = () => {
         setLoadingAnalysis(false);
       }
     },
-    [user, clearMessages]
+    [user, clearMessages, showSuccess, showError]
   );
 
   const handleFileUpload = useCallback(
@@ -203,7 +204,7 @@ export const useAnalyze = () => {
       showError(err instanceof Error ? err.message : "Analysis failed");
       setLoadingAnalysis(false);
     }
-  }, [user, text, clearMessages]);
+  }, [user, text, clearMessages, showSuccess, showError]);
 
   const handleSaveAnalysis = useCallback(async () => {
     if (!user || !analysisResult) return;
@@ -222,7 +223,7 @@ export const useAnalyze = () => {
     } finally {
       setSaving(false);
     }
-  }, [user, analysisResult]);
+  }, [user, analysisResult, showSuccess, showError]);
 
   return {
     // State

@@ -14,7 +14,7 @@ const STATUS_OPTIONS = [
 
 interface StatusSelectorProps {
   word: Word;
-  onStatusChange: (id: string, status: number) => void;
+  onStatusChange: (id: string, status: 1 | 2 | 3 | 4 | 5 | 6 | 7) => void;
   updating?: string | null;
   className?: string;
 }
@@ -48,8 +48,8 @@ export default function StatusSelector({
 
   const handleChange = (value: number[]) => {
     const newStatus = value[0];
-    if (newStatus !== currentStatus) {
-      onStatusChange(word.id, newStatus);
+    if (newStatus !== currentStatus && newStatus >= 1 && newStatus <= 7) {
+      onStatusChange(word.id, newStatus as 1 | 2 | 3 | 4 | 5 | 6 | 7);
     }
   };
 

@@ -1,6 +1,7 @@
-import { useEffect } from "react";
+import { useEffect, useCallback } from "react";
 import { useAppDispatch, useAppSelector } from "@/app/store";
-import { useAuth } from "@/lib/auth-context";
+import { useSelector } from "react-redux";
+import { selectUser } from "@/entities/user/model/selectors";
 import { fetchAnalysisWords } from "../model/analysisWordsSlice";
 import {
   selectAnalysisWords,
@@ -14,7 +15,7 @@ import {
 
 export const useAnalysisWordsRTK = (analysisId: string) => {
   const dispatch = useAppDispatch();
-  const { user } = useAuth();
+  const user = useSelector(selectUser);
 
   // Selectors
   const words = useAppSelector(selectAnalysisWords);
@@ -26,22 +27,22 @@ export const useAnalysisWordsRTK = (analysisId: string) => {
   const wordsInDictionary = useAppSelector(selectWordsInDictionary);
 
   // Actions
-  const fetchWords = () => {
+  const fetchWords = useCallback(() => {
     if (user && analysisId) {
       dispatch(fetchAnalysisWords({ userId: user.uid, analysisId }));
     }
-  };
+  }, [user, analysisId, dispatch]);
 
-  const refreshWords = () => {
+  const refreshWords = useCallback(() => {
     fetchWords();
-  };
+  }, [fetchWords]);
 
   // Load words when analysisId changes
   useEffect(() => {
     if (user && analysisId) {
       fetchWords();
     }
-  }, [user, analysisId]);
+  }, [user, analysisId, fetchWords]);
 
   return {
     // State

@@ -1,6 +1,7 @@
-import { useEffect } from "react";
+import { useEffect, useCallback } from "react";
 import { useAppDispatch, useAppSelector } from "@/app/store";
-import { useAuth } from "@/lib/auth-context";
+import { useSelector } from "react-redux";
+import { selectUser } from "@/entities/user/model/selectors";
 import { fetchUserAnalyses, clearAnalyses } from "../model/analysesSlice";
 import {
   selectAnalyses,
@@ -12,7 +13,7 @@ import {
 
 export const useAnalysesRTK = () => {
   const dispatch = useAppDispatch();
-  const { user } = useAuth();
+  const user = useSelector(selectUser);
 
   // Selectors
   const analyses = useAppSelector(selectAnalyses);
@@ -22,19 +23,19 @@ export const useAnalysesRTK = () => {
   const latestAnalysis = useAppSelector(selectLatestAnalysis);
 
   // Actions
-  const fetchAnalyses = () => {
+  const fetchAnalyses = useCallback(() => {
     if (user) {
       dispatch(fetchUserAnalyses(user.uid));
     }
-  };
+  }, [user, dispatch]);
 
-  const refreshAnalyses = () => {
+  const refreshAnalyses = useCallback(() => {
     fetchAnalyses();
-  };
+  }, [fetchAnalyses]);
 
-  const clearAnalysesData = () => {
+  const clearAnalysesData = useCallback(() => {
     dispatch(clearAnalyses());
-  };
+  }, [dispatch]);
 
   // Load analyses when user changes
   useEffect(() => {
@@ -43,7 +44,7 @@ export const useAnalysesRTK = () => {
     } else {
       clearAnalysesData();
     }
-  }, [user]);
+  }, [user, fetchAnalyses, clearAnalysesData]);
 
   return {
     // State

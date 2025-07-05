@@ -1,14 +1,15 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { useAuth } from "@/lib/auth-context";
+import { useSelector } from "react-redux";
+import { selectUser } from "@/entities/user/model/selectors";
 import { useAnalysisWords } from "@/features/analysis-words";
 import LoadingSpinner from "@/components/LoadingSpinner";
 import { WordList } from "@/features/analysis-words/ui/WordList";
 import { AnalysisWordsHeader } from "@/features/analysis-words/ui/AnalysisWordsHeader";
 
 export default function AnalysisWordsPage() {
-  const { user } = useAuth();
+  const user = useSelector(selectUser);
   const params = useParams();
   const analysisId = params.analysisId as string;
 

@@ -1,6 +1,7 @@
 import { useEffect, useCallback } from "react";
 import { useAppDispatch } from "@/app/store";
-import { useAuth } from "@/lib/auth-context";
+import { useSelector } from "react-redux";
+import { selectUser } from "@/entities/user/model/selectors";
 import {
   Sentence,
   setCurrentPage,
@@ -19,7 +20,7 @@ export const useUserSettings = (
   currentPage: number
 ) => {
   const dispatch = useAppDispatch();
-  const { user } = useAuth();
+  const user = useSelector(selectUser);
 
   // Load reading progress
   useEffect(() => {

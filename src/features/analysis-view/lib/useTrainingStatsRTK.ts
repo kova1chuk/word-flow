@@ -1,6 +1,7 @@
 import { useEffect, useCallback } from "react";
 import { useAppDispatch, useAppSelector } from "@/app/store";
-import { useAuth } from "@/lib/auth-context";
+import { useSelector } from "react-redux";
+import { selectUser } from "@/entities/user/model/selectors";
 import {
   fetchTrainingStats,
   clearTrainingStats,
@@ -15,7 +16,7 @@ import {
 
 export const useTrainingStatsRTK = (analysisId: string) => {
   const dispatch = useAppDispatch();
-  const { user } = useAuth();
+  const user = useSelector(selectUser);
 
   // Selectors
   const trainingStats = useAppSelector(selectTrainingStats);
@@ -25,15 +26,15 @@ export const useTrainingStatsRTK = (analysisId: string) => {
   const trainingProgress = useAppSelector(selectTrainingProgress);
 
   // Actions
-  const fetchStats = () => {
+  const fetchStats = useCallback(() => {
     if (user && analysisId) {
       dispatch(fetchTrainingStats({ userId: user.uid, analysisId }));
     }
-  };
+  }, [user, analysisId, dispatch]);
 
-  const clearStats = () => {
+  const clearStats = useCallback(() => {
     dispatch(clearTrainingStats());
-  };
+  }, [dispatch]);
 
   // Start training handler
   const handleStartTraining = useCallback(async () => {
@@ -50,7 +51,7 @@ export const useTrainingStatsRTK = (analysisId: string) => {
     if (user && analysisId) {
       fetchStats();
     }
-  }, [user, analysisId]);
+  }, [user, analysisId, fetchStats]);
 
   return {
     // State

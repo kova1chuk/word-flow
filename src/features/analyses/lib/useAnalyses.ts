@@ -1,9 +1,10 @@
 import { useState, useEffect, useCallback } from "react";
-import { useAuth } from "@/lib/auth-context";
+import { useSelector } from "react-redux";
+import { selectUser } from "@/entities/user/model/selectors";
 import { analysesApi, Analysis } from "./analysesApi";
 
 export const useAnalyses = () => {
-  const { user } = useAuth();
+  const user = useSelector(selectUser);
   const [analyses, setAnalyses] = useState<Analysis[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");

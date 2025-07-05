@@ -12,6 +12,11 @@ export interface FormState {
 
   // Word forms
   word: {
+    newWord: string;
+    newDefinition: string;
+    newExample: string;
+    submitting: boolean;
+    error: string;
     selectedStatuses: number[];
     searchQuery: string;
     sortBy: string;
@@ -53,6 +58,11 @@ const initialState: FormState = {
 
   // Word forms
   word: {
+    newWord: "",
+    newDefinition: "",
+    newExample: "",
+    submitting: false,
+    error: "",
     selectedStatuses: [1, 2, 3, 4, 5],
     searchQuery: "",
     sortBy: "createdAt",

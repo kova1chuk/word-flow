@@ -1,8 +1,9 @@
 import Link from "next/link";
 import { useState } from "react";
 import { Analysis, analysesApi } from "../lib/analysesApi";
-import { useAuth } from "@/lib/auth-context";
 import { LearningOverview } from "@/components/LearningOverview";
+import { useSelector } from "react-redux";
+import { selectUser } from "@/entities/user/model/selectors";
 
 interface AnalysisCardProps {
   analysis: Analysis;
@@ -13,7 +14,7 @@ export const AnalysisCard: React.FC<AnalysisCardProps> = ({
   analysis,
   onRefresh,
 }) => {
-  const { user } = useAuth();
+  const user = useSelector(selectUser);
   const [isReloading, setIsReloading] = useState(false);
 
   const formatDate = (dateString: string) => {

@@ -1,14 +1,15 @@
 "use client";
 
 import Link from "next/link";
-import { useAuth } from "@/lib/auth-context";
 import { signOut } from "firebase/auth";
 import { auth } from "@/lib/firebase";
 import { useState, useEffect, useRef } from "react";
+import { useSelector } from "react-redux";
+import { selectUser } from "@/entities/user/model/selectors";
 import LoadingSpinner from "./LoadingSpinner";
 
 export default function Header() {
-  const { user, loading } = useAuth();
+  const user = useSelector(selectUser);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
@@ -58,7 +59,7 @@ export default function Header() {
     setIsUserMenuOpen(false);
   };
 
-  if (loading) {
+  if (!user) {
     return (
       <header className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -93,7 +94,7 @@ export default function Header() {
 
           {/* Desktop Menu */}
           <div className="hidden md:flex items-center space-x-2">
-            {user ? (
+            {user && (
               <>
                 {navLinks.map((link) => (
                   <Link
@@ -143,21 +144,6 @@ export default function Header() {
                   )}
                 </div>
               </>
-            ) : (
-              <div className="flex items-center space-x-2">
-                <Link
-                  href="/auth/signin"
-                  className="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-white px-3 py-2 rounded-md text-sm font-medium transition-colors"
-                >
-                  Sign In
-                </Link>
-                <Link
-                  href="/auth/signup"
-                  className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors shadow-sm"
-                >
-                  Sign Up
-                </Link>
-              </div>
             )}
           </div>
 
@@ -209,7 +195,7 @@ export default function Header() {
               }`}
             >
               <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
-                {user ? (
+                {user && (
                   <>
                     {navLinks.map((link) => (
                       <Link
@@ -237,23 +223,6 @@ export default function Header() {
                         Sign Out
                       </button>
                     </div>
-                  </>
-                ) : (
-                  <>
-                    <Link
-                      href="/auth/signin"
-                      onClick={closeMenus}
-                      className="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700 block px-3 py-2 rounded-md text-base font-medium transition-colors"
-                    >
-                      Sign In
-                    </Link>
-                    <Link
-                      href="/auth/signup"
-                      onClick={closeMenus}
-                      className="bg-blue-600 hover:bg-blue-700 text-white block px-3 py-2 rounded-md text-base font-medium transition-colors shadow-sm"
-                    >
-                      Sign Up
-                    </Link>
                   </>
                 )}
               </div>

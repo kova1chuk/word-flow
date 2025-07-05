@@ -31,12 +31,13 @@ import {
   setSelectedWord,
 } from "@/entities/analysis";
 import { fetchAnalysisDetails } from "./analysisApi";
-import { useAuth } from "@/lib/auth-context";
 import { WordInfo } from "@/entities/analysis";
+import { useSelector } from "react-redux";
+import { selectUser } from "@/entities/user/model/selectors";
 
 export const useAnalysisView = (analysisId: string) => {
   const dispatch = useAppDispatch();
-  const { user } = useAuth();
+  const user = useSelector(selectUser);
 
   // Selectors
   const analysis = useAppSelector(selectAnalysis);

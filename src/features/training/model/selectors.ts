@@ -7,7 +7,7 @@ export const selectTrainingState = (state: RootState) => state.training;
 // Training mode and settings
 export const selectTrainingMode = createSelector(
   [selectTrainingState],
-  (training) => training.trainingMode
+  (training) => training.mode
 );
 
 export const selectSelectedStatuses = createSelector(
@@ -23,7 +23,7 @@ export const selectTrainingWords = createSelector(
 
 export const selectCurrentWordIndex = createSelector(
   [selectTrainingState],
-  (training) => training.currentWordIndex
+  (training) => training.currentIndex
 );
 
 export const selectCurrentWord = createSelector(
@@ -33,117 +33,112 @@ export const selectCurrentWord = createSelector(
 
 export const selectTrainingStarted = createSelector(
   [selectTrainingState],
-  (training) => training.trainingStarted
+  (training) => training.isStarted
 );
 
-export const selectTrainingCompleted = createSelector(
-  [selectTrainingState],
-  (training) => training.trainingCompleted
-);
+// Sentence training - commented out as not implemented in state
+// export const selectTrainingSentences = createSelector(
+//   [selectTrainingState],
+//   (training) => training.sentences
+// );
 
-// Sentence training
-export const selectTrainingSentences = createSelector(
-  [selectTrainingState],
-  (training) => training.sentences
-);
+// export const selectCurrentSentenceIndex = createSelector(
+//   [selectTrainingState],
+//   (training) => training.currentSentenceIndex
+// );
 
-export const selectCurrentSentenceIndex = createSelector(
-  [selectTrainingState],
-  (training) => training.currentSentenceIndex
-);
+// export const selectCurrentSentence = createSelector(
+//   [selectTrainingSentences, selectCurrentSentenceIndex],
+//   (sentences, index) => sentences[index] || null
+// );
 
-export const selectCurrentSentence = createSelector(
-  [selectTrainingSentences, selectCurrentSentenceIndex],
-  (sentences, index) => sentences[index] || null
-);
+// export const selectShuffledWords = createSelector(
+//   [selectTrainingState],
+//   (training) => training.shuffledWords
+// );
 
-export const selectShuffledWords = createSelector(
-  [selectTrainingState],
-  (training) => training.shuffledWords
-);
+// export const selectUserAnswer = createSelector(
+//   [selectTrainingState],
+//   (training) => training.userAnswer
+// );
 
-export const selectUserAnswer = createSelector(
-  [selectTrainingState],
-  (training) => training.userAnswer
-);
+// export const selectIsAnswerChecked = createSelector(
+//   [selectTrainingState],
+//   (training) => training.isAnswerChecked
+// );
 
-export const selectIsAnswerChecked = createSelector(
-  [selectTrainingState],
-  (training) => training.isAnswerChecked
-);
+// Progress tracking - commented out as not implemented in state
+// export const selectTotalWords = createSelector(
+//   [selectTrainingState],
+//   (training) => training.totalWords
+// );
 
-// Progress tracking
-export const selectTotalWords = createSelector(
-  [selectTrainingState],
-  (training) => training.totalWords
-);
+// export const selectCompletedWords = createSelector(
+//   [selectTrainingState],
+//   (training) => training.completedWords
+// );
 
-export const selectCompletedWords = createSelector(
-  [selectTrainingState],
-  (training) => training.completedWords
-);
+// export const selectCorrectAnswers = createSelector(
+//   [selectTrainingState],
+//   (training) => training.correctAnswers
+// );
 
-export const selectCorrectAnswers = createSelector(
-  [selectTrainingState],
-  (training) => training.correctAnswers
-);
+// export const selectIncorrectAnswers = createSelector(
+//   [selectTrainingState],
+//   (training) => training.incorrectAnswers
+// );
 
-export const selectIncorrectAnswers = createSelector(
-  [selectTrainingState],
-  (training) => training.incorrectAnswers
-);
+// export const selectTrainingProgress = createSelector(
+//   [selectCompletedWords, selectTotalWords],
+//   (completed, total) => (total > 0 ? (completed / total) * 100 : 0)
+// );
 
-export const selectTrainingProgress = createSelector(
-  [selectCompletedWords, selectTotalWords],
-  (completed, total) => (total > 0 ? (completed / total) * 100 : 0)
-);
+// export const selectAccuracy = createSelector(
+//   [selectCorrectAnswers, selectCompletedWords],
+//   (correct, completed) => (completed > 0 ? (correct / completed) * 100 : 0)
+// );
 
-export const selectAccuracy = createSelector(
-  [selectCorrectAnswers, selectCompletedWords],
-  (correct, completed) => (completed > 0 ? (correct / completed) * 100 : 0)
-);
+// Loading states - commented out as not implemented in state
+// export const selectTrainingLoading = createSelector(
+//   [selectTrainingState],
+//   (training) => training.loading
+// );
 
-// Loading states
-export const selectTrainingLoading = createSelector(
-  [selectTrainingState],
-  (training) => training.loading
-);
+// export const selectTrainingUpdating = createSelector(
+//   [selectTrainingState],
+//   (training) => training.updating
+// );
 
-export const selectTrainingUpdating = createSelector(
-  [selectTrainingState],
-  (training) => training.updating
-);
-
-export const selectTrainingError = createSelector(
-  [selectTrainingState],
-  (training) => training.error
-);
+// export const selectTrainingError = createSelector(
+//   [selectTrainingState],
+//   (training) => training.error
+// );
 
 // Derived selectors
 export const selectHasTrainingData = createSelector(
-  [selectTrainingWords, selectTrainingSentences, selectTrainingMode],
-  (words, sentences, mode) => {
+  [selectTrainingWords, selectTrainingMode],
+  (words, mode) => {
     if (mode === "word") return words.length > 0;
-    return sentences.length > 0;
+    return false; // No sentence training implemented yet
   }
 );
 
-export const selectIsTrainingActive = createSelector(
-  [selectTrainingStarted, selectTrainingCompleted],
-  (started, completed) => started && !completed
-);
+// export const selectIsTrainingActive = createSelector(
+//   [selectTrainingStarted, selectTrainingCompleted],
+//   (started, completed) => started && !completed
+// );
 
-export const selectRemainingWords = createSelector(
-  [selectTotalWords, selectCompletedWords],
-  (total, completed) => total - completed
-);
+// export const selectRemainingWords = createSelector(
+//   [selectTotalWords, selectCompletedWords],
+//   (total, completed) => total - completed
+// );
 
 export const selectNextWord = createSelector(
   [selectTrainingWords, selectCurrentWordIndex],
   (words, index) => words[index + 1] || null
 );
 
-export const selectNextSentence = createSelector(
-  [selectTrainingSentences, selectCurrentSentenceIndex],
-  (sentences, index) => sentences[index + 1] || null
-);
+// export const selectNextSentence = createSelector(
+//   [selectTrainingSentences, selectCurrentSentenceIndex],
+//   (sentences, index) => sentences[index + 1] || null
+// );

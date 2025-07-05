@@ -108,7 +108,6 @@ export default function WordTrainingCard({
           onStatusChange={onStatusChange}
           updating={updating}
           className="mb-6"
-          buttonClassName="px-4 py-2"
         />
       </div>
 

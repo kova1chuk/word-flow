@@ -1,7 +1,11 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
-import { useAuth } from "@/lib/auth-context";
+import { useSelector } from "react-redux";
+import {
+  selectUser,
+  selectIsAuthenticated,
+} from "@/entities/user/model/selectors";
 import { db } from "@/lib/firebase";
 import {
   collection,
@@ -33,7 +37,8 @@ interface DictionaryApiResponse {
 }
 
 export default function WordsPage() {
-  const { user, loading } = useAuth();
+  const user = useSelector(selectUser);
+  const isAuthenticated = useSelector(selectIsAuthenticated);
   const [words, setWords] = useState<Word[]>([]);
   const [loadingWords, setLoadingWords] = useState(true);
   const [showAddForm, setShowAddForm] = useState(false);
@@ -289,8 +294,8 @@ export default function WordsPage() {
     goToPage(currentPage + 1);
   };
 
-  if (loading) {
-    return <PageLoader text="Loading words..." />;
+  if (!isAuthenticated) {
+    return <PageLoader text="Loading..." />;
   }
 
   if (!user) {

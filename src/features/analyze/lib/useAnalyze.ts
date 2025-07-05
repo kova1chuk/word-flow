@@ -60,19 +60,34 @@ export const useAnalyze = () => {
           throw new Error(`Subtitle upload failed: ${response.statusText}`);
         }
         const apiResponse = await response.json();
+
+        // Show basic results immediately
+        const basicResult = transformApiResult(apiResponse, file.name, []);
+        setAnalysisResult({
+          ...basicResult,
+          isProcessingUserWords: true,
+        });
+        setLoadingAnalysis(false);
+
+        // Process user words in background
         const uniqueWords =
           apiResponse.unique_words || apiResponse.uniqueWords || [];
         const userWords = await fetchStatusesForWords(user.uid, uniqueWords);
-        setAnalysisResult(
-          transformApiResult(apiResponse, file.name, userWords)
+        const finalResult = transformApiResult(
+          apiResponse,
+          file.name,
+          userWords
         );
+        setAnalysisResult({
+          ...finalResult,
+          isProcessingUserWords: false,
+        });
         showSuccess("Subtitle file analyzed successfully!");
       } catch (err) {
         console.error("Subtitle upload error:", err);
         showError(
           err instanceof Error ? err.message : "Subtitle upload failed"
         );
-      } finally {
         setLoadingAnalysis(false);
       }
     },
@@ -97,17 +112,32 @@ export const useAnalyze = () => {
           throw new Error(`Upload failed: ${response.statusText}`);
         }
         const apiResponse = await response.json();
+
+        // Show basic results immediately
+        const basicResult = transformApiResult(apiResponse, file.name, []);
+        setAnalysisResult({
+          ...basicResult,
+          isProcessingUserWords: true,
+        });
+        setLoadingAnalysis(false);
+
+        // Process user words in background
         const uniqueWords =
           apiResponse.unique_words || apiResponse.uniqueWords || [];
         const userWords = await fetchStatusesForWords(user.uid, uniqueWords);
-        setAnalysisResult(
-          transformApiResult(apiResponse, file.name, userWords)
+        const finalResult = transformApiResult(
+          apiResponse,
+          file.name,
+          userWords
         );
+        setAnalysisResult({
+          ...finalResult,
+          isProcessingUserWords: false,
+        });
         showSuccess("File uploaded and analyzed successfully!");
       } catch (err) {
         console.error("Upload error:", err);
         showError(err instanceof Error ? err.message : "Upload failed");
-      } finally {
         setLoadingAnalysis(false);
       }
     },
@@ -144,17 +174,32 @@ export const useAnalyze = () => {
         throw new Error(`Analysis failed: ${response.statusText}`);
       }
       const apiResponse = await response.json();
+
+      // Show basic results immediately
+      const basicResult = transformApiResult(apiResponse, "Pasted Text", []);
+      setAnalysisResult({
+        ...basicResult,
+        isProcessingUserWords: true,
+      });
+      setLoadingAnalysis(false);
+
+      // Process user words in background
       const uniqueWords =
         apiResponse.unique_words || apiResponse.uniqueWords || [];
       const userWords = await fetchStatusesForWords(user.uid, uniqueWords);
-      setAnalysisResult(
-        transformApiResult(apiResponse, "Pasted Text", userWords)
+      const finalResult = transformApiResult(
+        apiResponse,
+        "Pasted Text",
+        userWords
       );
+      setAnalysisResult({
+        ...finalResult,
+        isProcessingUserWords: false,
+      });
       showSuccess("Text analyzed successfully!");
     } catch (err) {
       console.error("Analysis error:", err);
       showError(err instanceof Error ? err.message : "Analysis failed");
-    } finally {
       setLoadingAnalysis(false);
     }
   }, [user, text, clearMessages]);

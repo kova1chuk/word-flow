@@ -20,6 +20,7 @@ export interface AnalysisResult {
     learnerWords: number;
     unknownWords: number;
   };
+  isProcessingUserWords?: boolean;
 }
 
 export interface ApiAnalysisResponse {

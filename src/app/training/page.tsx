@@ -1,71 +1,62 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import { useSelector } from "react-redux";
 import { selectUser } from "@/entities/user/model/selectors";
-import { db } from "@/lib/firebase";
-import {
-  collection,
-  query,
-  where,
-  getDocs,
-  updateDoc,
-  doc,
-} from "firebase/firestore";
-import type { Word, WordDetails, Phonetic } from "@/types";
-import { config } from "@/lib/config";
-import WordTrainingCard from "@/components/WordTrainingCard";
 import { useAnalyses } from "@/features/analyses/lib/useAnalyses";
 import { ChevronDownIcon, ChevronRightIcon } from "@heroicons/react/24/solid";
 import { useUserStats } from "@/shared/hooks/useUserStats";
-import { updateWordStatsOnStatusChange } from "@/features/word-management/lib/updateWordStatsOnStatusChange";
-
-interface DictionaryApiResponse {
-  phonetics: { text: string; audio: string }[];
-  meanings: {
-    partOfSpeech: string;
-    definitions: {
-      definition: string;
-      example?: string;
-      synonyms?: string[];
-      antonyms?: string[];
-    }[];
-  }[];
-}
+import { useTrainingSession } from "@/features/training/lib/useTrainingSession";
+import { TrainingQuestionCard } from "@/features/training/ui/TrainingQuestionCard";
+import { TrainingSessionSummary } from "@/features/training/ui/TrainingSessionSummary";
+import type { TrainingType } from "@/types";
 
 export default function TrainingPage() {
   const user = useSelector(selectUser);
-  const [trainingMode, setTrainingMode] = useState<"word" | "sentence">("word");
 
-  // Word training state (only used when trainingMode === 'word')
-  const [words, setWords] = useState<Word[]>([]);
-  const [updating, setUpdating] = useState<string | null>(null);
-  const [error, setError] = useState("");
-  const [current, setCurrent] = useState(0);
-  const [trainingStarted, setTrainingStarted] = useState(false);
+  // Status selection
   const [selectedStatuses, setSelectedStatuses] = useState<number[]>([
-    1,
-    2,
-    3,
-    4,
-    5, // Include all statuses except mastered for training
+    1, 2, 3, 4, 5,
   ]);
-  const [trainingWords, setTrainingWords] = useState<Word[]>([]);
 
-  // Analyses selection state
-  const {
-    analyses,
-    loading: analysesLoading,
-    error: analysesError,
-  } = useAnalyses();
+  // Analyses selection
+  const { analyses, loading: analysesLoading } = useAnalyses();
   const [analysesExpanded, setAnalysesExpanded] = useState(false);
   const [selectedAnalysisIds, setSelectedAnalysisIds] = useState<string[]>([]);
 
+  // Training settings
+  const [sessionSize, setSessionSize] = useState(10);
+  const [selectedTrainingTypes, setSelectedTrainingTypes] = useState<
+    TrainingType[]
+  >(["input_word", "choose_translation"]);
+
+  const { wordStats: userWordStats } = useUserStats();
+
+  // Training session
   const {
-    wordStats: userWordStats,
-    loading: userStatsLoading,
-    error: userStatsError,
-  } = useUserStats();
+    session,
+    words,
+    currentQuestion,
+    currentWordIndex,
+    isStarted,
+    isCompleted,
+    loading,
+    error,
+    correctAnswers,
+    incorrectAnswers,
+    completedWords,
+    progress,
+    accuracy,
+    startSession,
+    handleAnswer,
+    skipQuestion,
+    endSession,
+  } = useTrainingSession({
+    selectedStatuses,
+    selectedAnalysisIds,
+    sessionSize,
+    trainingTypes: selectedTrainingTypes,
+  });
 
   const STATUS_OPTIONS = [
     { value: 1, label: "Not Learned", color: "bg-gray-500" },
@@ -77,192 +68,33 @@ export default function TrainingPage() {
     { value: 7, label: "Mastered", color: "bg-purple-500" },
   ];
 
-  const fetchWords = useCallback(async () => {
-    if (!user) return;
-    try {
-      setError("");
-      const q = query(collection(db, "words"), where("userId", "==", user.uid));
-      const querySnapshot = await getDocs(q);
-      const userWords = querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as Word[];
-
-      // Sort words: 'to_learn' first, then 'want_repeat', then by creation date
-      userWords.sort((a, b) => {
-        const statusOrder: Record<string, number> = {
-          to_learn: 1,
-          want_repeat: 2,
-        };
-        const statusA = statusOrder[a.status || "unset"] || 3;
-        const statusB = statusOrder[b.status || "unset"] || 3;
-
-        if (statusA !== statusB) {
-          return statusA - statusB;
-        }
-
-        const dateA = a.createdAt?.toDate?.() || new Date(0);
-        const dateB = b.createdAt?.toDate?.() || new Date(0);
-        return dateB.getTime() - dateA.getTime();
-      });
-
-      setWords(userWords);
-    } catch (err) {
-      console.error("Error fetching words:", err);
-      setError("Failed to fetch words. Please try again.");
-    }
-  }, [user]);
-
-  useEffect(() => {
-    if (user && trainingMode === "word") {
-      fetchWords();
-    }
-  }, [user, fetchWords, trainingMode]);
-
-  const handleStatusChange = async (
-    wordId: string,
-    status: 1 | 2 | 3 | 4 | 5 | 6 | 7
-  ) => {
-    setUpdating(wordId);
-    try {
-      const word = words.find((w) => w.id === wordId);
-      const oldStatus = word?.status ?? 1;
-      await updateDoc(doc(db, "words", wordId), { status });
-      if (user) {
-        await updateWordStatsOnStatusChange({
-          wordId,
-          userId: user.uid,
-          oldStatus,
-          newStatus: status,
-        });
-      }
-      setWords((prev) =>
-        prev.map((w) => (w.id === wordId ? { ...w, status } : w))
-      );
-      setTrainingWords((prev) =>
-        prev.map((w) => (w.id === wordId ? { ...w, status } : w))
-      );
-    } catch {
-      setError("Failed to update status");
-    } finally {
-      setUpdating(null);
-    }
-  };
-
-  const reloadDefinition = async (word: Word) => {
-    setUpdating(word.id);
-    setError("");
-    try {
-      let definition = "";
-      let details: WordDetails | undefined = undefined;
-
-      const res = await fetch(
-        `https://api.dictionaryapi.dev/api/v2/entries/en/${encodeURIComponent(
-          word.word
-        )}`
-      );
-
-      if (res.ok) {
-        const data: DictionaryApiResponse[] = await res.json();
-        if (Array.isArray(data) && data.length > 0) {
-          const firstResult = data[0];
-          definition =
-            firstResult.meanings?.[0]?.definitions?.[0]?.definition ??
-            "No definition found.";
-
-          details = {
-            phonetics: (firstResult.phonetics || [])
-              .map((p) => ({ text: p.text, audio: p.audio }))
-              .filter((p): p is Phonetic => !!(p.text && p.audio)),
-            meanings: (firstResult.meanings || []).map((m) => ({
-              partOfSpeech: m.partOfSpeech,
-              definitions: m.definitions.map((d) => {
-                const newDef: {
-                  definition: string;
-                  example?: string;
-                  synonyms?: string[];
-                  antonyms?: string[];
-                } = { definition: d.definition };
-                if (d.example) newDef.example = d.example;
-                if (d.synonyms) newDef.synonyms = d.synonyms;
-                if (d.antonyms) newDef.antonyms = d.antonyms;
-                return newDef;
-              }),
-            })),
-          };
-        } else {
-          definition = "No definition found.";
-        }
-      } else {
-        definition = "No definition found.";
-      }
-
-      const dataToUpdate: { definition: string; details?: WordDetails } = {
-        definition,
-      };
-      if (details) {
-        dataToUpdate.details = details;
-      }
-
-      await updateDoc(doc(db, "words", word.id), dataToUpdate);
-
-      const updateWordState = (prev: Word[]) =>
-        prev.map((w) => (w.id === word.id ? { ...w, ...dataToUpdate } : w));
-      setWords(updateWordState);
-      setTrainingWords(updateWordState);
-    } catch (error) {
-      console.error("Error reloading definition:", error);
-      setError(
-        `Failed to reload definition: ${
-          error instanceof Error ? error.message : "Unknown error"
-        }`
-      );
-    } finally {
-      setUpdating(null);
-    }
-  };
-
-  const reloadTranslation = async (word: Word) => {
-    setUpdating(word.id);
-    try {
-      let translation = "";
-      console.log(`Reloading translation for word: "${word.word}"`);
-
-      // Using MyMemory API
-      const langPair = `en|uk`; // English to Ukrainian
-      const url = `${config.translationApi.baseUrl}?q=${encodeURIComponent(
-        word.word
-      )}&langpair=${langPair}`;
-
-      const response = await fetch(url);
-      if (response.ok) {
-        const data = await response.json();
-        if (data.responseData && data.responseData.translatedText) {
-          translation = data.responseData.translatedText;
-        } else {
-          translation = "Translation not found";
-        }
-      } else {
-        translation = "Translation not found";
-      }
-
-      await updateDoc(doc(db, "words", word.id), { translation });
-
-      const updateWordState = (prev: Word[]) =>
-        prev.map((w) => (w.id === word.id ? { ...w, translation } : w));
-      setWords(updateWordState);
-      setTrainingWords(updateWordState);
-    } catch (error) {
-      console.error("Error reloading translation:", error);
-      setError(
-        `Failed to reload translation: ${
-          error instanceof Error ? error.message : "Unknown error"
-        }`
-      );
-    } finally {
-      setUpdating(null);
-    }
-  };
+  const TRAINING_TYPE_OPTIONS = [
+    {
+      value: "input_word",
+      label: "Input Word",
+      description: "Type the English word",
+    },
+    {
+      value: "choose_translation",
+      label: "Choose Translation",
+      description: "Select correct translation",
+    },
+    {
+      value: "context_usage",
+      label: "Context Usage",
+      description: "Complete sentences",
+    },
+    {
+      value: "synonym_match",
+      label: "Synonym Match",
+      description: "Find synonyms/antonyms",
+    },
+    {
+      value: "audio_dictation",
+      label: "Audio Dictation",
+      description: "Listen and type",
+    },
+  ];
 
   const toggleStatusSelection = (status: number) => {
     setSelectedStatuses((prev) =>
@@ -272,201 +104,39 @@ export default function TrainingPage() {
     );
   };
 
-  const startTraining = () => {
-    if (selectedAnalysisIds.length === 0) {
-      setError("Please select at least one analysis to train on.");
-      return;
-    }
-
-    // Filter words by selected analyses and statuses
-    const filteredWords = words.filter((word) => {
-      const hasSelectedStatus = selectedStatuses.includes(word.status || 1);
-      const belongsToSelectedAnalysis =
-        word.analysisIds?.some((analysisId) =>
-          selectedAnalysisIds.includes(analysisId)
-        ) || false;
-      return hasSelectedStatus && belongsToSelectedAnalysis;
-    });
-
-    if (filteredWords.length === 0) {
-      setError("No words found for the selected analyses and statuses.");
-      return;
-    }
-
-    setTrainingWords(filteredWords);
-    setCurrent(0);
-    setTrainingStarted(true);
-    setError(""); // Clear any previous errors
+  const toggleAnalysis = (id: string) => {
+    setSelectedAnalysisIds((prev) =>
+      prev.includes(id)
+        ? prev.filter((analysisId) => analysisId !== id)
+        : [...prev, id]
+    );
   };
 
-  const stopTraining = () => {
-    setTrainingStarted(false);
-    setTrainingWords([]);
-    setCurrent(0);
+  const toggleAll = () => {
+    if (selectedAnalysisIds.length === analyses.length) {
+      setSelectedAnalysisIds([]);
+    } else {
+      setSelectedAnalysisIds(analyses.map((a) => a.id));
+    }
+  };
+
+  const toggleTrainingType = (type: TrainingType) => {
+    setSelectedTrainingTypes((prev) =>
+      prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]
+    );
   };
 
   const getStatusCount = (status: number) => {
-    return words.filter((word) => word.status === status).length;
+    return userWordStats?.[status] || 0;
   };
 
-  function shuffleArray<T>(array: T[]): T[] {
-    const arr = [...array];
-    for (let i = arr.length - 1; i > 0; i--) {
-      const j = Math.floor(Math.random() * (i + 1));
-      [arr[i], arr[j]] = [arr[j], arr[i]];
-    }
-    return arr;
-  }
-
-  function SentenceTraining() {
-    const [sentences] = useState([
-      {
-        english: "I love learning new languages",
-        translation: "Я люблю вивчати нові мови",
-      },
-      {
-        english: "The weather is beautiful today",
-        translation: "Сьогодні гарна погода",
-      },
-      {
-        english: "Can you help me with this?",
-        translation: "Чи можете ви допомогти мені з цим?",
-      },
-    ]);
-
-    const [current, setCurrent] = useState(0);
-    const [shuffled, setShuffled] = useState<string[]>([]);
-    const [answer, setAnswer] = useState<string[]>([]);
-    const [checked, setChecked] = useState<null | boolean>(null);
-
-    useEffect(() => {
-      const words = sentences[current].english.split(" ");
-      setShuffled(shuffleArray(words));
-      setAnswer([]);
-      setChecked(null);
-    }, [current, sentences]);
-
-    const handleWordClick = (word: string) => {
-      if (checked) return;
-      if (answer.includes(word)) return;
-      setAnswer([...answer, word]);
-    };
-    const handleRemove = (idx: number) => {
-      if (checked) return;
-      setAnswer(answer.filter((_, i) => i !== idx));
-    };
-    const handleCheck = () => {
-      setChecked(answer.join(" ") === sentences[current].english);
-    };
-    const handleNext = () => {
-      setCurrent((prev) => (prev + 1) % sentences.length);
-    };
-
-    const words = sentences[current].english.split(" ");
-
-    return (
-      <div className="bg-gray-800 rounded-lg p-6 text-center text-gray-300 max-w-xl mx-auto">
-        <h2 className="text-xl font-bold mb-4">Sentence Training</h2>
-        <div className="mb-4">
-          <span className="text-gray-400">Translate:</span>
-          <div className="text-lg font-semibold text-white mt-1 mb-2">
-            {sentences[current].translation}
-          </div>
-        </div>
-        <div className="mb-4 flex flex-wrap gap-2 justify-center">
-          {shuffled.map((word, i) => (
-            <button
-              key={i}
-              className={`px-3 py-2 rounded bg-gray-700 text-white text-base font-medium transition-colors duration-150 ${
-                answer.includes(word)
-                  ? "opacity-40 cursor-not-allowed"
-                  : "hover:bg-blue-600"
-              }`}
-              onClick={() => handleWordClick(word)}
-              disabled={answer.includes(word) || !!checked}
-            >
-              {word}
-            </button>
-          ))}
-        </div>
-        <div className="mb-4 min-h-[40px] flex flex-wrap gap-2 justify-center">
-          {answer.map((word, i) => (
-            <button
-              key={i}
-              className="px-3 py-2 rounded bg-blue-600 text-white text-base font-medium hover:bg-blue-700"
-              onClick={() => handleRemove(i)}
-              disabled={!!checked}
-            >
-              {word}
-            </button>
-          ))}
-        </div>
-        <div className="mb-4">
-          <button
-            className="px-4 py-2 rounded bg-green-600 text-white font-semibold disabled:opacity-50"
-            onClick={handleCheck}
-            disabled={answer.length !== words.length || checked !== null}
-          >
-            Check
-          </button>
-          {checked !== null && (
-            <span
-              className={`ml-4 font-bold ${
-                checked ? "text-green-400" : "text-red-400"
-              }`}
-            >
-              {checked ? "Correct!" : "Try again!"}
-            </span>
-          )}
-        </div>
-        {checked && (
-          <button
-            className="px-4 py-2 rounded bg-purple-600 text-white font-semibold mt-2"
-            onClick={handleNext}
-          >
-            Next Sentence
-          </button>
-        )}
-      </div>
-    );
-  }
-
-  const toggleAnalysis = (id: string) => {
-    setSelectedAnalysisIds((prev) =>
-      prev.includes(id) ? prev.filter((a) => a !== id) : [...prev, id]
-    );
-  };
-  const allSelected =
-    analyses.length > 0 && selectedAnalysisIds.length === analyses.length;
-  const toggleAll = () => {
-    if (allSelected) setSelectedAnalysisIds([]);
-    else setSelectedAnalysisIds(analyses.map((a) => a.id));
-  };
-
-  // Compute status counts for the widget
-  let statusCounts: Record<number, number> = {
-    1: 0,
-    2: 0,
-    3: 0,
-    4: 0,
-    5: 0,
-    6: 0,
-    7: 0,
-  };
-  if (selectedAnalysisIds.length === 0) {
-    if (userWordStats) statusCounts = { ...statusCounts, ...userWordStats };
-  } else {
-    // Only show stats for selected analyses
-    analyses.forEach((a) => {
-      if (selectedAnalysisIds.includes(a.id) && a.wordStats) {
-        const stats = a.wordStats as Record<number, number>;
-        for (let s = 1; s <= 7; s++) {
-          statusCounts[s] += stats[s] || 0;
-        }
-      }
+  const getTotalSelectedWords = () => {
+    let total = 0;
+    selectedStatuses.forEach((status) => {
+      total += getStatusCount(status);
     });
-    // If no stats found for selected, keep zeros (do not fallback)
-  }
+    return total;
+  };
 
   if (!user) {
     return (
@@ -480,210 +150,263 @@ export default function TrainingPage() {
     );
   }
 
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-400">
+            Loading training...
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="max-w-2xl mx-auto py-8 px-4">
-      <div className="flex justify-center mb-6 gap-2">
-        <button
-          className={`px-4 py-2 rounded-lg font-semibold transition-colors duration-200 ${
-            trainingMode === "word"
-              ? "bg-blue-600 text-white"
-              : "bg-gray-700 text-gray-300"
-          }`}
-          onClick={() => setTrainingMode("word")}
-        >
-          Word Training
-        </button>
-        <button
-          className={`px-4 py-2 rounded-lg font-semibold transition-colors duration-200 ${
-            trainingMode === "sentence"
-              ? "bg-blue-600 text-white"
-              : "bg-gray-700 text-gray-300"
-          }`}
-          onClick={() => setTrainingMode("sentence")}
-        >
-          Sentence Training
-        </button>
-      </div>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
+            Word Training
+          </h1>
+          <p className="text-lg text-gray-600 dark:text-gray-400">
+            Practice and improve your vocabulary with interactive exercises
+          </p>
+        </div>
 
-      {/* Expandable Analyses Checkbox List */}
-      <div className="max-w-2xl mx-auto mt-8 mb-6 bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-        <button
-          className="flex items-center w-full text-left focus:outline-none"
-          onClick={() => setAnalysesExpanded((v) => !v)}
-        >
-          {analysesExpanded ? (
-            <ChevronDownIcon className="w-5 h-5 mr-2" />
-          ) : (
-            <ChevronRightIcon className="w-5 h-5 mr-2" />
-          )}
-          <span className="font-semibold text-lg">
-            Select Analyses for Training
-          </span>
-          <span className="ml-auto text-sm text-gray-500">
-            {selectedAnalysisIds.length} selected
-          </span>
-        </button>
-        {analysesExpanded && (
-          <div className="mt-4 space-y-2">
-            {analysesLoading ? (
-              <div className="text-gray-500">Loading analyses...</div>
-            ) : analysesError ? (
-              <div className="text-red-600">{analysesError}</div>
-            ) : analyses.length === 0 ? (
-              <div className="text-gray-500">No analyses found.</div>
-            ) : (
-              <>
-                <label className="flex items-center cursor-pointer mb-2">
-                  <input
-                    type="checkbox"
-                    checked={allSelected}
-                    onChange={toggleAll}
-                    className="mr-2 accent-blue-600"
-                  />
-                  <span className="font-medium">Select All</span>
-                </label>
-                <div className="max-h-48 overflow-y-auto pr-2">
-                  {analyses.map((a) => (
-                    <label
-                      key={a.id}
-                      className="flex items-center cursor-pointer py-1 px-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
-                    >
-                      <input
-                        type="checkbox"
-                        checked={selectedAnalysisIds.includes(a.id)}
-                        onChange={() => toggleAnalysis(a.id)}
-                        className="mr-2 accent-blue-600"
-                      />
-                      <span className="flex-1">{a.title}</span>
-                      <span className="ml-2 text-xs text-gray-500">
-                        {a.summary?.totalWords ?? 0} words
-                      </span>
-                    </label>
-                  ))}
-                </div>
-              </>
-            )}
-          </div>
-        )}
-      </div>
-
-      {trainingMode === "word" ? (
-        <div className="bg-gray-50 dark:bg-gray-900">
-          <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-            <div className="flex justify-between items-center mb-6">
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                Training Session
-              </h1>
-              <button
-                onClick={stopTraining}
-                className="text-gray-500 hover:text-gray-700 text-sm font-medium"
-              >
-                Stop Training
-              </button>
-            </div>
-
-            {/* Status Widget Heading */}
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-              {selectedAnalysisIds.length === 0
-                ? "Select Word Statuses to Train (all words)"
-                : "Select Word Statuses to Train (in selected analyses)"}
-            </h2>
-            {/* Status Widget */}
-            {userStatsLoading ? (
-              <div className="mb-6 text-gray-500">Loading word stats...</div>
-            ) : userStatsError ? (
-              <div className="mb-6 text-red-600">{userStatsError}</div>
-            ) : (
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        {!isStarted && !isCompleted && (
+          <>
+            {/* Status Selection */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+                Select Word Statuses to Train
+              </h2>
+              <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
                 {STATUS_OPTIONS.map((option) => (
                   <button
                     key={option.value}
                     onClick={() => toggleStatusSelection(option.value)}
-                    className={`p-4 rounded-lg border-2 transition-colors ${
+                    className={`p-3 rounded-lg border-2 transition-colors ${
                       selectedStatuses.includes(option.value)
-                        ? `${option.color} text-white border-transparent`
-                        : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600"
+                        ? `border-${option.color.split("-")[1]}-500 bg-${
+                            option.color.split("-")[1]
+                          }-50 dark:bg-${option.color.split("-")[1]}-900/20`
+                        : "border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500"
                     }`}
                   >
-                    <div className="text-2xl font-bold">
-                      {statusCounts[option.value] ?? 0}
+                    <div className="text-center">
+                      <div
+                        className={`w-3 h-3 rounded-full ${option.color} mx-auto mb-2`}
+                      ></div>
+                      <div className="text-sm font-medium text-gray-900 dark:text-white">
+                        {option.label}
+                      </div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                        {getStatusCount(option.value)}
+                      </div>
                     </div>
-                    <div className="text-sm">{option.label}</div>
                   </button>
                 ))}
               </div>
-            )}
+            </div>
 
-            {error && (
-              <div className="mb-6 bg-red-100 dark:bg-red-900/20 border border-red-400 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-md">
-                <p>{error}</p>
-              </div>
-            )}
-
-            {trainingStarted && trainingWords.length > 0 ? (
-              <div>
-                <WordTrainingCard
-                  word={trainingWords[current]}
-                  onReloadDefinition={reloadDefinition}
-                  onReloadTranslation={reloadTranslation}
-                  onStatusChange={handleStatusChange}
-                  updating={updating}
-                  current={current}
-                  total={trainingWords.length}
-                  onPrev={() => setCurrent(Math.max(0, current - 1))}
-                  onNext={() =>
-                    setCurrent(Math.min(trainingWords.length - 1, current + 1))
-                  }
-                />
-              </div>
-            ) : (
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-                  Select Word Statuses to Train
+            {/* Analyses Selection */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                  Select Analyses (Optional)
                 </h2>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                  {STATUS_OPTIONS.map((option) => (
+                <button
+                  onClick={() => setAnalysesExpanded(!analysesExpanded)}
+                  className="flex items-center text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+                >
+                  {analysesExpanded ? (
+                    <ChevronDownIcon className="h-5 w-5" />
+                  ) : (
+                    <ChevronRightIcon className="h-5 w-5" />
+                  )}
+                </button>
+              </div>
+
+              {analysesExpanded && (
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={toggleAll}
+                      className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                    >
+                      {selectedAnalysisIds.length === analyses.length
+                        ? "Deselect All"
+                        : "Select All"}
+                    </button>
+                    <span className="text-sm text-gray-500 dark:text-gray-400">
+                      {selectedAnalysisIds.length} of {analyses.length} selected
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                    {analyses.map((analysis) => (
+                      <button
+                        key={analysis.id}
+                        onClick={() => toggleAnalysis(analysis.id)}
+                        className={`p-3 text-left rounded-lg border-2 transition-colors ${
+                          selectedAnalysisIds.includes(analysis.id)
+                            ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
+                            : "border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500"
+                        }`}
+                      >
+                        <div className="font-medium text-gray-900 dark:text-white">
+                          {analysis.title}
+                        </div>
+                        <div className="text-sm text-gray-500 dark:text-gray-400">
+                          {analysis.totalWords} words
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Training Settings */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+                Training Settings
+              </h2>
+
+              {/* Session Size */}
+              <div className="mb-6">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Session Size: {sessionSize} words
+                </label>
+                <input
+                  type="range"
+                  min="5"
+                  max="50"
+                  value={sessionSize}
+                  onChange={(e) => setSessionSize(Number(e.target.value))}
+                  className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700"
+                />
+                <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
+                  <span>5</span>
+                  <span>50</span>
+                </div>
+              </div>
+
+              {/* Training Types */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                  Training Types
+                </label>
+                <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+                  {TRAINING_TYPE_OPTIONS.map((option) => (
                     <button
                       key={option.value}
-                      onClick={() => toggleStatusSelection(option.value)}
-                      className={`p-4 rounded-lg border-2 transition-colors ${
-                        selectedStatuses.includes(option.value)
-                          ? `${option.color} text-white border-transparent`
-                          : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600"
+                      onClick={() =>
+                        toggleTrainingType(option.value as TrainingType)
+                      }
+                      className={`p-3 text-left rounded-lg border-2 transition-colors ${
+                        selectedTrainingTypes.includes(
+                          option.value as TrainingType
+                        )
+                          ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
+                          : "border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500"
                       }`}
                     >
-                      <div className="text-2xl font-bold">
-                        {getStatusCount(option.value)}
+                      <div className="font-medium text-gray-900 dark:text-white">
+                        {option.label}
                       </div>
-                      <div className="text-sm">{option.label}</div>
+                      <div className="text-sm text-gray-500 dark:text-gray-400">
+                        {option.description}
+                      </div>
                     </button>
                   ))}
                 </div>
-                {selectedAnalysisIds.length === 0 && (
-                  <div className="mb-4 p-3 bg-yellow-100 dark:bg-yellow-900/20 border border-yellow-400 dark:border-yellow-800 text-yellow-700 dark:text-yellow-400 rounded-md">
-                    <p className="text-sm">
-                      Please select at least one analysis above to start
-                      training.
-                    </p>
+              </div>
+            </div>
+
+            {/* Summary and Start Button */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
+              <div className="text-center">
+                <div className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
+                  {getTotalSelectedWords()} words available
+                </div>
+                <p className="text-gray-600 dark:text-gray-400 mb-6">
+                  Ready to train{" "}
+                  {Math.min(sessionSize, getTotalSelectedWords())} words
+                </p>
+
+                {error && (
+                  <div className="text-red-600 dark:text-red-400 mb-4">
+                    {error}
                   </div>
                 )}
+
                 <button
-                  onClick={startTraining}
+                  onClick={startSession}
                   disabled={
                     selectedStatuses.length === 0 ||
-                    selectedAnalysisIds.length === 0
+                    getTotalSelectedWords() === 0
                   }
-                  className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-8 py-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-lg font-medium"
                 >
-                  Start Training
+                  🚀 Start Training Session
                 </button>
               </div>
-            )}
+            </div>
+          </>
+        )}
+
+        {/* Training Session */}
+        {isStarted && !isCompleted && currentQuestion && (
+          <div className="space-y-6">
+            {/* Progress Bar */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  Progress: {currentWordIndex + 1} / {words.length}
+                </span>
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  {progress.toFixed(1)}%
+                </span>
+              </div>
+              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
+                <div
+                  className="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                  style={{ width: `${progress}%` }}
+                ></div>
+              </div>
+            </div>
+
+            {/* Current Question */}
+            <TrainingQuestionCard
+              question={currentQuestion}
+              onAnswer={handleAnswer}
+              onSkip={skipQuestion}
+            />
           </div>
-        </div>
-      ) : (
-        <SentenceTraining />
-      )}
+        )}
+
+        {/* Session Summary */}
+        {isCompleted && (
+          <TrainingSessionSummary
+            words={words}
+            correctAnswers={correctAnswers}
+            incorrectAnswers={incorrectAnswers}
+            completedWords={completedWords}
+            onRetry={() => {
+              // TODO: Implement retry logic for incorrect answers
+              endSession();
+            }}
+            onNewSession={() => {
+              endSession();
+            }}
+            onEndSession={endSession}
+          />
+        )}
+      </div>
     </div>
   );
 }

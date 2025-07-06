@@ -15,6 +15,9 @@ import {
 import type { Word, WordDetails, Phonetic } from "@/types";
 import { config } from "@/lib/config";
 import WordTrainingCard from "@/components/WordTrainingCard";
+import { useAnalyses } from "@/features/analyses/lib/useAnalyses";
+import { ChevronDownIcon, ChevronRightIcon } from "@heroicons/react/24/solid";
+import { useUserStats } from "@/shared/hooks/useUserStats";
 
 interface DictionaryApiResponse {
   phonetics: { text: string; audio: string }[];
@@ -47,6 +50,21 @@ export default function TrainingPage() {
     5, // Include all statuses except mastered for training
   ]);
   const [trainingWords, setTrainingWords] = useState<Word[]>([]);
+
+  // Analyses selection state
+  const {
+    analyses,
+    loading: analysesLoading,
+    error: analysesError,
+  } = useAnalyses();
+  const [analysesExpanded, setAnalysesExpanded] = useState(false);
+  const [selectedAnalysisIds, setSelectedAnalysisIds] = useState<string[]>([]);
+
+  const {
+    wordStats: userWordStats,
+    loading: userStatsLoading,
+    error: userStatsError,
+  } = useUserStats();
 
   const STATUS_OPTIONS = [
     { value: 1, label: "Not Learned", color: "bg-gray-500" },
@@ -244,12 +262,30 @@ export default function TrainingPage() {
   };
 
   const startTraining = () => {
-    const filteredWords = words.filter((word) =>
-      selectedStatuses.includes(word.status || 1)
-    );
+    if (selectedAnalysisIds.length === 0) {
+      setError("Please select at least one analysis to train on.");
+      return;
+    }
+
+    // Filter words by selected analyses and statuses
+    const filteredWords = words.filter((word) => {
+      const hasSelectedStatus = selectedStatuses.includes(word.status || 1);
+      const belongsToSelectedAnalysis =
+        word.analysisIds?.some((analysisId) =>
+          selectedAnalysisIds.includes(analysisId)
+        ) || false;
+      return hasSelectedStatus && belongsToSelectedAnalysis;
+    });
+
+    if (filteredWords.length === 0) {
+      setError("No words found for the selected analyses and statuses.");
+      return;
+    }
+
     setTrainingWords(filteredWords);
     setCurrent(0);
     setTrainingStarted(true);
+    setError(""); // Clear any previous errors
   };
 
   const stopTraining = () => {
@@ -384,6 +420,43 @@ export default function TrainingPage() {
     );
   }
 
+  const toggleAnalysis = (id: string) => {
+    setSelectedAnalysisIds((prev) =>
+      prev.includes(id) ? prev.filter((a) => a !== id) : [...prev, id]
+    );
+  };
+  const allSelected =
+    analyses.length > 0 && selectedAnalysisIds.length === analyses.length;
+  const toggleAll = () => {
+    if (allSelected) setSelectedAnalysisIds([]);
+    else setSelectedAnalysisIds(analyses.map((a) => a.id));
+  };
+
+  // Compute status counts for the widget
+  let statusCounts: Record<number, number> = {
+    1: 0,
+    2: 0,
+    3: 0,
+    4: 0,
+    5: 0,
+    6: 0,
+    7: 0,
+  };
+  if (selectedAnalysisIds.length === 0) {
+    if (userWordStats) statusCounts = { ...statusCounts, ...userWordStats };
+  } else {
+    // Only show stats for selected analyses
+    analyses.forEach((a) => {
+      if (selectedAnalysisIds.includes(a.id) && a.wordStats) {
+        const stats = a.wordStats as Record<number, number>;
+        for (let s = 1; s <= 7; s++) {
+          statusCounts[s] += stats[s] || 0;
+        }
+      }
+    });
+    // If no stats found for selected, keep zeros (do not fallback)
+  }
+
   if (!user) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
@@ -421,8 +494,70 @@ export default function TrainingPage() {
         </button>
       </div>
 
+      {/* Expandable Analyses Checkbox List */}
+      <div className="max-w-2xl mx-auto mt-8 mb-6 bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+        <button
+          className="flex items-center w-full text-left focus:outline-none"
+          onClick={() => setAnalysesExpanded((v) => !v)}
+        >
+          {analysesExpanded ? (
+            <ChevronDownIcon className="w-5 h-5 mr-2" />
+          ) : (
+            <ChevronRightIcon className="w-5 h-5 mr-2" />
+          )}
+          <span className="font-semibold text-lg">
+            Select Analyses for Training
+          </span>
+          <span className="ml-auto text-sm text-gray-500">
+            {selectedAnalysisIds.length} selected
+          </span>
+        </button>
+        {analysesExpanded && (
+          <div className="mt-4 space-y-2">
+            {analysesLoading ? (
+              <div className="text-gray-500">Loading analyses...</div>
+            ) : analysesError ? (
+              <div className="text-red-600">{analysesError}</div>
+            ) : analyses.length === 0 ? (
+              <div className="text-gray-500">No analyses found.</div>
+            ) : (
+              <>
+                <label className="flex items-center cursor-pointer mb-2">
+                  <input
+                    type="checkbox"
+                    checked={allSelected}
+                    onChange={toggleAll}
+                    className="mr-2 accent-blue-600"
+                  />
+                  <span className="font-medium">Select All</span>
+                </label>
+                <div className="max-h-48 overflow-y-auto pr-2">
+                  {analyses.map((a) => (
+                    <label
+                      key={a.id}
+                      className="flex items-center cursor-pointer py-1 px-2 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
+                    >
+                      <input
+                        type="checkbox"
+                        checked={selectedAnalysisIds.includes(a.id)}
+                        onChange={() => toggleAnalysis(a.id)}
+                        className="mr-2 accent-blue-600"
+                      />
+                      <span className="flex-1">{a.title}</span>
+                      <span className="ml-2 text-xs text-gray-500">
+                        {a.summary?.totalWords ?? 0} words
+                      </span>
+                    </label>
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        )}
+      </div>
+
       {trainingMode === "word" ? (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+        <div className="bg-gray-50 dark:bg-gray-900">
           <div className="max-w-4xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
             <div className="flex justify-between items-center mb-6">
               <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
@@ -435,6 +570,38 @@ export default function TrainingPage() {
                 Stop Training
               </button>
             </div>
+
+            {/* Status Widget Heading */}
+            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+              {selectedAnalysisIds.length === 0
+                ? "Select Word Statuses to Train (all words)"
+                : "Select Word Statuses to Train (in selected analyses)"}
+            </h2>
+            {/* Status Widget */}
+            {userStatsLoading ? (
+              <div className="mb-6 text-gray-500">Loading word stats...</div>
+            ) : userStatsError ? (
+              <div className="mb-6 text-red-600">{userStatsError}</div>
+            ) : (
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+                {STATUS_OPTIONS.map((option) => (
+                  <button
+                    key={option.value}
+                    onClick={() => toggleStatusSelection(option.value)}
+                    className={`p-4 rounded-lg border-2 transition-colors ${
+                      selectedStatuses.includes(option.value)
+                        ? `${option.color} text-white border-transparent`
+                        : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 border-gray-300 dark:border-gray-600"
+                    }`}
+                  >
+                    <div className="text-2xl font-bold">
+                      {statusCounts[option.value] ?? 0}
+                    </div>
+                    <div className="text-sm">{option.label}</div>
+                  </button>
+                ))}
+              </div>
+            )}
 
             {error && (
               <div className="mb-6 bg-red-100 dark:bg-red-900/20 border border-red-400 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-md">
@@ -481,9 +648,20 @@ export default function TrainingPage() {
                     </button>
                   ))}
                 </div>
+                {selectedAnalysisIds.length === 0 && (
+                  <div className="mb-4 p-3 bg-yellow-100 dark:bg-yellow-900/20 border border-yellow-400 dark:border-yellow-800 text-yellow-700 dark:text-yellow-400 rounded-md">
+                    <p className="text-sm">
+                      Please select at least one analysis above to start
+                      training.
+                    </p>
+                  </div>
+                )}
                 <button
                   onClick={startTraining}
-                  disabled={selectedStatuses.length === 0}
+                  disabled={
+                    selectedStatuses.length === 0 ||
+                    selectedAnalysisIds.length === 0
+                  }
                   className="w-full bg-blue-600 text-white py-3 px-6 rounded-lg font-semibold hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Start Training

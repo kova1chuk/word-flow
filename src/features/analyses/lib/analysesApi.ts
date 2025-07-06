@@ -7,6 +7,7 @@ import {
   Timestamp,
   doc,
   updateDoc,
+  getDoc,
 } from "firebase/firestore";
 
 export interface Analysis {
@@ -149,5 +150,34 @@ export const analysesApi = {
       console.error("Error updating analysis stats:", error);
       throw error;
     }
+  },
+
+  // Fetch a single analysis by ID, only returning required fields
+  async fetchAnalysisById(
+    analysisId: string
+  ): Promise<
+    Pick<Analysis, "id" | "title" | "createdAt" | "summary" | "wordStats">
+  > {
+    const analysisRef = doc(db, "analyses", analysisId);
+    const analysisSnap = await getDoc(analysisRef);
+    if (!analysisSnap.exists()) {
+      throw new Error("Analysis not found");
+    }
+    const data = analysisSnap.data();
+    return {
+      id: analysisSnap.id,
+      title: data.title,
+      createdAt: data.createdAt
+        ? {
+            seconds: data.createdAt.seconds,
+            nanoseconds: data.createdAt.nanoseconds,
+            dateString: data.createdAt.toDate
+              ? data.createdAt.toDate().toISOString()
+              : "",
+          }
+        : { seconds: 0, nanoseconds: 0, dateString: "" },
+      summary: data.summary,
+      wordStats: data.wordStats,
+    };
   },
 };

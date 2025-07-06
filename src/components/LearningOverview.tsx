@@ -1,145 +1,51 @@
-import React from "react";
+import { WORD_STATUS_LABELS, WORD_STATUS_COLORS } from "@/entities/word/types";
 
 interface LearningOverviewProps {
-  toLearn: number;
-  toRepeat: number;
-  learned: number;
-  total: number;
-  mode?: "compact" | "detailed";
+  statusCounts: { [key: number]: number };
+  totalStatusWords: number;
 }
 
 export const LearningOverview: React.FC<LearningOverviewProps> = ({
-  toLearn,
-  toRepeat,
-  learned,
-  total,
-  mode = "compact",
+  statusCounts,
+  totalStatusWords,
 }) => {
-  const percent = (n: number) =>
-    total > 0 ? Math.round((n / total) * 100) : 0;
-
-  if (mode === "detailed") {
-    // Detailed: full block with legend and big bars
-    return (
-      <div className="rounded-2xl border border-gray-700/40 bg-gray-800/60 p-6 mb-6">
-        <div className="flex items-center mb-4">
-          <span className="text-lg font-semibold text-white mr-2">
-            Progress Overview
-          </span>
-          <span className="ml-auto text-sm text-gray-400">
-            Total: {total.toLocaleString()} words
-          </span>
-        </div>
-        {/* Stacked Bar */}
-        <div className="w-full bg-gray-700 rounded-full h-4 overflow-hidden mb-4 flex">
-          <div
-            className="bg-blue-600 h-full"
-            style={{ width: `${percent(toLearn)}%` }}
-          />
-          <div
-            className="bg-orange-500 h-full"
-            style={{ width: `${percent(toRepeat)}%` }}
-          />
-          <div
-            className="bg-green-500 h-full"
-            style={{ width: `${percent(learned)}%` }}
-          />
-        </div>
-        {/* Legend */}
-        <div className="flex items-center space-x-6 mb-4">
-          <div className="flex items-center text-blue-400 text-sm">
-            <span className="w-3 h-3 rounded-full bg-blue-600 mr-2 inline-block" />
-            To Learn
-          </div>
-          <div className="flex items-center text-orange-400 text-sm">
-            <span className="w-3 h-3 rounded-full bg-orange-500 mr-2 inline-block" />
-            To Repeat
-          </div>
-          <div className="flex items-center text-green-400 text-sm">
-            <span className="w-3 h-3 rounded-full bg-green-500 mr-2 inline-block" />
-            Learned
-          </div>
-        </div>
-        {/* Individual Bars */}
-        <div className="mb-2 flex items-center">
-          <span className="w-3 h-3 rounded-full bg-blue-600 mr-2" />
-          <span className="text-blue-400 font-semibold mr-2">To Learn</span>
-          <span className="text-white font-bold mr-2">
-            {toLearn.toLocaleString()}
-          </span>
-          <span className="bg-blue-900/60 text-blue-200 text-xs px-2 py-0.5 rounded-full">
-            {percent(toLearn)}%
-          </span>
-        </div>
-        <div className="w-full bg-gray-700 rounded-full h-3 mb-3">
-          <div
-            className="bg-blue-600 h-3 rounded-full"
-            style={{ width: `${percent(toLearn)}%` }}
-          />
-        </div>
-        <div className="mb-2 flex items-center">
-          <span className="w-3 h-3 rounded-full bg-orange-500 mr-2" />
-          <span className="text-orange-400 font-semibold mr-2">To Repeat</span>
-          <span className="text-white font-bold mr-2">
-            {toRepeat.toLocaleString()}
-          </span>
-          <span className="bg-orange-900/60 text-orange-200 text-xs px-2 py-0.5 rounded-full">
-            {percent(toRepeat)}%
-          </span>
-        </div>
-        <div className="w-full bg-gray-700 rounded-full h-3 mb-3">
-          <div
-            className="bg-orange-500 h-3 rounded-full"
-            style={{ width: `${percent(toRepeat)}%` }}
-          />
-        </div>
-        <div className="mb-2 flex items-center">
-          <span className="w-3 h-3 rounded-full bg-green-500 mr-2" />
-          <span className="text-green-400 font-semibold mr-2">Learned</span>
-          <span className="text-white font-bold mr-2">
-            {learned.toLocaleString()}
-          </span>
-          <span className="bg-green-900/60 text-green-200 text-xs px-2 py-0.5 rounded-full">
-            {percent(learned)}%
-          </span>
-        </div>
-        <div className="w-full bg-gray-700 rounded-full h-3">
-          <div
-            className="bg-green-500 h-3 rounded-full"
-            style={{ width: `${percent(learned)}%` }}
-          />
-        </div>
-      </div>
-    );
-  }
-
-  // Compact: single stacked bar with numbers/percentages
+  if (totalStatusWords === 0) return null;
   return (
-    <div className="w-full mb-2">
-      <div className="flex items-center justify-between mb-1">
-        <span className="text-xs text-gray-400">Progress</span>
-        <span className="text-xs text-gray-400">
-          {total.toLocaleString()} words
-        </span>
+    <div className="my-4">
+      {/* Segmented Progress Bar */}
+      <div className="flex w-full h-4 rounded-full overflow-hidden border border-gray-200 dark:border-gray-700">
+        {Array.from({ length: 7 }, (_, i) => i + 1).map((status) => {
+          const count = statusCounts[status] || 0;
+          const percent = (count / totalStatusWords) * 100;
+          const colorClass =
+            WORD_STATUS_COLORS[status as keyof typeof WORD_STATUS_COLORS] ||
+            "bg-gray-500";
+          return (
+            <div
+              key={status}
+              className={colorClass}
+              style={{ width: `${percent}%`, transition: "width 0.3s" }}
+            />
+          );
+        })}
       </div>
-      <div className="w-full bg-gray-700 rounded-full h-3 overflow-hidden flex">
-        <div
-          className="bg-blue-600 h-full"
-          style={{ width: `${percent(toLearn)}%` }}
-        />
-        <div
-          className="bg-orange-500 h-full"
-          style={{ width: `${percent(toRepeat)}%` }}
-        />
-        <div
-          className="bg-green-500 h-full"
-          style={{ width: `${percent(learned)}%` }}
-        />
-      </div>
-      <div className="flex justify-between mt-1 text-xs">
-        <span className="text-blue-400">{toLearn}</span>
-        <span className="text-orange-400">{toRepeat}</span>
-        <span className="text-green-400">{learned}</span>
+      {/* Legend */}
+      <div className="flex flex-wrap justify-between mt-2 text-xs">
+        {Array.from({ length: 7 }, (_, i) => i + 1).map((status) => (
+          <div key={status} className="flex items-center mr-2 mb-1">
+            <span
+              className={`inline-block w-3 h-3 rounded-full mr-1 border ${
+                WORD_STATUS_COLORS[status as keyof typeof WORD_STATUS_COLORS]
+              }`}
+            ></span>
+            <span className="font-medium mr-1">
+              {WORD_STATUS_LABELS[status as keyof typeof WORD_STATUS_LABELS]}
+            </span>
+            <span className="text-gray-500 dark:text-gray-400">
+              ({statusCounts[status] || 0})
+            </span>
+          </div>
+        ))}
       </div>
     </div>
   );

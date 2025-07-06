@@ -1,9 +1,12 @@
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Analysis, analysesApi } from "../lib/analysesApi";
 import { LearningOverview } from "@/components/LearningOverview";
 import { useSelector } from "react-redux";
 import { selectUser } from "@/entities/user/model/selectors";
+import { collection, getDocs } from "firebase/firestore";
+import { db } from "@/lib/firebase";
+import { Word } from "@/entities/word/types";
 
 interface AnalysisCardProps {
   analysis: Analysis;
@@ -16,6 +19,10 @@ export const AnalysisCard: React.FC<AnalysisCardProps> = ({
 }) => {
   const user = useSelector(selectUser);
   const [isReloading, setIsReloading] = useState(false);
+  const [statusCounts, setStatusCounts] = useState<{ [key: number]: number }>(
+    {}
+  );
+  const [totalStatusWords, setTotalStatusWords] = useState(0);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
@@ -42,6 +49,60 @@ export const AnalysisCard: React.FC<AnalysisCardProps> = ({
     }
   };
 
+  useEffect(() => {
+    // Log the analysis document to inspect its structure
+
+    console.log("AnalysisCard analysis:", analysis);
+    let ignore = false;
+    async function fetchStatusCounts() {
+      if (!analysis?.id) return;
+      // Fetch word references from analysis subcollection
+      const wordsSnapshot = await getDocs(
+        collection(db, "analyses", analysis.id, "words")
+      );
+      const wordIds = wordsSnapshot.docs.map((doc) => doc.data().wordId);
+      if (wordIds.length === 0) {
+        if (!ignore) {
+          setStatusCounts({});
+          setTotalStatusWords(0);
+        }
+        return;
+      }
+      // Fetch actual word docs in chunks
+      const chunkSize = 10;
+      let fetchedWords: Word[] = [];
+      for (let i = 0; i < wordIds.length; i += chunkSize) {
+        const chunk = wordIds.slice(i, i + chunkSize);
+        const wordsQuery = collection(db, "words");
+        const wordsSnapshot = await getDocs(wordsQuery);
+        fetchedWords = fetchedWords.concat(
+          wordsSnapshot.docs
+            .filter((doc) => chunk.includes(doc.id))
+            .map((doc) => doc.data() as Word)
+        );
+      }
+      // Count by status
+      const counts: { [key: number]: number } = {};
+      let total = 0;
+      for (let s = 1; s <= 7; s++) counts[s] = 0;
+      for (const w of fetchedWords) {
+        const status = typeof w.status === "number" ? w.status : 1;
+        if (status >= 1 && status <= 7) {
+          counts[status]++;
+          total++;
+        }
+      }
+      if (!ignore) {
+        setStatusCounts(counts);
+        setTotalStatusWords(total);
+      }
+    }
+    fetchStatusCounts();
+    return () => {
+      ignore = true;
+    };
+  }, [analysis?.id]);
+
   // Always provide bar chart data, fallback to summary if wordStats is missing
   let barChartStats = analysis.wordStats;
   if (!barChartStats) {
@@ -53,12 +114,22 @@ export const AnalysisCard: React.FC<AnalysisCardProps> = ({
       uniqueWords: analysis.summary.uniqueWords || 0,
     };
   }
-  const totalProgressWords =
-    barChartStats.toLearn + barChartStats.toRepeat + barChartStats.learned;
-  const completionPercentage =
-    totalProgressWords > 0
-      ? Math.round((barChartStats.learned / totalProgressWords) * 100)
-      : 0;
+
+  // Calculate completeness from statusCounts using weighted average
+  function calculateCompletenessFromCounts(counts: {
+    [key: number]: number;
+  }): number {
+    const arr = Array.from({ length: 7 }, (_, i) => counts[i + 1] || 0);
+    const total = arr.reduce((a, b) => a + b, 0);
+    if (total === 0) return 0;
+    const weighted = arr.reduce((sum, count, i) => sum + i * count, 0);
+    return ((weighted - total) / (6 * total)) * 100;
+  }
+
+  // Calculate completion percentage from statusCounts
+  const completionPercentage = Math.round(
+    calculateCompletenessFromCounts(statusCounts)
+  );
 
   return (
     <Link href={`/analyses/${analysis.id}`}>
@@ -132,11 +203,8 @@ export const AnalysisCard: React.FC<AnalysisCardProps> = ({
 
           {/* Enhanced Word Statistics */}
           <LearningOverview
-            toLearn={barChartStats.toLearn}
-            toRepeat={barChartStats.toRepeat}
-            learned={barChartStats.learned}
-            total={barChartStats.totalWords}
-            mode="compact"
+            statusCounts={statusCounts}
+            totalStatusWords={totalStatusWords}
           />
 
           {/* Enhanced Summary Stats */}
@@ -146,7 +214,7 @@ export const AnalysisCard: React.FC<AnalysisCardProps> = ({
                 Total Words
               </span>
               <span className="font-bold text-gray-800 dark:text-white text-lg">
-                {barChartStats.totalWords.toLocaleString()}
+                {analysis.summary?.totalWords?.toLocaleString?.() ?? "-"}
               </span>
             </div>
             <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700/50 dark:to-gray-800/50 rounded-xl p-4 border border-gray-200/50 dark:border-gray-600/50">
@@ -154,7 +222,7 @@ export const AnalysisCard: React.FC<AnalysisCardProps> = ({
                 Unique Words
               </span>
               <span className="font-bold text-gray-800 dark:text-white text-lg">
-                {barChartStats.uniqueWords.toLocaleString()}
+                {analysis.summary?.uniqueWords?.toLocaleString?.() ?? "-"}
               </span>
             </div>
           </div>

@@ -4,8 +4,8 @@ import "./globals.css";
 import { StoreProvider } from "@/providers/StoreProvider";
 import { PWAProvider } from "@/providers/PWAProvider";
 import { NotificationProvider } from "@/providers/NotificationProvider";
+import { AuthSyncProvider } from "@/providers/AuthSyncProvider";
 import Header from "@/components/Header";
-import { AuthSync } from "./AuthSync";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -67,7 +67,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <StoreProvider>
-          <AuthSync />
+          <AuthSyncProvider />
           <PWAProvider>
             <NotificationProvider>
               <Header />

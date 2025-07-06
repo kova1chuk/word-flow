@@ -2,8 +2,8 @@
 
 export interface BaseEntity {
   id: string;
-  createdAt: Date;
-  updatedAt?: Date;
+  createdAt: string; // ISO string for Redux serialization
+  updatedAt?: string; // ISO string for Redux serialization
 }
 
 export interface ApiResponse<T = unknown> {

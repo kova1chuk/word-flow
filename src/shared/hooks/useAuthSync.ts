@@ -1,12 +1,10 @@
-"use client";
-
 import { useEffect } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import { useDispatch } from "react-redux";
 import { setUser } from "@/entities/user/model/authSlice";
 import { auth } from "@/lib/firebase";
 
-export function AuthSync() {
+export function useAuthSync() {
   const dispatch = useDispatch();
 
   useEffect(() => {
@@ -21,7 +19,7 @@ export function AuthSync() {
                 displayName: firebaseUser.displayName || undefined,
                 photoURL: firebaseUser.photoURL || undefined,
                 emailVerified: firebaseUser.emailVerified,
-                createdAt: new Date(),
+                createdAt: new Date().toISOString(),
               }
             : null
         )
@@ -29,6 +27,4 @@ export function AuthSync() {
     });
     return unsubscribe;
   }, [dispatch]);
-
-  return null; // This component does not render anything
 }

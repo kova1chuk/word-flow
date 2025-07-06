@@ -18,6 +18,7 @@ import WordTrainingCard from "@/components/WordTrainingCard";
 import { useAnalyses } from "@/features/analyses/lib/useAnalyses";
 import { ChevronDownIcon, ChevronRightIcon } from "@heroicons/react/24/solid";
 import { useUserStats } from "@/shared/hooks/useUserStats";
+import { updateWordStatsOnStatusChange } from "@/features/word-management/lib/updateWordStatsOnStatusChange";
 
 interface DictionaryApiResponse {
   phonetics: { text: string; audio: string }[];
@@ -124,7 +125,17 @@ export default function TrainingPage() {
   ) => {
     setUpdating(wordId);
     try {
+      const word = words.find((w) => w.id === wordId);
+      const oldStatus = word?.status ?? 1;
       await updateDoc(doc(db, "words", wordId), { status });
+      if (user) {
+        await updateWordStatsOnStatusChange({
+          wordId,
+          userId: user.uid,
+          oldStatus,
+          newStatus: status,
+        });
+      }
       setWords((prev) =>
         prev.map((w) => (w.id === wordId ? { ...w, status } : w))
       );

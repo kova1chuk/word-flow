@@ -17,6 +17,12 @@ export default function AdminPage() {
   const [userStatsLoading, setUserStatsLoading] = useState(false);
   const [userStatsError, setUserStatsError] = useState<string | null>(null);
 
+  const [analysisStatsResult, setAnalysisStatsResult] = useState<any>(null);
+  const [analysisStatsLoading, setAnalysisStatsLoading] = useState(false);
+  const [analysisStatsError, setAnalysisStatsError] = useState<string | null>(
+    null
+  );
+
   const pollProgress = async () => {
     try {
       const res = await fetch("/api/admin/migrate-word-status/progress");
@@ -235,6 +241,42 @@ export default function AdminPage() {
             {userStatsResult.success
               ? `Processed ${userStatsResult.processed} users successfully.`
               : `Error: ${userStatsResult.error}`}
+          </div>
+        )}
+      </div>
+      {/* Analysis wordStats Migration Section */}
+      <div className="max-w-2xl mx-auto py-12 px-4 mt-12">
+        <h2 className="text-xl font-bold mb-4">Update Analyses wordStats</h2>
+        <button
+          onClick={async () => {
+            setAnalysisStatsResult(null);
+            setAnalysisStatsError(null);
+            setAnalysisStatsLoading(true);
+            try {
+              const res = await fetch("/api/admin/analysis-word-stats/start", {
+                method: "POST",
+              });
+              const data = await res.json();
+              setAnalysisStatsResult(data);
+              setAnalysisStatsLoading(false);
+            } catch (e: any) {
+              setAnalysisStatsError(e.message || "Unknown error");
+              setAnalysisStatsLoading(false);
+            }
+          }}
+          disabled={analysisStatsLoading}
+          className="px-6 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 disabled:opacity-50 mb-4"
+        >
+          {analysisStatsLoading ? "Running..." : "Update Analyses wordStats"}
+        </button>
+        {analysisStatsError && (
+          <div className="mt-2 text-red-600">{analysisStatsError}</div>
+        )}
+        {analysisStatsResult && (
+          <div className="mt-2 text-gray-800">
+            {analysisStatsResult.success
+              ? `Processed ${analysisStatsResult.processed} analyses successfully.`
+              : `Error: ${analysisStatsResult.error}`}
           </div>
         )}
       </div>

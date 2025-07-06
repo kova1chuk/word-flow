@@ -12,16 +12,16 @@ import {
   query,
   where,
   getDocs,
-  addDoc,
   deleteDoc,
   doc,
-  Timestamp,
   updateDoc,
 } from "firebase/firestore";
 import WordCard from "@/components/WordCard";
 import type { Word, WordDetails, Phonetic } from "@/types";
 import { config } from "@/lib/config";
 import PageLoader from "@/components/PageLoader";
+import { updateWordStatsOnStatusChange } from "@/features/word-management/lib/updateWordStatsOnStatusChange";
+import WordFilterControls from "@/shared/ui/WordFilterControls";
 
 interface DictionaryApiResponse {
   phonetics: { text: string; audio: string }[];
@@ -41,16 +41,12 @@ export default function WordsPage() {
   const isAuthenticated = useSelector(selectIsAuthenticated);
   const [words, setWords] = useState<Word[]>([]);
   const [loadingWords, setLoadingWords] = useState(true);
-  const [showAddForm, setShowAddForm] = useState(false);
-  const [newWord, setNewWord] = useState("");
-  const [newDefinition, setNewDefinition] = useState("");
-  const [newExample, setNewExample] = useState("");
-  const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [updating, setUpdating] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState("all");
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(12);
+  const [search, setSearch] = useState("");
 
   const STATUS_OPTIONS = [
     { value: "all", label: "All Statuses" },
@@ -89,49 +85,6 @@ export default function WordsPage() {
       fetchWords();
     }
   }, [user, fetchWords]);
-
-  const handleAddWord = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!user) return;
-
-    if (!newWord.trim() || !newDefinition.trim()) {
-      setError("Word and definition are required");
-      return;
-    }
-    const wordExists = words.some(
-      (word) => word.word.toLowerCase().trim() === newWord.toLowerCase().trim()
-    );
-    if (wordExists) {
-      setError("This word already exists in your collection");
-      return;
-    }
-
-    setSubmitting(true);
-    setError("");
-    try {
-      const newWordData = {
-        userId: user.uid,
-        word: newWord.trim(),
-        definition: newDefinition.trim(),
-        example: newExample.trim(),
-        createdAt: Timestamp.now(),
-        status: 1, // Default to "Not Learned"
-      };
-      const docRef = await addDoc(collection(db, "words"), newWordData);
-
-      setWords((prev) => [{ id: docRef.id, ...newWordData } as Word, ...prev]);
-
-      setNewWord("");
-      setNewDefinition("");
-      setNewExample("");
-      setShowAddForm(false);
-    } catch (error) {
-      console.error("Error adding word:", error);
-      setError("Failed to add word");
-    } finally {
-      setSubmitting(false);
-    }
-  };
 
   const handleDeleteWord = async (word: Word) => {
     if (!user) return;
@@ -255,8 +208,21 @@ export default function WordsPage() {
     setUpdating(id);
     setError("");
     try {
+      // Find the word and its old status
+      const word = words.find((w) => w.id === id);
+      if (!word || !user) throw new Error("Word or user not found");
+      const oldStatus = word.status;
+      if (typeof oldStatus !== "number") {
+        throw new Error("Old status is not a number");
+      }
       await updateDoc(doc(db, "words", id), { status });
       setWords((prev) => prev.map((w) => (w.id === id ? { ...w, status } : w)));
+      await updateWordStatsOnStatusChange({
+        wordId: id,
+        userId: user.uid,
+        oldStatus,
+        newStatus: status,
+      });
     } catch (error) {
       console.error("Error updating word status:", error);
       setError("Failed to update word status");
@@ -265,11 +231,17 @@ export default function WordsPage() {
     }
   };
 
-  const filteredWords = words.filter((word) => {
-    if (statusFilter === "all") return true;
-    if (statusFilter === "unset") return !word.status;
-    return word.status === parseInt(statusFilter);
-  });
+  const filteredWords = words
+    .filter((word) => {
+      if (statusFilter === "all") return true;
+      if (statusFilter === "unset") return !word.status;
+      return word.status === parseInt(statusFilter);
+    })
+    .filter((word) =>
+      search.trim() === ""
+        ? true
+        : word.word.toLowerCase().includes(search.trim().toLowerCase())
+    );
 
   // Pagination logic
   const totalPages = Math.ceil(filteredWords.length / pageSize);
@@ -305,129 +277,23 @@ export default function WordsPage() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-            My Words
-          </h1>
-          <p className="text-lg text-gray-600 dark:text-gray-400">
-            Manage your vocabulary collection and track your learning progress.
-          </p>
-        </div>
-
+        <WordFilterControls
+          statusFilter={statusFilter}
+          onStatusFilterChange={setStatusFilter}
+          pageSize={pageSize}
+          onPageSizeChange={setPageSize}
+          search={search}
+          onSearchChange={setSearch}
+          statusOptions={STATUS_OPTIONS}
+          pageSizeOptions={PAGE_SIZE_OPTIONS}
+          totalCount={words.length}
+          filteredCount={filteredWords.length}
+        />
         {error && (
           <div className="mb-6 bg-red-100 dark:bg-red-900/20 border border-red-400 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-md">
             <p>{error}</p>
           </div>
         )}
-
-        <div className="mb-6">
-          <button
-            onClick={() => setShowAddForm(!showAddForm)}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
-          >
-            {showAddForm ? "Cancel" : "+ Add New Word"}
-          </button>
-        </div>
-
-        {showAddForm && (
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-8">
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-              Add New Word
-            </h2>
-            <form onSubmit={handleAddWord} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Word
-                  </label>
-                  <input
-                    type="text"
-                    value={newWord}
-                    onChange={(e) => setNewWord(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
-                    placeholder="Enter word"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Definition
-                  </label>
-                  <input
-                    type="text"
-                    value={newDefinition}
-                    onChange={(e) => setNewDefinition(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
-                    placeholder="Enter definition"
-                    required
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                    Example (optional)
-                  </label>
-                  <input
-                    type="text"
-                    value={newExample}
-                    onChange={(e) => setNewExample(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400"
-                    placeholder="Enter example sentence"
-                  />
-                </div>
-              </div>
-              <button
-                type="submit"
-                disabled={submitting}
-                className="bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 dark:disabled:bg-gray-600 text-white px-4 py-2 rounded-md font-medium transition-colors disabled:cursor-not-allowed"
-              >
-                {submitting ? "Adding..." : "Add Word"}
-              </button>
-            </form>
-          </div>
-        )}
-
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-8">
-          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-            <div className="flex flex-col sm:flex-row gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Status Filter
-                </label>
-                <select
-                  value={statusFilter}
-                  onChange={(e) => setStatusFilter(e.target.value)}
-                  className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                >
-                  {STATUS_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>
-                      {option.label}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Words per page
-                </label>
-                <select
-                  value={pageSize}
-                  onChange={(e) => setPageSize(Number(e.target.value))}
-                  className="px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-                >
-                  {PAGE_SIZE_OPTIONS.map((size) => (
-                    <option key={size} value={size}>
-                      {size}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
-            <div className="text-sm text-gray-600 dark:text-gray-400">
-              {filteredWords.length} words total
-            </div>
-          </div>
-        </div>
-
         {loadingWords ? (
           <div className="flex items-center justify-center py-12">
             <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
@@ -476,7 +342,6 @@ export default function WordsPage() {
                 />
               ))}
             </div>
-
             {/* Pagination Controls */}
             {totalPages > 1 && (
               <div className="mt-8 flex items-center justify-between">
@@ -506,7 +371,6 @@ export default function WordsPage() {
                     } else {
                       pageNum = currentPage - 2 + i;
                     }
-
                     return (
                       <button
                         key={pageNum}

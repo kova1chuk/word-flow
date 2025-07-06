@@ -8,17 +8,25 @@ import {
   getDocs,
   doc,
   getDoc,
+  orderBy,
+  limit,
+  startAfter,
+  QueryDocumentSnapshot,
+  DocumentData,
+  Timestamp,
 } from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
 export interface AnalysisWord {
   id: string;
   word: string;
+  status: number;
   isLearned: boolean;
   isInDictionary: boolean;
   usages: string[];
   definition?: string;
   translation?: string;
+  createdAt: Timestamp | null;
 }
 
 export interface AnalysisStats {
@@ -33,9 +41,21 @@ export interface Analysis {
   createdAt: string;
   totalWords: number;
   uniqueWords: number;
+  summary?: {
+    wordStats?: Record<number, number>;
+    // Add other known summary fields here as needed
+  };
 }
 
-export function useAnalysisWords(analysisId: string) {
+export function useAnalysisWords(
+  analysisId: string,
+  options?: {
+    pageSize?: number;
+    statusFilter?: string;
+    search?: string;
+    pageCursor?: QueryDocumentSnapshot<DocumentData> | null;
+  }
+) {
   const user = useSelector(selectUser);
   const [words, setWords] = useState<AnalysisWord[]>([]);
   const [analysis, setAnalysis] = useState<Analysis | null>(null);
@@ -46,20 +66,23 @@ export function useAnalysisWords(analysisId: string) {
     learned: 0,
     notLearned: 0,
   });
+  const [nextCursor, setNextCursor] =
+    useState<QueryDocumentSnapshot<DocumentData> | null>(null);
+  const pageSize = options?.pageSize || 12;
+  const statusFilter = options?.statusFilter || "all";
+  const search = options?.search || "";
+  const pageCursor = options?.pageCursor || null;
 
   const fetchWords = useCallback(async () => {
     if (!user || !analysisId) return;
-
     setLoading(true);
     setError(null);
-
     try {
       // Fetch analysis details
       const analysisDoc = await getDoc(doc(db, "analyses", analysisId));
       if (!analysisDoc.exists()) {
         throw new Error("Analysis not found");
       }
-
       const analysisData = analysisDoc.data();
       setAnalysis({
         id: analysisId,
@@ -69,72 +92,76 @@ export function useAnalysisWords(analysisId: string) {
           new Date().toISOString(),
         totalWords: analysisData.totalWords || 0,
         uniqueWords: analysisData.uniqueWords || 0,
+        summary: analysisData.summary,
       });
-
-      // Fetch words from the analysis words subcollection
-      const analysisWordsQuery = query(
-        collection(db, "analyses", analysisId, "words")
+      // Build query for word references
+      let refsQuery = query(
+        collection(db, "analyses", analysisId, "words"),
+        orderBy("word")
       );
-      const analysisWordsSnapshot = await getDocs(analysisWordsQuery);
-      console.log("analysisWordsSnapshot", analysisWordsSnapshot);
-
-      // Get all word IDs from the analysis
-      const wordIds = analysisWordsSnapshot.docs.map(
-        (doc) => doc.data().wordId
-      );
-
-      if (wordIds.length === 0) {
-        setWords([]);
-        setStats({ total: 0, learned: 0, notLearned: 0 });
-        return;
+      if (pageCursor) {
+        refsQuery = query(refsQuery, startAfter(pageCursor));
       }
-
-      // Fetch the actual word documents
+      refsQuery = query(refsQuery, limit(pageSize));
+      const refsSnapshot = await getDocs(refsQuery);
+      const wordIds = refsSnapshot.docs.map((doc) => doc.data().wordId);
+      setNextCursor(
+        refsSnapshot.docs.length === pageSize
+          ? refsSnapshot.docs[refsSnapshot.docs.length - 1]
+          : null
+      );
+      // Fetch actual word docs
       const wordsData: AnalysisWord[] = [];
-
-      // Process words in chunks to avoid query limits
-      const chunkSize = 10;
-      for (let i = 0; i < wordIds.length; i += chunkSize) {
-        const chunk = wordIds.slice(i, i + chunkSize);
-        const wordsQuery = query(
-          collection(db, "words"),
-          where("__name__", "in", chunk)
-        );
-        const wordsSnapshot = await getDocs(wordsQuery);
-
-        wordsSnapshot.forEach((doc) => {
-          const data = doc.data();
-          wordsData.push({
-            id: doc.id,
-            word: data.word,
-            isLearned: data.isLearned || false,
-            isInDictionary: data.isInDictionary || false,
-            usages: data.usages || [],
-            definition: data.definition,
-            translation: data.translation,
+      if (wordIds.length > 0) {
+        const chunkSize = 10;
+        for (let i = 0; i < wordIds.length; i += chunkSize) {
+          const chunk = wordIds.slice(i, i + chunkSize);
+          const wordsQuery = query(
+            collection(db, "words"),
+            where("__name__", "in", chunk)
+          );
+          const wordsSnapshot = await getDocs(wordsQuery);
+          wordsSnapshot.forEach((doc) => {
+            const data = doc.data();
+            wordsData.push({
+              id: doc.id,
+              word: data.word,
+              status: typeof data.status === "number" ? data.status : 1,
+              isLearned: data.isLearned || false,
+              isInDictionary: data.isInDictionary || false,
+              usages: data.usages || [],
+              definition:
+                typeof data.definition === "string" ? data.definition : "",
+              translation:
+                typeof data.translation === "string" ? data.translation : "",
+              createdAt: data.createdAt || null,
+            });
           });
-        });
+        }
       }
-
-      setWords(wordsData);
-
+      // Apply status filter and search on client (for now)
+      let filtered = wordsData;
+      if (statusFilter !== "all") {
+        filtered = filtered.filter((w) => String(w.status) === statusFilter);
+      }
+      if (search.trim() !== "") {
+        filtered = filtered.filter((w) =>
+          w.word.toLowerCase().includes(search.trim().toLowerCase())
+        );
+      }
+      setWords(filtered);
       // Calculate stats
       const total = wordsData.length;
       const learned = wordsData.filter((w) => w.isLearned).length;
       const notLearned = total - learned;
-
-      setStats({
-        total,
-        learned,
-        notLearned,
-      });
+      setStats({ total, learned, notLearned });
     } catch (err) {
       console.error("Error fetching analysis words:", err);
       setError(err instanceof Error ? err.message : "Failed to load words");
     } finally {
       setLoading(false);
     }
-  }, [user, analysisId]);
+  }, [user, analysisId, pageSize, statusFilter, search, pageCursor]);
 
   const refreshWords = useCallback(() => {
     fetchWords();
@@ -151,5 +178,6 @@ export function useAnalysisWords(analysisId: string) {
     error,
     stats,
     refreshWords,
+    nextCursor,
   };
 }

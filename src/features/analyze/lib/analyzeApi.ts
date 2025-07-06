@@ -62,9 +62,36 @@ const transformApiResult = (
   fileName: string,
   userWords: UserWord[]
 ): AnalysisResult => {
-  const userWordMap = new Map(
-    userWords.map((w) => [w.word.toLowerCase(), w.status])
-  );
+  // Log the API response for debugging
+  console.log("API response for analysis:", apiResponse);
+
+  // Extract wordFrequency from all possible fields
+  let wordFrequency = apiResponse.wordFrequency || {};
+  if (
+    (!wordFrequency || Object.keys(wordFrequency).length === 0) &&
+    Array.isArray(apiResponse.unique_words)
+  ) {
+    wordFrequency = Object.fromEntries(
+      apiResponse.unique_words.map((w) => [w, 1])
+    );
+  } else if (
+    (!wordFrequency || Object.keys(wordFrequency).length === 0) &&
+    Array.isArray(apiResponse.uniqueWords)
+  ) {
+    wordFrequency = Object.fromEntries(
+      apiResponse.uniqueWords.map((w) => [w, 1])
+    );
+  }
+
+  // Extract unknownWordList from all possible fields
+  let unknownWordList = apiResponse.unknownWordList || [];
+  if (
+    (!unknownWordList || unknownWordList.length === 0) &&
+    Array.isArray(apiResponse.unknownWords)
+  ) {
+    unknownWordList = apiResponse.unknownWords;
+  }
+
   let uniqueWords: string[] = [];
   if (Array.isArray(apiResponse.unique_words)) {
     uniqueWords = apiResponse.unique_words;
@@ -74,6 +101,9 @@ const transformApiResult = (
   let learnerWords = 0;
   let unknownWords = 0;
 
+  const userWordMap = new Map(
+    userWords.map((w) => [w.word.toLowerCase(), w.status])
+  );
   uniqueWords.forEach((word: string) => {
     const status = userWordMap.get(word.toLowerCase());
     if (status !== undefined) {
@@ -101,8 +131,8 @@ const transformApiResult = (
 
   return {
     title: apiResponse.title || fileName,
-    wordFrequency: apiResponse.wordFrequency || {},
-    unknownWordList: apiResponse.unknownWordList || [],
+    wordFrequency,
+    unknownWordList,
     sentences: apiResponse.sentences || [],
     summary: {
       totalWords,

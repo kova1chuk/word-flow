@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { initializeApp, getApps, cert } from "firebase-admin/app";
 import { getFirestore } from "firebase-admin/firestore";
-import { getAuth } from "firebase-admin/auth";
+import { getAuth, UserRecord } from "firebase-admin/auth";
 
 const projectId = process.env.FIREBASE_PROJECT_ID;
 const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
@@ -25,7 +25,7 @@ const db = getFirestore();
 const auth = getAuth();
 
 async function listAllUsers() {
-  let users = [];
+  let users: UserRecord[] = [];
   let result = await auth.listUsers(1000);
   users = users.concat(result.users);
   while (result.pageToken) {

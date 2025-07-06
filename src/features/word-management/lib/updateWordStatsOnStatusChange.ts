@@ -1,11 +1,5 @@
 import { db } from "@/lib/firebase";
-import {
-  doc,
-  updateDoc,
-  getDocs,
-  collection,
-  runTransaction,
-} from "firebase/firestore";
+import { doc, getDocs, collection, runTransaction } from "firebase/firestore";
 
 /**
  * Updates userStats and all relevant analyses' summary.wordStats when a word's status changes.

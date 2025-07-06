@@ -101,7 +101,7 @@ export const AnalysisCard: React.FC<AnalysisCardProps> = ({
     return () => {
       ignore = true;
     };
-  }, [analysis?.id]);
+  }, [analysis?.id, analysis]);
 
   // Always provide bar chart data, fallback to summary if wordStats is missing
   let barChartStats = analysis.wordStats;

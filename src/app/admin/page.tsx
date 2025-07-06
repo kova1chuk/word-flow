@@ -1,23 +1,58 @@
 "use client";
 import { useState, useRef } from "react";
 
+// Add interfaces at the top
+interface MigrationProgress {
+  status: string;
+  currentBatch?: number;
+  migratedCount?: number;
+  skippedCount?: number;
+  total?: number;
+  error?: string;
+}
+
+interface DbMigrationProgress {
+  status: string;
+  currentStep?: string;
+  steps?: {
+    name: string;
+    status: string;
+    processed?: number;
+    total?: number;
+  }[];
+  error?: string;
+}
+
+interface UserStatsResult {
+  success: boolean;
+  processed?: number;
+  error?: string;
+}
+
+interface AnalysisStatsResult {
+  success: boolean;
+  processed?: number;
+  error?: string;
+}
+
 export default function AdminPage() {
-  const [progress, setProgress] = useState<any>(null);
+  const [progress, setProgress] = useState<MigrationProgress | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<boolean | null>(null);
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
 
-  const [dbMigrationProgress, setDbMigrationProgress] = useState<any>(null);
+  const [dbMigrationProgress, setDbMigrationProgress] =
+    useState<DbMigrationProgress | null>(null);
   const [dbMigrationLoading, setDbMigrationLoading] = useState(false);
   const [dbMigrationError, setDbMigrationError] = useState<string | null>(null);
   const dbMigrationPollingRef = useRef<NodeJS.Timeout | null>(null);
 
-  const [userStatsResult, setUserStatsResult] = useState<any>(null);
+  const [userStatsResult, setUserStatsResult] = useState<unknown>(null);
   const [userStatsLoading, setUserStatsLoading] = useState(false);
   const [userStatsError, setUserStatsError] = useState<string | null>(null);
 
-  const [analysisStatsResult, setAnalysisStatsResult] = useState<any>(null);
+  const [analysisStatsResult, setAnalysisStatsResult] = useState<unknown>(null);
   const [analysisStatsLoading, setAnalysisStatsLoading] = useState(false);
   const [analysisStatsError, setAnalysisStatsError] = useState<string | null>(
     null
@@ -38,8 +73,8 @@ export default function AdminPage() {
         setLoading(false);
         clearInterval(pollingRef.current!);
       }
-    } catch (e: any) {
-      setError(e.message || "Unknown error");
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Unknown error");
       setLoading(false);
       clearInterval(pollingRef.current!);
     }
@@ -63,8 +98,8 @@ export default function AdminPage() {
       // Start polling
       pollingRef.current = setInterval(pollProgress, 2000);
       pollProgress();
-    } catch (e: any) {
-      setError(e.message || "Unknown error");
+    } catch (e: unknown) {
+      setError(e instanceof Error ? e.message : "Unknown error");
       setLoading(false);
     }
   };
@@ -78,8 +113,8 @@ export default function AdminPage() {
         setDbMigrationLoading(false);
         clearInterval(dbMigrationPollingRef.current!);
       }
-    } catch (e: any) {
-      setDbMigrationError(e.message || "Unknown error");
+    } catch (e: unknown) {
+      setDbMigrationError(e instanceof Error ? e.message : "Unknown error");
       setDbMigrationLoading(false);
       clearInterval(dbMigrationPollingRef.current!);
     }
@@ -157,8 +192,10 @@ export default function AdminPage() {
                 2000
               );
               dbMigrationPollProgress();
-            } catch (e: any) {
-              setDbMigrationError(e.message || "Unknown error");
+            } catch (e: unknown) {
+              setDbMigrationError(
+                e instanceof Error ? e.message : "Unknown error"
+              );
               setDbMigrationLoading(false);
             }
           }}
@@ -177,19 +214,26 @@ export default function AdminPage() {
               <div>Current Step: {dbMigrationProgress.currentStep}</div>
               <ol className="list-decimal list-inside space-y-2 mt-2">
                 {Array.isArray(dbMigrationProgress.steps) ? (
-                  dbMigrationProgress.steps.map((step: any, i: number) => (
-                    <li key={i}>
-                      <span className="font-semibold">{step.name}:</span>{" "}
-                      {step.status}
-                      {step.status === "running" ||
-                      step.status === "completed" ? (
-                        <span>
-                          {" "}
-                          ({step.processed}/{step.total})
-                        </span>
-                      ) : null}
-                    </li>
-                  ))
+                  dbMigrationProgress.steps.map((step, i) => {
+                    const s = step as {
+                      name: string;
+                      status: string;
+                      processed?: number;
+                      total?: number;
+                    };
+                    return (
+                      <li key={i}>
+                        <span className="font-semibold">{s.name}:</span>{" "}
+                        {s.status}
+                        {s.status === "running" || s.status === "completed" ? (
+                          <span>
+                            {" "}
+                            ({s.processed}/{s.total})
+                          </span>
+                        ) : null}
+                      </li>
+                    );
+                  })
                 ) : (
                   <li>No step progress available.</li>
                 )}
@@ -223,8 +267,10 @@ export default function AdminPage() {
               const data = await res.json();
               setUserStatsResult(data);
               setUserStatsLoading(false);
-            } catch (e: any) {
-              setUserStatsError(e.message || "Unknown error");
+            } catch (e: unknown) {
+              setUserStatsError(
+                e instanceof Error ? e.message : "Unknown error"
+              );
               setUserStatsLoading(false);
             }
           }}
@@ -236,13 +282,16 @@ export default function AdminPage() {
         {userStatsError && (
           <div className="mt-2 text-red-600">{userStatsError}</div>
         )}
-        {userStatsResult && (
+        {userStatsResult &&
+        (userStatsResult as UserStatsResult).success !== undefined ? (
           <div className="mt-2 text-gray-800">
-            {userStatsResult.success
-              ? `Processed ${userStatsResult.processed} users successfully.`
-              : `Error: ${userStatsResult.error}`}
+            {(userStatsResult as UserStatsResult).success
+              ? `Processed ${
+                  (userStatsResult as UserStatsResult).processed
+                } users successfully.`
+              : `Error: ${(userStatsResult as UserStatsResult).error}`}
           </div>
-        )}
+        ) : null}
       </div>
       {/* Analysis wordStats Migration Section */}
       <div className="max-w-2xl mx-auto py-12 px-4 mt-12">
@@ -259,8 +308,10 @@ export default function AdminPage() {
               const data = await res.json();
               setAnalysisStatsResult(data);
               setAnalysisStatsLoading(false);
-            } catch (e: any) {
-              setAnalysisStatsError(e.message || "Unknown error");
+            } catch (e: unknown) {
+              setAnalysisStatsError(
+                e instanceof Error ? e.message : "Unknown error"
+              );
               setAnalysisStatsLoading(false);
             }
           }}
@@ -272,13 +323,16 @@ export default function AdminPage() {
         {analysisStatsError && (
           <div className="mt-2 text-red-600">{analysisStatsError}</div>
         )}
-        {analysisStatsResult && (
+        {analysisStatsResult &&
+        (analysisStatsResult as AnalysisStatsResult).success !== undefined ? (
           <div className="mt-2 text-gray-800">
-            {analysisStatsResult.success
-              ? `Processed ${analysisStatsResult.processed} analyses successfully.`
-              : `Error: ${analysisStatsResult.error}`}
+            {(analysisStatsResult as AnalysisStatsResult).success
+              ? `Processed ${
+                  (analysisStatsResult as AnalysisStatsResult).processed
+                } analyses successfully.`
+              : `Error: ${(analysisStatsResult as AnalysisStatsResult).error}`}
           </div>
-        )}
+        ) : null}
       </div>
     </div>
   );

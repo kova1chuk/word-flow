@@ -90,7 +90,7 @@ async function migrateInBackground() {
           continue;
         }
         const newStatus = statusMapping[oldStatus] || 1;
-        const updateData: any = { status: newStatus };
+        const updateData: Record<string, unknown> = { status: newStatus };
         if (oldStatus !== undefined) {
           updateData.oldStatus = oldStatus;
         }

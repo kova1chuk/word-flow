@@ -35,6 +35,8 @@ export default function StatusSelector({
   // For label positioning
   const trackRef = useRef<HTMLDivElement>(null);
   const [thumbLeft, setThumbLeft] = useState(0);
+  const [labelWidth, setLabelWidth] = useState(80);
+  const labelRef = useRef<HTMLDivElement>(null);
 
   useLayoutEffect(() => {
     if (trackRef.current) {
@@ -45,6 +47,12 @@ export default function StatusSelector({
       setThumbLeft(rect.width * percent);
     }
   }, [currentStatus]);
+
+  useLayoutEffect(() => {
+    if (labelRef.current) {
+      setLabelWidth(labelRef.current.offsetWidth);
+    }
+  }, [activeLabel]);
 
   const handleChange = (value: number[]) => {
     const newStatus = value[0];
@@ -72,13 +80,14 @@ export default function StatusSelector({
               key={opt.value}
               className="block"
               style={{
-                width: 8,
-                height: 8,
-                borderRadius: 4,
+                width: 4,
+                height: 4,
+                borderRadius: 2,
                 background:
                   opt.value === currentStatus ? activeColor : "#a3a3a3",
                 boxShadow: "none",
                 transition: "background 0.2s",
+                cursor: "pointer",
                 display: "inline-block",
               }}
             />
@@ -86,10 +95,18 @@ export default function StatusSelector({
         </div>
         {/* Status label above thumb */}
         <div
+          ref={labelRef}
           className="absolute"
           style={{
-            left: `calc(${thumbLeft}px + 10px - 50%)`, // 10px is half thumb width
-            top: -28,
+            left: (() => {
+              if (!trackRef.current) return 0;
+              const trackWidth = trackRef.current.offsetWidth;
+              const thumbWidth = 20; // actual thumb width in px
+              let left = thumbLeft - labelWidth / 2 + thumbWidth / 2;
+              left = Math.max(0, Math.min(left, trackWidth - labelWidth));
+              return left;
+            })(),
+            top: -15,
             minWidth: 80,
             textAlign: "center",
             pointerEvents: "none",

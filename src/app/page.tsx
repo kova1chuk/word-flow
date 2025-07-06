@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useSelector } from "react-redux";
-import { Line } from "react-chartjs-2";
+import { Doughnut } from "react-chartjs-2";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -12,9 +12,10 @@ import {
   Title,
   Tooltip,
   Legend,
+  ArcElement,
 } from "chart.js";
-import { selectWordStats } from "@/entities/word/model/selectors";
 import { selectUser } from "@/entities/user/model/selectors";
+import { useUserStats } from "@/shared/hooks/useUserStats";
 
 ChartJS.register(
   CategoryScale,
@@ -23,7 +24,8 @@ ChartJS.register(
   LineElement,
   Title,
   Tooltip,
-  Legend
+  Legend,
+  ArcElement
 );
 
 const STATUS_LABELS = [
@@ -47,23 +49,16 @@ const STATUS_COLORS = [
 
 export default function HomePage() {
   const user = useSelector(selectUser);
-  const wordStats = useSelector(selectWordStats);
+  const { wordStats, loading, error } = useUserStats();
 
   // Prepare chart data (current snapshot)
+  const statusCounts = [1, 2, 3, 4, 5, 6, 7].map((s) => wordStats?.[s] ?? 0);
   const chartData = {
     labels: STATUS_LABELS,
     datasets: [
       {
         label: "Words by Status",
-        data: [
-          wordStats.notLearned,
-          wordStats.beginner,
-          wordStats.basic,
-          wordStats.intermediate,
-          wordStats.advanced,
-          wordStats.wellKnown,
-          wordStats.mastered,
-        ],
+        data: statusCounts,
         borderColor: "#3b82f6",
         backgroundColor: STATUS_COLORS,
         pointBackgroundColor: STATUS_COLORS,
@@ -72,17 +67,6 @@ export default function HomePage() {
         fill: false,
       },
     ],
-  };
-
-  const chartOptions = {
-    responsive: true,
-    plugins: {
-      legend: { display: false },
-      title: { display: true, text: "Your Word Statuses" },
-    },
-    scales: {
-      y: { beginAtZero: true, ticks: { stepSize: 1 } },
-    },
   };
 
   if (!user) {
@@ -105,30 +89,83 @@ export default function HomePage() {
 
   // Authenticated dashboard
   return (
-    <div className="max-w-2xl mx-auto py-10 px-4">
-      <h1 className="text-3xl font-bold mb-6 text-center">Dashboard</h1>
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-8">
-        <Line data={chartData} options={chartOptions} />
-      </div>
-      <div className="flex flex-col sm:flex-row gap-4 justify-center">
-        <Link
-          href="/training"
-          className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition text-center"
-        >
-          Training Words
-        </Link>
-        <Link
-          href="/analyses"
-          className="bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700 transition text-center"
-        >
-          Analyses
-        </Link>
-        <Link
-          href="/analyze"
-          className="bg-purple-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-purple-700 transition text-center"
-        >
-          Analyze
-        </Link>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="max-w-2xl mx-auto py-10 px-4">
+        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-8">
+          {loading ? (
+            <div className="text-gray-500">Loading word stats...</div>
+          ) : error ? (
+            <div className="text-red-600">{error}</div>
+          ) : (
+            <>
+              <div
+                className="flex justify-center items-center"
+                style={{ minHeight: 400 }}
+              >
+                <div className="w-full max-w-lg h-96">
+                  <Doughnut
+                    data={{
+                      ...chartData,
+                      datasets: chartData.datasets.map((ds) => ({
+                        ...ds,
+                        borderWidth: 0,
+                      })),
+                    }}
+                    options={{
+                      plugins: {
+                        legend: { display: false },
+                        title: { display: true, text: "Your Word Statuses" },
+                      },
+                      responsive: true,
+                      maintainAspectRatio: false,
+                      cutout: "65%",
+                    }}
+                  />
+                </div>
+              </div>
+              {/* Custom Legend */}
+              <div className="flex flex-wrap justify-center gap-2 mt-6 bg-white/80 dark:bg-gray-800/80 rounded-xl shadow-lg p-4 max-w-2xl mx-auto border border-gray-200 dark:border-gray-700">
+                {STATUS_LABELS.map((label, i) => (
+                  <div key={label} className="flex items-center gap-2">
+                    <span
+                      className="inline-block w-4 h-4 rounded-full border border-gray-400 shadow-sm"
+                      style={{ background: STATUS_COLORS[i] }}
+                    ></span>
+                    <span className="text-base font-medium text-gray-800 dark:text-gray-100">
+                      {label}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </>
+          )}
+        </div>
+        <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <Link
+            href="/words"
+            className="bg-gray-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-gray-700 transition text-center"
+          >
+            Words
+          </Link>
+          <Link
+            href="/training"
+            className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition text-center"
+          >
+            Training Words
+          </Link>
+          <Link
+            href="/analyses"
+            className="bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700 transition text-center"
+          >
+            Analyses
+          </Link>
+          <Link
+            href="/analyze"
+            className="bg-purple-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-purple-700 transition text-center"
+          >
+            Analyze
+          </Link>
+        </div>
       </div>
     </div>
   );

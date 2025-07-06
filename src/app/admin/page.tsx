@@ -1,28 +1,55 @@
 "use client";
-import { useState } from "react";
+import { useState, useRef } from "react";
 
 export default function AdminPage() {
-  const [logs, setLogs] = useState<string[]>([]);
+  const [progress, setProgress] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<boolean | null>(null);
+  const pollingRef = useRef<NodeJS.Timeout | null>(null);
+
+  const pollProgress = async () => {
+    try {
+      const res = await fetch("/api/admin/migrate-word-status/progress");
+      const data = await res.json();
+      setProgress(data);
+      if (data.status === "completed") {
+        setSuccess(true);
+        setLoading(false);
+        clearInterval(pollingRef.current!);
+      } else if (data.status === "error") {
+        setError(data.error || "Migration failed");
+        setSuccess(false);
+        setLoading(false);
+        clearInterval(pollingRef.current!);
+      }
+    } catch (e: any) {
+      setError(e.message || "Unknown error");
+      setLoading(false);
+      clearInterval(pollingRef.current!);
+    }
+  };
 
   const runMigration = async () => {
     setLoading(true);
-    setLogs([]);
+    setProgress(null);
     setError(null);
     setSuccess(null);
     try {
-      const res = await fetch("/api/admin/migrate-word-status", {
+      const res = await fetch("/api/admin/migrate-word-status/start", {
         method: "POST",
       });
       const data = await res.json();
-      setLogs(data.logs || []);
-      setSuccess(data.success);
-      if (!data.success) setError("Migration failed");
+      if (!data.started) {
+        setError(data.error || "Migration failed to start");
+        setLoading(false);
+        return;
+      }
+      // Start polling
+      pollingRef.current = setInterval(pollProgress, 2000);
+      pollProgress();
     } catch (e: any) {
       setError(e.message || "Unknown error");
-    } finally {
       setLoading(false);
     }
   };
@@ -47,10 +74,33 @@ export default function AdminPage() {
         </div>
       )}
       {error && <div className="mt-2 text-red-600">{error}</div>}
-      <div className="mt-6 bg-gray-100 rounded-lg p-4 max-h-96 overflow-auto text-sm font-mono">
-        {logs.map((log, i) => (
-          <div key={i}>{log}</div>
-        ))}
+      <div className="mt-6 bg-gray-100 rounded-lg p-4 max-h-96 overflow-auto text-sm font-mono text-gray-800">
+        {progress ? (
+          <>
+            <div>Status: {progress.status}</div>
+            {progress.status === "running" && (
+              <>
+                <div>Batch: {progress.currentBatch}</div>
+                <div>Migrated: {progress.migratedCount}</div>
+                <div>Skipped: {progress.skippedCount}</div>
+                <div>Total: {progress.total}</div>
+              </>
+            )}
+            {progress.status === "error" && (
+              <div className="text-red-600">Error: {progress.error}</div>
+            )}
+            {progress.status === "completed" && (
+              <>
+                <div className="text-green-600">Migration completed!</div>
+                <div>Migrated: {progress.migratedCount}</div>
+                <div>Skipped: {progress.skippedCount}</div>
+                <div>Total: {progress.total}</div>
+              </>
+            )}
+          </>
+        ) : (
+          <div>No migration progress yet.</div>
+        )}
       </div>
     </div>
   );

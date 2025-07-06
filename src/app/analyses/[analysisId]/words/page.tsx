@@ -24,7 +24,9 @@ export default function AnalysisWordsPage() {
 
   // Pagination state
   const [pageSize, setPageSize] = useState(12);
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [selectedStatuses, setSelectedStatuses] = useState<(string | number)[]>(
+    []
+  );
   const [search, setSearch] = useState("");
   const [pageCursorStack, setPageCursorStack] = useState<
     QueryDocumentSnapshot<DocumentData>[]
@@ -36,7 +38,7 @@ export default function AnalysisWordsPage() {
   const { words, analysis, loading, error, refreshWords, nextCursor } =
     useAnalysisWords(analysisId, {
       pageSize,
-      statusFilter,
+      statusFilter: selectedStatuses.length === 0 ? "all" : selectedStatuses,
       search,
       pageCursor: currentCursor,
     });
@@ -61,8 +63,10 @@ export default function AnalysisWordsPage() {
     setCurrentCursor(null);
     setPageCursorStack([]);
   };
-  const handleStatusFilterChange = (val: string) => {
-    setStatusFilter(val);
+  const handleStatusFilterChange = (statuses: (string | number)[]) => {
+    // Remove "all" from the selection since it's not a real filter
+    const filteredStatuses = statuses.filter((s) => s !== "all");
+    setSelectedStatuses(filteredStatuses);
     setCurrentCursor(null);
     setPageCursorStack([]);
   };
@@ -218,7 +222,7 @@ export default function AnalysisWordsPage() {
       <AnalysisWordsHeader analysis={analysis} />
       <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
         <WordFilterControls
-          statusFilter={statusFilter}
+          selectedStatuses={selectedStatuses}
           onStatusFilterChange={handleStatusFilterChange}
           pageSize={pageSize}
           onPageSizeChange={handlePageSizeChange}

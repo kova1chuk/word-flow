@@ -6,8 +6,8 @@ interface StatusOption {
 }
 
 interface WordFilterControlsProps {
-  statusFilter: string | number;
-  onStatusFilterChange: (value: string) => void;
+  selectedStatuses: (string | number)[];
+  onStatusFilterChange: (selected: (string | number)[]) => void;
   pageSize: number;
   onPageSizeChange: (value: number) => void;
   search: string;
@@ -20,7 +20,7 @@ interface WordFilterControlsProps {
 }
 
 const WordFilterControls: React.FC<WordFilterControlsProps> = ({
-  statusFilter,
+  selectedStatuses,
   onStatusFilterChange,
   pageSize,
   onPageSizeChange,
@@ -32,6 +32,8 @@ const WordFilterControls: React.FC<WordFilterControlsProps> = ({
   filteredCount,
   className = "",
 }) => {
+  const selectedStatusesSafe = selectedStatuses ?? [];
+
   // Helper to get count for each status
   const getCountForStatus = (value: string | number) => {
     if (value === "all") return totalCount ?? 0;
@@ -46,26 +48,6 @@ const WordFilterControls: React.FC<WordFilterControlsProps> = ({
     >
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div className="flex flex-col sm:flex-row gap-4 items-center">
-          {/* Status Button Group */}
-          <div className="flex flex-wrap gap-2 max-w-3xl mx-auto mb-2">
-            {statusOptions.map((option) => (
-              <button
-                key={option.value}
-                onClick={() => onStatusFilterChange(option.value.toString())}
-                className={`px-2 py-1 rounded-md text-xs font-medium transition-colors ${
-                  statusFilter === option.value
-                    ? "bg-blue-100 text-blue-800"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200"
-                }`}
-                style={{ minWidth: 80 }}
-              >
-                {option.label}
-                {typeof getCountForStatus(option.value) === "number" && (
-                  <> ({getCountForStatus(option.value)})</>
-                )}
-              </button>
-            ))}
-          </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
               Words per page
@@ -103,6 +85,51 @@ const WordFilterControls: React.FC<WordFilterControlsProps> = ({
               </div>
             )}
         </div>
+      </div>
+      {/* Status Multi-Select Button Group at the bottom */}
+      <div className="flex flex-wrap gap-2 max-w-3xl mx-auto mt-6 justify-center">
+        {statusOptions.map((option) => {
+          const isAllOption = option.value === "all";
+          const selected = isAllOption
+            ? selectedStatusesSafe.length === 0
+            : selectedStatusesSafe.includes(option.value);
+          return (
+            <button
+              key={option.value}
+              type="button"
+              onClick={() => {
+                if (isAllOption) {
+                  // If "all" is clicked, clear all other selections
+                  onStatusFilterChange([]);
+                } else {
+                  if (selected) {
+                    onStatusFilterChange(
+                      selectedStatusesSafe.filter((v) => v !== option.value)
+                    );
+                  } else {
+                    onStatusFilterChange([
+                      ...selectedStatusesSafe,
+                      option.value,
+                    ]);
+                  }
+                }
+              }}
+              className={`px-2 py-1 rounded-full text-sm font-medium transition-colors border
+                ${
+                  selected
+                    ? "bg-blue-600 text-white border-blue-600 shadow"
+                    : "bg-gray-100 text-gray-800 border-gray-300 hover:bg-blue-50"
+                }
+                focus:outline-none focus:ring-2 focus:ring-blue-400`}
+              style={{ minWidth: 64 }}
+            >
+              {option.label}
+              {typeof getCountForStatus(option.value) === "number" && (
+                <> ({getCountForStatus(option.value)})</>
+              )}
+            </button>
+          );
+        })}
       </div>
     </div>
   );

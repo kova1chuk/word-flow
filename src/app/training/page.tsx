@@ -20,7 +20,7 @@ export default function TrainingPage() {
   ]);
 
   // Analyses selection
-  const { analyses, loading: analysesLoading } = useAnalyses();
+  const { analyses } = useAnalyses();
   const [analysesExpanded, setAnalysesExpanded] = useState(false);
   const [selectedAnalysisIds, setSelectedAnalysisIds] = useState<string[]>([]);
 
@@ -34,7 +34,6 @@ export default function TrainingPage() {
 
   // Training session
   const {
-    session,
     words,
     currentQuestion,
     currentWordIndex,
@@ -46,7 +45,6 @@ export default function TrainingPage() {
     incorrectAnswers,
     completedWords,
     progress,
-    accuracy,
     startSession,
     handleAnswer,
     skipQuestion,
@@ -261,7 +259,7 @@ export default function TrainingPage() {
                           {analysis.title}
                         </div>
                         <div className="text-sm text-gray-500 dark:text-gray-400">
-                          {analysis.totalWords} words
+                          {analysis.summary?.totalWords ?? 0} words
                         </div>
                       </button>
                     ))}
@@ -383,6 +381,7 @@ export default function TrainingPage() {
             {/* Current Question */}
             <TrainingQuestionCard
               question={currentQuestion}
+              word={words[currentWordIndex]}
               onAnswer={handleAnswer}
               onSkip={skipQuestion}
             />

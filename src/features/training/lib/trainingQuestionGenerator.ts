@@ -78,10 +78,12 @@ export class TrainingQuestionGenerator {
 
   // 3. Usage in Context
   private static generateContextUsageQuestion(word: Word): TrainingQuestion {
-    const examples =
-      word.examples || word.details?.meanings?.[0]?.definitions?.[0]?.example
-        ? [word.details.meanings[0].definitions[0].example!]
-        : [`I need to use the word "${word.word}" in a sentence.`];
+    const example =
+      word.examples?.[0] ||
+      word.details?.meanings?.[0]?.definitions?.[0]?.example;
+    const examples = example
+      ? [example]
+      : [`I need to use the word "${word.word}" in a sentence.`];
 
     const context = examples[0].replace(word.word, "_____");
 

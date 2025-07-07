@@ -43,7 +43,7 @@ export default function WordsPage() {
   const [loadingWords, setLoadingWords] = useState(true);
   const [error, setError] = useState("");
   const [updating, setUpdating] = useState<string | null>(null);
-  const [statusFilter, setStatusFilter] = useState("all");
+  const [statusFilter, setStatusFilter] = useState<(string | number)[]>([]);
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(12);
   const [search, setSearch] = useState("");
@@ -233,9 +233,9 @@ export default function WordsPage() {
 
   const filteredWords = words
     .filter((word) => {
-      if (statusFilter === "all") return true;
-      if (statusFilter === "unset") return !word.status;
-      return word.status === parseInt(statusFilter);
+      if (statusFilter.length === 0) return true; // Show all if none selected
+      if (statusFilter.includes("unset")) return !word.status;
+      return word.status !== undefined && statusFilter.includes(word.status);
     })
     .filter((word) =>
       search.trim() === ""
@@ -278,7 +278,7 @@ export default function WordsPage() {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
         <WordFilterControls
-          statusFilter={statusFilter}
+          selectedStatuses={statusFilter}
           onStatusFilterChange={setStatusFilter}
           pageSize={pageSize}
           onPageSizeChange={setPageSize}
@@ -319,11 +319,12 @@ export default function WordsPage() {
               No words found
             </h3>
             <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-              {statusFilter === "all"
+              {statusFilter.length === 0
                 ? "Get started by adding your first word."
                 : `No words with status "${
-                    STATUS_OPTIONS.find((opt) => opt.value === statusFilter)
-                      ?.label
+                    statusFilter[0] !== undefined
+                      ? STATUS_OPTIONS.find((opt) => opt.value === statusFilter[0])?.label ?? statusFilter[0]
+                      : "Unknown"
                   }".`}
             </p>
           </div>

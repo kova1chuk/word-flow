@@ -1,11 +1,13 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
+import { useRouter, useSearchParams } from "next/navigation";
 import { selectUser } from "@/entities/user/model/selectors";
 import { useAnalyses } from "@/features/analyses/lib/useAnalyses";
 import { ChevronDownIcon, ChevronRightIcon } from "@heroicons/react/24/solid";
 import { useUserStats } from "@/shared/hooks/useUserStats";
+import { useAnalysisFilteredStats } from "@/shared/hooks/useAnalysisFilteredStats";
 import { useTrainingSession } from "@/features/training/lib/useTrainingSession";
 import { TrainingQuestionCard } from "@/features/training/ui/TrainingQuestionCard";
 import { TrainingSessionSummary } from "@/features/training/ui/TrainingSessionSummary";
@@ -19,10 +21,43 @@ export default function TrainingPage() {
     1, 2, 3, 4, 5,
   ]);
 
+  // URL state management
+  const router = useRouter();
+  const searchParams = useSearchParams();
+
   // Analyses selection
   const { analyses } = useAnalyses();
   const [analysesExpanded, setAnalysesExpanded] = useState(false);
   const [selectedAnalysisIds, setSelectedAnalysisIds] = useState<string[]>([]);
+
+  // Load selected analyses from URL on component mount
+  useEffect(() => {
+    const analysesParam = searchParams.get("analyses");
+    if (analysesParam) {
+      const analysisIds = analysesParam
+        .split(",")
+        .filter((id) => id.trim() !== "");
+      setSelectedAnalysisIds(analysisIds);
+      // Auto-expand analyses section if analyses are selected
+      if (analysisIds.length > 0) {
+        setAnalysesExpanded(true);
+      }
+    }
+  }, [searchParams]);
+
+  // Update URL when selected analyses change
+  useEffect(() => {
+    const params = new URLSearchParams(searchParams.toString());
+
+    if (selectedAnalysisIds.length > 0) {
+      params.set("analyses", selectedAnalysisIds.join(","));
+    } else {
+      params.delete("analyses");
+    }
+
+    const newUrl = `${window.location.pathname}?${params.toString()}`;
+    router.replace(newUrl, { scroll: false });
+  }, [selectedAnalysisIds, router, searchParams]);
 
   // Training settings
   const [sessionSize, setSessionSize] = useState(10);
@@ -30,6 +65,7 @@ export default function TrainingPage() {
     useState<TrainingType>("input_word");
 
   const { wordStats: userWordStats } = useUserStats();
+  const { filteredWordStats } = useAnalysisFilteredStats(selectedAnalysisIds);
 
   // Training session
   const {
@@ -133,6 +169,10 @@ export default function TrainingPage() {
   };
 
   const getStatusCount = (status: number) => {
+    // If analyses are selected, use filtered stats; otherwise use overall stats
+    if (selectedAnalysisIds.length > 0 && filteredWordStats) {
+      return filteredWordStats[status] || 0;
+    }
     return userWordStats?.[status] || 0;
   };
 
@@ -234,9 +274,17 @@ export default function TrainingPage() {
 
             {/* Status Selection */}
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-                Select Word Statuses to Train
-              </h2>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
+                  Select Word Statuses to Train
+                </h2>
+                {selectedAnalysisIds.length > 0 && (
+                  <div className="text-sm text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-3 py-1 rounded-full">
+                    Filtered by {selectedAnalysisIds.length} analysis
+                    {selectedAnalysisIds.length > 1 ? "es" : ""}
+                  </div>
+                )}
+              </div>
               <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
                 {STATUS_OPTIONS.map((option) => (
                   <button

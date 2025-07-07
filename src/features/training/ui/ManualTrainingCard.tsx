@@ -103,9 +103,6 @@ export function ManualTrainingCard({
 
       {/* Status Selector */}
       <div className="mb-6">
-        <h4 className="font-semibold text-gray-700 dark:text-gray-300 text-sm mb-3 text-center">
-          Update Learning Status:
-        </h4>
         <StatusSelector
           word={word}
           onStatusChange={handleStatusChange}

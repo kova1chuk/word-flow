@@ -8,6 +8,7 @@ import {
   where,
   getDocs,
   updateDoc,
+  deleteDoc,
   doc,
   addDoc,
   serverTimestamp,
@@ -20,7 +21,10 @@ import type {
   TrainingResult,
 } from "@/types";
 import { TrainingQuestionGenerator } from "./trainingQuestionGenerator";
-import { updateWordStatsOnStatusChange } from "@/features/word-management/lib/updateWordStatsOnStatusChange";
+import {
+  updateWordStatsOnStatusChange,
+  updateWordStatsOnDeletion,
+} from "@/features/word-management/lib/updateWordStatsOnStatusChange";
 import { config } from "@/lib/config";
 
 interface UseTrainingSessionProps {
@@ -515,10 +519,34 @@ export function useTrainingSession({
       if (!user) return;
 
       try {
-        // Remove word from database
-        await updateDoc(doc(db, "words", wordToDelete.id), {
-          deletedAt: serverTimestamp(),
+        const oldStatus = wordToDelete.status || 1;
+
+        // Delete word from database
+        await deleteDoc(doc(db, "words", wordToDelete.id));
+
+        // Update user stats to reflect the deletion
+        await updateWordStatsOnDeletion({
+          wordId: wordToDelete.id,
+          userId: user.uid,
+          oldStatus,
         });
+
+        // Remove word from all analysis word collections
+        const analysesSnapshot = await getDocs(collection(db, "analyses"));
+        for (const analysisDoc of analysesSnapshot.docs) {
+          const analysisId = analysisDoc.id;
+          const analysisWordsSnapshot = await getDocs(
+            collection(db, "analyses", analysisId, "words")
+          );
+
+          // Find and delete the word reference from this analysis
+          for (const wordRefDoc of analysisWordsSnapshot.docs) {
+            if (wordRefDoc.data().wordId === wordToDelete.id) {
+              await deleteDoc(wordRefDoc.ref);
+              break;
+            }
+          }
+        }
 
         // Remove from local state
         setWords((prev) => {

@@ -1,6 +1,7 @@
 // Training components
 export { TrainingQuestionCard } from "./ui/TrainingQuestionCard";
 export { TrainingSessionSummary } from "./ui/TrainingSessionSummary";
+export { ManualTrainingCard } from "./ui/ManualTrainingCard";
 
 // Training hooks
 export { useTrainingSession } from "./lib/useTrainingSession";

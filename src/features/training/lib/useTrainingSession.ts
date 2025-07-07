@@ -57,7 +57,7 @@ export function useTrainingSession({
   selectedStatuses,
   selectedAnalysisIds,
   sessionSize = 10,
-  trainingTypes = ["input_word", "choose_translation"],
+  trainingTypes = ["input_word"],
 }: UseTrainingSessionProps) {
   const user = useSelector(selectUser);
 
@@ -336,8 +336,98 @@ export function useTrainingSession({
         trainingTypes[0]
       );
       setCurrentQuestion(nextQuestion);
+    } else {
+      // Reached the last word, complete the session
+      setIsCompleted(true);
+      setCurrentQuestion(null);
     }
   }, [currentWordIndex, words, trainingTypes]);
+
+  // Navigate to next word
+  const nextWord = useCallback(() => {
+    if (currentWordIndex < words.length - 1) {
+      const nextIndex = currentWordIndex + 1;
+      setCurrentWordIndex(nextIndex);
+      const nextWord = words[nextIndex];
+      const nextQuestion = TrainingQuestionGenerator.generateQuestion(
+        nextWord,
+        trainingTypes[0]
+      );
+      setCurrentQuestion(nextQuestion);
+    } else {
+      // Reached the last word, complete the session
+      setIsCompleted(true);
+      setCurrentQuestion(null);
+    }
+  }, [currentWordIndex, words, trainingTypes]);
+
+  // Navigate to previous word
+  const previousWord = useCallback(() => {
+    if (currentWordIndex > 0) {
+      const prevIndex = currentWordIndex - 1;
+      setCurrentWordIndex(prevIndex);
+      const prevWord = words[prevIndex];
+      const prevQuestion = TrainingQuestionGenerator.generateQuestion(
+        prevWord,
+        trainingTypes[0]
+      );
+      setCurrentQuestion(prevQuestion);
+    }
+  }, [currentWordIndex, words, trainingTypes]);
+
+  // Handle status change for manual training
+  const handleStatusChange = useCallback(
+    async (wordId: string, newStatus: 1 | 2 | 3 | 4 | 5 | 6 | 7) => {
+      if (!user) return;
+
+      const currentWord = words[currentWordIndex];
+      if (currentWord.id !== wordId) return;
+
+      const oldStatus = currentWord.status || 1;
+
+      try {
+        // Update word status in database
+        await updateDoc(doc(db, "words", wordId), {
+          status: newStatus,
+          lastTrainedAt: serverTimestamp(),
+        });
+
+        // Update user stats
+        await updateWordStatsOnStatusChange({
+          wordId,
+          userId: user.uid,
+          oldStatus,
+          newStatus,
+        });
+
+        // Update local state
+        setWords((prev) =>
+          prev.map((word) =>
+            word.id === wordId ? { ...word, status: newStatus } : word
+          )
+        );
+
+        // Save training result
+        const trainingResult: Omit<TrainingResult, "id"> = {
+          result: "correct", // Manual status change is considered correct
+          type: "manual",
+          timestamp: new Date(),
+          oldStatus,
+          newStatus,
+          sessionId: session?.id,
+        };
+
+        await addDoc(collection(db, "trainingResults"), {
+          ...trainingResult,
+          timestamp: serverTimestamp(),
+        });
+      } catch (err) {
+        console.error("Error updating word status:", err);
+        setError("Failed to update word status");
+      }
+    },
+    [user, words, currentWordIndex, session]
+  );
 
   // End session
   const endSession = useCallback(() => {
@@ -352,6 +442,122 @@ export function useTrainingSession({
     setCompletedWords([]);
   }, []);
 
+  // Retry incorrect answers
+  const retryIncorrectAnswers = useCallback(async () => {
+    if (!user || words.length === 0) return;
+
+    // Get words that were answered incorrectly (status decreased)
+    const incorrectWords = words.filter((word) => {
+      const originalStatus = word.status || 1;
+      // If word status is lower than expected, it was likely answered incorrectly
+      return originalStatus <= 2; // Words with low status that need retry
+    });
+
+    if (incorrectWords.length === 0) {
+      // No incorrect answers to retry, start new session
+      endSession();
+      return;
+    }
+
+    // Start a new session with only incorrect words
+    const sessionData: Omit<TrainingSessionType, "id"> = {
+      userId: user.uid,
+      mode: "word",
+      wordIds: incorrectWords.map((w) => w.id),
+      currentIndex: 0,
+      completedWords: [],
+      correctAnswers: 0,
+      incorrectAnswers: 0,
+      startedAt: new Date(),
+      settings: {
+        autoAdvance: false,
+        showTranslation: true,
+        showDefinition: true,
+        trainingTypes,
+        sessionSize: incorrectWords.length,
+        priorityLowerStatus: true,
+        priorityOldWords: true,
+      },
+    };
+
+    // Save session to database
+    const sessionRef = await addDoc(collection(db, "trainingSessions"), {
+      ...sessionData,
+      startedAt: serverTimestamp(),
+    });
+
+    const newSession: TrainingSessionType = {
+      ...sessionData,
+      id: sessionRef.id,
+    };
+
+    setSession(newSession);
+    setWords(incorrectWords);
+    setIsStarted(true);
+    setIsCompleted(false);
+    setCurrentWordIndex(0);
+    setCorrectAnswers(0);
+    setIncorrectAnswers(0);
+    setCompletedWords([]);
+
+    // Generate first question
+    const firstWord = incorrectWords[0];
+    const question = TrainingQuestionGenerator.generateQuestion(
+      firstWord,
+      trainingTypes[0]
+    );
+    setCurrentQuestion(question);
+  }, [user, words, trainingTypes, endSession]);
+
+  // Handle word deletion
+  const handleDeleteWord = useCallback(
+    async (wordToDelete: Word) => {
+      if (!user) return;
+
+      try {
+        // Remove word from database
+        await updateDoc(doc(db, "words", wordToDelete.id), {
+          deletedAt: serverTimestamp(),
+        });
+
+        // Remove from local state
+        setWords((prev) => {
+          const updated = prev.filter((word) => word.id !== wordToDelete.id);
+
+          // Check if we have no more words
+          if (updated.length === 0) {
+            // End session immediately if no words left
+            setTimeout(() => {
+              setIsCompleted(true);
+              setCurrentQuestion(null);
+            }, 100);
+          }
+
+          return updated;
+        });
+
+        // If we deleted the current word, move to next or previous
+        if (wordToDelete.id === words[currentWordIndex]?.id) {
+          if (currentWordIndex < words.length - 1) {
+            nextWord();
+          } else if (currentWordIndex > 0) {
+            previousWord();
+          } else {
+            // No more words, end session
+            setTimeout(() => {
+              setIsCompleted(true);
+              setCurrentQuestion(null);
+            }, 100);
+          }
+        }
+      } catch (err) {
+        console.error("Error deleting word:", err);
+        setError("Failed to delete word");
+      }
+    },
+    [user, words, currentWordIndex, nextWord, previousWord]
+  );
+
   // Calculate progress
   const progress =
     words.length > 0 ? (currentWordIndex / words.length) * 100 : 0;
@@ -359,6 +565,12 @@ export function useTrainingSession({
     correctAnswers + incorrectAnswers > 0
       ? (correctAnswers / (correctAnswers + incorrectAnswers)) * 100
       : 0;
+
+  // Complete session manually
+  const completeSession = useCallback(() => {
+    setIsCompleted(true);
+    setCurrentQuestion(null);
+  }, []);
 
   return {
     // State
@@ -383,5 +595,11 @@ export function useTrainingSession({
     handleAnswer,
     skipQuestion,
     endSession,
+    retryIncorrectAnswers,
+    completeSession,
+    nextWord,
+    previousWord,
+    handleStatusChange,
+    handleDeleteWord,
   };
 }

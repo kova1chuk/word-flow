@@ -71,7 +71,8 @@ export type TrainingType =
   | "choose_translation" // Choose the Correct Translation
   | "context_usage" // Usage in Context
   | "synonym_match" // Synonym/Antonym Match
-  | "audio_dictation"; // Audio Dictation
+  | "audio_dictation"
+  | "manual"; // Manual word review and status management // Audio Dictation
 
 export interface TrainingSession {
   id: string;

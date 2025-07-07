@@ -218,7 +218,7 @@ export default function AnalysisWordsPage() {
   const PAGE_SIZE_OPTIONS = [6, 12, 24, 48];
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="bg-gray-50 dark:bg-gray-900">
       <AnalysisWordsHeader analysis={analysis} />
       <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
         <WordFilterControls

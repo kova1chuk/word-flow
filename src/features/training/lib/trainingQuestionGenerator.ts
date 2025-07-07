@@ -18,6 +18,8 @@ export class TrainingQuestionGenerator {
         return this.generateSynonymMatchQuestion(word);
       case "audio_dictation":
         return this.generateAudioDictationQuestion(word);
+      case "manual":
+        return this.generateManualQuestion(word);
       default:
         throw new Error(`Unknown training type: ${type}`);
     }
@@ -146,9 +148,24 @@ export class TrainingQuestionGenerator {
     };
   }
 
+  // 6. Manual Word Review
+  private static generateManualQuestion(word: Word): TrainingQuestion {
+    return {
+      id: this.generateId(),
+      wordId: word.id,
+      type: "manual",
+      question: `Review the word and update its status:`,
+      correctAnswer: word.word.toLowerCase().trim(),
+    };
+  }
+
   // Generate a random training type for a word
   static generateRandomType(word: Word): TrainingType {
-    const availableTypes: TrainingType[] = ["input_word", "choose_translation"];
+    const availableTypes: TrainingType[] = [
+      "input_word",
+      "choose_translation",
+      "manual",
+    ];
 
     // Add context usage if word has examples
     if (

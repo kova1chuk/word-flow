@@ -6,7 +6,7 @@ interface PageLoaderProps {
 
 export default function PageLoader({ text = "Loading..." }: PageLoaderProps) {
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+    <div className="bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
       <LoadingSpinner size="xl" text={text} />
     </div>
   );

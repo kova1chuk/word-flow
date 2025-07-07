@@ -137,7 +137,7 @@ export default function SingleAnalysisPage() {
       className={`${
         isFullScreen
           ? "fixed inset-0 z-50 bg-white dark:bg-gray-900"
-          : "min-h-screen bg-gray-50 dark:bg-gray-900"
+          : "bg-gray-50 dark:bg-gray-900"
       }`}
     >
       <div

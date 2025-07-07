@@ -26,9 +26,8 @@ export default function TrainingPage() {
 
   // Training settings
   const [sessionSize, setSessionSize] = useState(10);
-  const [selectedTrainingTypes, setSelectedTrainingTypes] = useState<
-    TrainingType[]
-  >(["input_word", "choose_translation"]);
+  const [selectedTrainingType, setSelectedTrainingType] =
+    useState<TrainingType>("input_word");
 
   const { wordStats: userWordStats } = useUserStats();
 
@@ -49,11 +48,17 @@ export default function TrainingPage() {
     handleAnswer,
     skipQuestion,
     endSession,
+    retryIncorrectAnswers,
+    completeSession,
+    nextWord,
+    previousWord,
+    handleStatusChange,
+    handleDeleteWord,
   } = useTrainingSession({
     selectedStatuses,
     selectedAnalysisIds,
     sessionSize,
-    trainingTypes: selectedTrainingTypes,
+    trainingTypes: [selectedTrainingType],
   });
 
   const STATUS_OPTIONS = [
@@ -92,6 +97,11 @@ export default function TrainingPage() {
       label: "Audio Dictation",
       description: "Listen and type",
     },
+    {
+      value: "manual",
+      label: "Manual Review",
+      description: "Review words and update status",
+    },
   ];
 
   const toggleStatusSelection = (status: number) => {
@@ -118,10 +128,8 @@ export default function TrainingPage() {
     }
   };
 
-  const toggleTrainingType = (type: TrainingType) => {
-    setSelectedTrainingTypes((prev) =>
-      prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]
-    );
+  const selectTrainingType = (type: TrainingType) => {
+    setSelectedTrainingType(type);
   };
 
   const getStatusCount = (status: number) => {
@@ -138,7 +146,7 @@ export default function TrainingPage() {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+      <div className="bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
             Please sign in to access training
@@ -150,7 +158,7 @@ export default function TrainingPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+      <div className="bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-gray-600 dark:text-gray-400">
@@ -162,18 +170,8 @@ export default function TrainingPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="bg-gray-50 dark:bg-gray-900">
       <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-        {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
-            Word Training
-          </h1>
-          <p className="text-lg text-gray-600 dark:text-gray-400">
-            Practice and improve your vocabulary with interactive exercises
-          </p>
-        </div>
-
         {!isStarted && !isCompleted && (
           <>
             {/* Status Selection */}
@@ -296,19 +294,17 @@ export default function TrainingPage() {
               {/* Training Types */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-                  Training Types
+                  Training Type
                 </label>
                 <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                   {TRAINING_TYPE_OPTIONS.map((option) => (
                     <button
                       key={option.value}
                       onClick={() =>
-                        toggleTrainingType(option.value as TrainingType)
+                        selectTrainingType(option.value as TrainingType)
                       }
                       className={`p-3 text-left rounded-lg border-2 transition-colors ${
-                        selectedTrainingTypes.includes(
-                          option.value as TrainingType
-                        )
+                        selectedTrainingType === option.value
                           ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
                           : "border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500"
                       }`}
@@ -384,7 +380,26 @@ export default function TrainingPage() {
               word={words[currentWordIndex]}
               onAnswer={handleAnswer}
               onSkip={skipQuestion}
+              onNext={nextWord}
+              onPrevious={previousWord}
+              canGoNext={currentWordIndex < words.length - 1}
+              canGoPrevious={currentWordIndex > 0}
+              onStatusChange={handleStatusChange}
+              onDelete={handleDeleteWord}
+              updating={null}
             />
+
+            {/* Complete Session Button - Show when on last word */}
+            {currentWordIndex === words.length - 1 && (
+              <div className="text-center">
+                <button
+                  onClick={completeSession}
+                  className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
+                >
+                  ✅ Complete Session
+                </button>
+              </div>
+            )}
           </div>
         )}
 
@@ -395,10 +410,7 @@ export default function TrainingPage() {
             correctAnswers={correctAnswers}
             incorrectAnswers={incorrectAnswers}
             completedWords={completedWords}
-            onRetry={() => {
-              // TODO: Implement retry logic for incorrect answers
-              endSession();
-            }}
+            onRetry={retryIncorrectAnswers}
             onNewSession={() => {
               endSession();
             }}

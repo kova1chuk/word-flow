@@ -275,7 +275,7 @@ export default function WordsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+    <div className="bg-gray-50 dark:bg-gray-900">
       <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
         <WordFilterControls
           selectedStatuses={statusFilter}
@@ -323,7 +323,9 @@ export default function WordsPage() {
                 ? "Get started by adding your first word."
                 : `No words with status "${
                     statusFilter[0] !== undefined
-                      ? STATUS_OPTIONS.find((opt) => opt.value === statusFilter[0])?.label ?? statusFilter[0]
+                      ? STATUS_OPTIONS.find(
+                          (opt) => opt.value === statusFilter[0]
+                        )?.label ?? statusFilter[0]
                       : "Unknown"
                   }".`}
             </p>

@@ -1,18 +1,34 @@
 import React, { useState } from "react";
 import type { TrainingQuestion, Word } from "@/types";
 import AudioPlayer from "@/components/shared/AudioPlayer";
+import { ManualTrainingCard } from "./ManualTrainingCard";
 
 interface TrainingQuestionCardProps {
   question: TrainingQuestion;
   word: Word;
   onAnswer: (isCorrect: boolean) => void;
   onSkip?: () => void;
+  onNext?: () => void;
+  onPrevious?: () => void;
+  canGoNext?: boolean;
+  canGoPrevious?: boolean;
+  onStatusChange?: (id: string, status: 1 | 2 | 3 | 4 | 5 | 6 | 7) => void;
+  onDelete?: (word: Word) => void;
+  updating?: string | null;
 }
 
 export function TrainingQuestionCard({
   question,
+  word,
   onAnswer,
   onSkip,
+  onNext,
+  onPrevious,
+  canGoNext = false,
+  canGoPrevious = false,
+  onStatusChange,
+  onDelete,
+  updating,
 }: TrainingQuestionCardProps) {
   const [userAnswer, setUserAnswer] = useState("");
   const [selectedOption, setSelectedOption] = useState<string>("");
@@ -171,6 +187,20 @@ export function TrainingQuestionCard({
               autoFocus
             />
           </div>
+        );
+
+      case "manual":
+        return (
+          <ManualTrainingCard
+            word={word}
+            onStatusChange={onStatusChange!}
+            onDelete={onDelete}
+            onNext={onNext!}
+            onPrevious={onPrevious!}
+            canGoNext={canGoNext}
+            canGoPrevious={canGoPrevious}
+            updating={updating}
+          />
         );
 
       default:

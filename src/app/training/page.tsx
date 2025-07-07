@@ -174,40 +174,6 @@ export default function TrainingPage() {
       <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
         {!isStarted && !isCompleted && (
           <>
-            {/* Status Selection */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-                Select Word Statuses to Train
-              </h2>
-              <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
-                {STATUS_OPTIONS.map((option) => (
-                  <button
-                    key={option.value}
-                    onClick={() => toggleStatusSelection(option.value)}
-                    className={`p-3 rounded-lg border-2 transition-colors ${
-                      selectedStatuses.includes(option.value)
-                        ? `border-${option.color.split("-")[1]}-500 bg-${
-                            option.color.split("-")[1]
-                          }-50 dark:bg-${option.color.split("-")[1]}-900/20`
-                        : "border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500"
-                    }`}
-                  >
-                    <div className="text-center">
-                      <div
-                        className={`w-3 h-3 rounded-full ${option.color} mx-auto mb-2`}
-                      ></div>
-                      <div className="text-sm font-medium text-gray-900 dark:text-white">
-                        {option.label}
-                      </div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400">
-                        {getStatusCount(option.value)}
-                      </div>
-                    </div>
-                  </button>
-                ))}
-              </div>
-            </div>
-
             {/* Analyses Selection */}
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
               <div className="flex items-center justify-between mb-4">
@@ -264,6 +230,40 @@ export default function TrainingPage() {
                   </div>
                 </div>
               )}
+            </div>
+
+            {/* Status Selection */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+                Select Word Statuses to Train
+              </h2>
+              <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
+                {STATUS_OPTIONS.map((option) => (
+                  <button
+                    key={option.value}
+                    onClick={() => toggleStatusSelection(option.value)}
+                    className={`p-3 rounded-lg border-2 transition-colors ${
+                      selectedStatuses.includes(option.value)
+                        ? `border-${option.color.split("-")[1]}-500 bg-${
+                            option.color.split("-")[1]
+                          }-50 dark:bg-${option.color.split("-")[1]}-900/20`
+                        : "border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500"
+                    }`}
+                  >
+                    <div className="text-center">
+                      <div
+                        className={`w-3 h-3 rounded-full ${option.color} mx-auto mb-2`}
+                      ></div>
+                      <div className="text-sm font-medium text-gray-900 dark:text-white">
+                        {option.label}
+                      </div>
+                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                        {getStatusCount(option.value)}
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
             </div>
 
             {/* Training Settings */}

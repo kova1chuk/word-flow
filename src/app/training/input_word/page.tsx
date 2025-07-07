@@ -196,6 +196,47 @@ export default function InputWordTrainingPage() {
 
         {!isStarted && !isCompleted && (
           <>
+            {/* Stats Overview */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
+              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+                Your Learning Stats
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="text-center p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                  <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                    {Object.values(userWordStats || {}).reduce(
+                      (sum, count) => sum + count,
+                      0
+                    )}
+                  </div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400">
+                    Total Words
+                  </div>
+                </div>
+                <div className="text-center p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                  <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                    {selectedAnalysisIds.length > 0
+                      ? getTotalSelectedWords()
+                      : Object.values(userWordStats || {}).reduce(
+                          (sum, count) => sum + count,
+                          0
+                        )}
+                  </div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400">
+                    Available for Training
+                  </div>
+                </div>
+                <div className="text-center p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+                  <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
+                    {analyses.length}
+                  </div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400">
+                    Analyses
+                  </div>
+                </div>
+              </div>
+            </div>
+
             {/* Analyses Selection */}
             <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
               <div className="flex items-center justify-between mb-4">

@@ -71,7 +71,7 @@ export default function RootLayout({
           <PWAProvider>
             <NotificationProvider>
               <Header />
-              {children}
+              <main className="pt-16">{children}</main>
             </NotificationProvider>
           </PWAProvider>
         </StoreProvider>

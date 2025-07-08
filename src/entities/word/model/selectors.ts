@@ -1,5 +1,5 @@
 import { createSelector } from "@reduxjs/toolkit";
-import type { RootState } from "@/app/store";
+import type { RootState } from "@/shared/model/store";
 import type { Word } from "@/entities/word/types";
 
 // Base selectors

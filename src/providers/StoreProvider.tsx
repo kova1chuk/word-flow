@@ -1,6 +1,6 @@
 "use client";
 
-import { store } from "@/app/store";
+import { store } from "@/shared/model/store";
 import { Provider } from "react-redux";
 
 interface StoreProviderProps {

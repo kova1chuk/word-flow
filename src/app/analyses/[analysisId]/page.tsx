@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams, useRouter } from "next/navigation";
-import { useAppDispatch } from "@/app/store";
+import { useAppDispatch } from "@/shared/model/store";
 import { useCallback } from "react";
 import PageLoader from "@/components/PageLoader";
 import Link from "next/link";

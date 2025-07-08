@@ -1,5 +1,5 @@
 import { createSelector } from "@reduxjs/toolkit";
-import { RootState } from "@/app/store";
+import { RootState } from "@/shared/model/store";
 
 // Base selectors
 const selectAnalysisState = (state: RootState) => state.analysis;

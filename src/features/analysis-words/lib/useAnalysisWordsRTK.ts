@@ -1,5 +1,5 @@
 import { useEffect, useCallback } from "react";
-import { useAppDispatch, useAppSelector } from "@/app/store";
+import { useAppDispatch, useAppSelector } from "@/shared/model/store";
 import { useSelector } from "react-redux";
 import { selectUser } from "@/entities/user/model/selectors";
 import { fetchAnalysisWords } from "../model/analysisWordsSlice";

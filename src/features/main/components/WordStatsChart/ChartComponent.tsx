@@ -2,18 +2,23 @@
 
 import { Doughnut } from "react-chartjs-2";
 import { STATUS_LABELS, STATUS_COLORS } from "@/shared/constants/colors";
+import { useChartComponentData } from "./hooks";
 
-interface WordStatsChartProps {
-  statusCounts: number[];
-  loading: boolean;
-  error: string | null;
-}
+export default function ChartComponent() {
+  const { statusCounts, error } = useChartComponentData();
 
-export default function WordStatsChart({
-  statusCounts,
-  loading,
-  error,
-}: WordStatsChartProps) {
+  // Show full gray overlay if there's an error
+  if (error) {
+    return (
+      <div className="w-full h-full bg-gray-300 dark:bg-gray-700 flex items-center justify-center rounded-lg">
+        <div className="text-gray-600 dark:text-gray-400 text-center">
+          <div className="text-lg font-semibold mb-2">Error Loading Data</div>
+          <div className="text-sm">{error}</div>
+        </div>
+      </div>
+    );
+  }
+
   const chartData = {
     labels: STATUS_LABELS,
     datasets: [
@@ -29,14 +34,6 @@ export default function WordStatsChart({
       },
     ],
   };
-
-  if (loading) {
-    return <div className="text-gray-500">Loading word stats...</div>;
-  }
-
-  if (error) {
-    return <div className="text-red-600">{error}</div>;
-  }
 
   return (
     <>
@@ -56,7 +53,6 @@ export default function WordStatsChart({
             options={{
               plugins: {
                 legend: { display: false },
-                title: { display: true, text: "Your Word Statuses" },
               },
               responsive: true,
               maintainAspectRatio: false,

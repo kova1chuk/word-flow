@@ -1,48 +1,20 @@
 "use client";
 
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-  ArcElement,
-} from "chart.js";
-import { useUserStats } from "@/shared/hooks/useUserStats";
-import WelcomeScreen from "./components/WelcomeScreen";
-import LazyWordStatsChart from "./components/LazyWordStatsChart";
-import NavigationLinks from "./components/NavigationLinks";
 import AuthGuard from "@/components/AuthGuard";
-
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  PointElement,
-  LineElement,
-  Title,
-  Tooltip,
-  Legend,
-  ArcElement
-);
+import {
+  WordStatsChart,
+  NavigationLinks,
+  WelcomeScreen,
+} from "@/features/main";
 
 function AuthenticatedDashboard() {
-  const { wordStats, loading, error } = useUserStats();
-
-  // Prepare chart data (current snapshot)
-  const statusCounts = [1, 2, 3, 4, 5, 6, 7].map((s) => wordStats?.[s] ?? 0);
-
   return (
     <div className="bg-gray-50 dark:bg-gray-900">
-      <div className="max-w-2xl mx-auto py-10 px-4">
+      <div className="max-w-2xl mx-auto p-4">
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-8">
-          <LazyWordStatsChart
-            statusCounts={statusCounts}
-            loading={loading}
-            error={error}
-          />
+          <div className="mb-8">
+            <WordStatsChart />
+          </div>
         </div>
         <NavigationLinks />
       </div>

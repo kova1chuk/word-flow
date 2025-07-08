@@ -2,7 +2,6 @@ import React from "react";
 import { useSelector } from "react-redux";
 import { RootState } from "@/shared/model/store";
 import WordCard from "@/components/WordCard";
-import { LoadingSpinner } from "@/shared/ui/LoadingSpinner";
 import type { Word } from "@/types";
 
 interface WordsListRTKProps {
@@ -20,20 +19,20 @@ export const WordsListRTK: React.FC<WordsListRTKProps> = ({
     (state: RootState) => state.words
   );
 
+  // Throw a promise when loading to trigger Suspense
+  if (loading) {
+    throw new Promise((_resolve) => {
+      // This promise will never resolve, but Suspense will catch it
+      // and show the fallback until the loading state changes
+    });
+  }
+
   // Get words for the current page
   const startIndex = (currentPage - 1) * pageSize;
   const endIndex = startIndex + pageSize;
   const paginatedWords = words
     .slice(startIndex, endIndex)
     .filter(Boolean) as Word[];
-
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center py-8">
-        <LoadingSpinner />
-      </div>
-    );
-  }
 
   if (error) {
     return (
@@ -73,7 +72,6 @@ export const WordsListRTK: React.FC<WordsListRTKProps> = ({
     id: string,
     _status: 1 | 2 | 3 | 4 | 5 | 6 | 7
   ) => {
-    // Status parameter is required by WordCard interface but not used in this implementation
     const word = paginatedWords.find((w) => w.id === id);
     if (word) {
       onWordAction("update-status", word);

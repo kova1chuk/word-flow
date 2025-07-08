@@ -4,7 +4,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { useAuthSync } from "@/shared/hooks/useAuthSync";
 import { useWordsRTK } from "@/features/words/lib/useWordsRTK";
 import { useWordFilters } from "@/features/words/lib/useWordFilters";
-import { WordsListRTK } from "@/features/words/components/WordsListRTK";
+import { WordsListRTKWithSuspense } from "@/features/words/components/WordsListRTKWithSuspense";
 import WordFilterControls from "@/shared/ui/WordFilterControls";
 import Pagination from "@/shared/ui/Pagination";
 import { LoadingSpinner } from "@/shared/ui/LoadingSpinner";
@@ -152,7 +152,7 @@ export default function WordsPage() {
         </div>
       )}
 
-      <WordsListRTK
+      <WordsListRTKWithSuspense
         currentPage={currentPage}
         pageSize={pageSize}
         onWordAction={handleWordAction}

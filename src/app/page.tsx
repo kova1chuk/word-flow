@@ -13,7 +13,7 @@ import {
 } from "chart.js";
 import { useUserStats } from "@/shared/hooks/useUserStats";
 import WelcomeScreen from "./components/WelcomeScreen";
-import WordStatsChart from "./components/WordStatsChart";
+import LazyWordStatsChart from "./components/LazyWordStatsChart";
 import NavigationLinks from "./components/NavigationLinks";
 import AuthGuard from "@/components/AuthGuard";
 
@@ -38,7 +38,7 @@ function AuthenticatedDashboard() {
     <div className="bg-gray-50 dark:bg-gray-900">
       <div className="max-w-2xl mx-auto py-10 px-4">
         <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-8">
-          <WordStatsChart
+          <LazyWordStatsChart
             statusCounts={statusCounts}
             loading={loading}
             error={error}

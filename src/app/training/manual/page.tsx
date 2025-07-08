@@ -92,6 +92,8 @@ export default function ManualTrainingPage() {
     previousWord,
     handleStatusChange,
     handleDeleteWord,
+    reloadDefinition,
+    reloadTranslation,
   } = useTrainingSession({
     selectedStatuses,
     selectedAnalysisIds,
@@ -308,12 +310,12 @@ export default function ManualTrainingPage() {
                   </div>
                 )}
               </div>
-              <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
+              <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
                 {STATUS_OPTIONS.map((option) => (
                   <button
                     key={option.value}
                     onClick={() => toggleStatusSelection(option.value)}
-                    className={`p-3 rounded-lg border-2 transition-colors ${
+                    className={`p-2 rounded-md border transition-colors text-xs sm:text-sm h-20 sm:h-24 flex flex-col items-center justify-center ${
                       selectedStatuses.includes(option.value)
                         ? `border-${option.color.split("-")[1]}-500 bg-${
                             option.color.split("-")[1]
@@ -321,14 +323,14 @@ export default function ManualTrainingPage() {
                         : "border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500"
                     }`}
                   >
-                    <div className="text-center">
+                    <div className="flex flex-col items-center">
                       <div
-                        className={`w-3 h-3 rounded-full ${option.color} mx-auto mb-2`}
+                        className={`w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full ${option.color} mb-1`}
                       ></div>
-                      <div className="text-sm font-medium text-gray-900 dark:text-white">
+                      <div className="font-medium text-gray-900 dark:text-white text-xs sm:text-sm">
                         {option.label}
                       </div>
-                      <div className="text-xs text-gray-500 dark:text-gray-400">
+                      <div className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5">
                         {getStatusCount(option.value)}
                       </div>
                     </div>
@@ -428,6 +430,8 @@ export default function ManualTrainingPage() {
               canGoPrevious={currentWordIndex > 0}
               onStatusChange={handleStatusChange}
               onDelete={handleDeleteWord}
+              onReloadDefinition={reloadDefinition}
+              onReloadTranslation={reloadTranslation}
               updating={null}
             />
 

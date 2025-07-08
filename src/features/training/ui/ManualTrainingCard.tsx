@@ -3,6 +3,7 @@ import type { Word } from "@/types";
 import WordDisplay from "@/components/shared/WordDisplay";
 import StatusSelector from "@/components/shared/StatusSelector";
 import AudioPlayer from "@/components/shared/AudioPlayer";
+import ReloadButton from "@/components/shared/ReloadButton";
 
 interface ManualTrainingCardProps {
   word: Word;
@@ -12,6 +13,8 @@ interface ManualTrainingCardProps {
   onPrevious: () => void;
   canGoNext: boolean;
   canGoPrevious: boolean;
+  onReloadDefinition?: () => void;
+  onReloadTranslation?: () => void;
   updating?: string | null;
 }
 
@@ -23,6 +26,8 @@ export function ManualTrainingCard({
   onPrevious,
   canGoNext,
   canGoPrevious,
+  onReloadDefinition,
+  onReloadTranslation,
   updating,
 }: ManualTrainingCardProps) {
   const handleStatusChange = (
@@ -58,28 +63,47 @@ export function ManualTrainingCard({
       {/* Word Details */}
       <div className="space-y-4 mb-6">
         {/* Definition */}
-        {word.definition && (
-          <div>
-            <h4 className="font-semibold text-gray-700 dark:text-gray-300 text-sm mb-2">
+        <div>
+          <div className="flex items-center gap-2 mb-2">
+            <h4 className="font-semibold text-gray-700 dark:text-gray-300 text-sm">
               Definition:
             </h4>
-            <p className="text-gray-800 dark:text-gray-200 text-sm leading-relaxed">
-              {word.definition}
-            </p>
+            {(!word.definition || word.definition === "No definition found.") &&
+              onReloadDefinition && (
+                <ReloadButton
+                  onClick={onReloadDefinition}
+                  disabled={updating === word.id}
+                />
+              )}
           </div>
-        )}
+          <p className="text-gray-800 dark:text-gray-200 text-sm leading-relaxed">
+            {word.definition || (
+              <span className="text-gray-400 dark:text-gray-500">(none)</span>
+            )}
+          </p>
+        </div>
 
         {/* Translation */}
-        {word.translation && (
-          <div>
-            <h4 className="font-semibold text-green-700 dark:text-green-400 text-sm mb-2">
+        <div>
+          <div className="flex items-center gap-2 mb-2">
+            <h4 className="font-semibold text-green-700 dark:text-green-400 text-sm">
               Translation:
             </h4>
-            <p className="text-green-700 dark:text-green-400 text-sm">
-              {word.translation}
-            </p>
+            {(!word.translation ||
+              word.translation === "No translation found.") &&
+              onReloadTranslation && (
+                <ReloadButton
+                  onClick={onReloadTranslation}
+                  disabled={updating === word.id}
+                />
+              )}
           </div>
-        )}
+          <p className="text-green-700 dark:text-green-400 text-sm">
+            {word.translation || (
+              <span className="text-gray-400 dark:text-gray-500">(none)</span>
+            )}
+          </p>
+        </div>
 
         {/* Examples */}
         {word.examples && word.examples.length > 0 && (

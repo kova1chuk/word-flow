@@ -14,6 +14,8 @@ interface TrainingQuestionCardProps {
   canGoPrevious?: boolean;
   onStatusChange?: (id: string, status: 1 | 2 | 3 | 4 | 5 | 6 | 7) => void;
   onDelete?: (word: Word) => void;
+  onReloadDefinition?: () => void;
+  onReloadTranslation?: () => void;
   updating?: string | null;
 }
 
@@ -28,6 +30,8 @@ export function TrainingQuestionCard({
   canGoPrevious = false,
   onStatusChange,
   onDelete,
+  onReloadDefinition,
+  onReloadTranslation,
   updating,
 }: TrainingQuestionCardProps) {
   const [userAnswer, setUserAnswer] = useState("");
@@ -200,6 +204,8 @@ export function TrainingQuestionCard({
             canGoNext={canGoNext}
             canGoPrevious={canGoPrevious}
             updating={updating}
+            onReloadDefinition={onReloadDefinition}
+            onReloadTranslation={onReloadTranslation}
           />
         );
 

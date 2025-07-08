@@ -34,6 +34,29 @@ interface UseTrainingSessionProps {
   trainingTypes?: TrainingType[];
 }
 
+// Helper to fetch definition for a word
+async function fetchAndUpdateDefinition(word: Word): Promise<string> {
+  const res = await fetch(
+    `${config.dictionaryApi}/${encodeURIComponent(word.word)}`
+  );
+  let definition = "";
+  if (res.ok) {
+    const data = await res.json();
+    if (Array.isArray(data) && data.length > 0) {
+      definition =
+        data[0].meanings?.[0]?.definitions?.[0]?.definition ??
+        "No definition found.";
+    } else {
+      definition = "No definition found.";
+    }
+  } else {
+    definition = "No definition found.";
+  }
+  // Update Firestore
+  await updateDoc(doc(db, "words", word.id), { definition });
+  return definition;
+}
+
 // Helper to fetch translation for a word
 async function fetchAndUpdateTranslation(word: Word): Promise<string> {
   const langPair = `en|uk`;
@@ -600,6 +623,56 @@ export function useTrainingSession({
     setCurrentQuestion(null);
   }, []);
 
+  // Reload definition for current word
+  const reloadDefinition = useCallback(async () => {
+    if (!user || !words[currentWordIndex]) return;
+
+    const currentWord = words[currentWordIndex];
+    setLoading(true);
+    setError(null);
+
+    try {
+      const definition = await fetchAndUpdateDefinition(currentWord);
+
+      // Update local state
+      setWords((prev) =>
+        prev.map((word) =>
+          word.id === currentWord.id ? { ...word, definition } : word
+        )
+      );
+    } catch (err) {
+      console.error("Error reloading definition:", err);
+      setError("Failed to reload definition");
+    } finally {
+      setLoading(false);
+    }
+  }, [user, words, currentWordIndex]);
+
+  // Reload translation for current word
+  const reloadTranslation = useCallback(async () => {
+    if (!user || !words[currentWordIndex]) return;
+
+    const currentWord = words[currentWordIndex];
+    setLoading(true);
+    setError(null);
+
+    try {
+      const translation = await fetchAndUpdateTranslation(currentWord);
+
+      // Update local state
+      setWords((prev) =>
+        prev.map((word) =>
+          word.id === currentWord.id ? { ...word, translation } : word
+        )
+      );
+    } catch (err) {
+      console.error("Error reloading translation:", err);
+      setError("Failed to reload translation");
+    } finally {
+      setLoading(false);
+    }
+  }, [user, words, currentWordIndex]);
+
   return {
     // State
     session,
@@ -629,5 +702,7 @@ export function useTrainingSession({
     previousWord,
     handleStatusChange,
     handleDeleteWord,
+    reloadDefinition,
+    reloadTranslation,
   };
 }

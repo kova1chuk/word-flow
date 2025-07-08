@@ -1,12 +1,9 @@
 import Link from "next/link";
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Analysis, analysesApi } from "../lib/analysesApi";
 import { LearningOverview } from "@/components/LearningOverview";
 import { useSelector } from "react-redux";
 import { selectUser } from "@/entities/user/model/selectors";
-import { collection, getDocs } from "firebase/firestore";
-import { db } from "@/lib/firebase";
-import { Word } from "@/entities/word/types";
 
 interface AnalysisCardProps {
   analysis: Analysis;
@@ -19,10 +16,6 @@ export const AnalysisCard: React.FC<AnalysisCardProps> = ({
 }) => {
   const user = useSelector(selectUser);
   const [isReloading, setIsReloading] = useState(false);
-  const [statusCounts, setStatusCounts] = useState<{ [key: number]: number }>(
-    {}
-  );
-  const [totalStatusWords, setTotalStatusWords] = useState(0);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString("en-US", {
@@ -49,71 +42,53 @@ export const AnalysisCard: React.FC<AnalysisCardProps> = ({
     }
   };
 
-  useEffect(() => {
-    // Log the analysis document to inspect its structure
-
-    console.log("AnalysisCard analysis:", analysis);
-    let ignore = false;
-    async function fetchStatusCounts() {
-      if (!analysis?.id) return;
-      // Fetch word references from analysis subcollection
-      const wordsSnapshot = await getDocs(
-        collection(db, "analyses", analysis.id, "words")
-      );
-      const wordIds = wordsSnapshot.docs.map((doc) => doc.data().wordId);
-      if (wordIds.length === 0) {
-        if (!ignore) {
-          setStatusCounts({});
-          setTotalStatusWords(0);
-        }
-        return;
-      }
-      // Fetch actual word docs in chunks
-      const chunkSize = 10;
-      let fetchedWords: Word[] = [];
-      for (let i = 0; i < wordIds.length; i += chunkSize) {
-        const chunk = wordIds.slice(i, i + chunkSize);
-        const wordsQuery = collection(db, "words");
-        const wordsSnapshot = await getDocs(wordsQuery);
-        fetchedWords = fetchedWords.concat(
-          wordsSnapshot.docs
-            .filter((doc) => chunk.includes(doc.id))
-            .map((doc) => doc.data() as Word)
-        );
-      }
-      // Count by status
-      const counts: { [key: number]: number } = {};
-      let total = 0;
-      for (let s = 1; s <= 7; s++) counts[s] = 0;
-      for (const w of fetchedWords) {
-        const status = typeof w.status === "number" ? w.status : 1;
-        if (status >= 1 && status <= 7) {
-          counts[status]++;
-          total++;
-        }
-      }
-      if (!ignore) {
-        setStatusCounts(counts);
-        setTotalStatusWords(total);
-      }
+  // Map wordStats to statusCounts for LearningOverview
+  const getStatusCounts = () => {
+    const wordStats =
+      (analysis.summary as { wordStats?: { [key: number]: number } })
+        ?.wordStats || analysis.wordStats;
+    if (!wordStats) {
+      return { counts: {}, total: 0 };
     }
-    fetchStatusCounts();
-    return () => {
-      ignore = true;
-    };
-  }, [analysis?.id, analysis]);
 
-  // Always provide bar chart data, fallback to summary if wordStats is missing
-  let barChartStats = analysis.wordStats;
-  if (!barChartStats) {
-    barChartStats = {
-      toLearn: analysis.summary.unknownWords || 0,
-      toRepeat: 0,
-      learned: analysis.summary.knownWords || 0,
-      totalWords: analysis.summary.totalWords || 0,
-      uniqueWords: analysis.summary.uniqueWords || 0,
-    };
-  }
+    // If wordStats is already in the correct format (status counts)
+    if (typeof wordStats === "object" && wordStats[1] !== undefined) {
+      const counts = { ...wordStats };
+      const total = Object.values(counts).reduce(
+        (sum: number, count: number) => sum + (count || 0),
+        0
+      );
+      return { counts, total };
+    }
+
+    // Fallback to the old mapping logic if it's in the old format
+    const counts: { [key: number]: number } = {};
+    for (let s = 1; s <= 7; s++) counts[s] = 0;
+
+    // Distribute toLearn across statuses 1-3
+    const toLearnPerStatus = Math.floor((wordStats.toLearn || 0) / 3);
+    counts[1] = toLearnPerStatus;
+    counts[2] = toLearnPerStatus;
+    counts[3] = (wordStats.toLearn || 0) - toLearnPerStatus * 2;
+
+    // Distribute toRepeat across statuses 4-5
+    const toRepeatPerStatus = Math.floor((wordStats.toRepeat || 0) / 2);
+    counts[4] = toRepeatPerStatus;
+    counts[5] = (wordStats.toRepeat || 0) - toRepeatPerStatus;
+
+    // Distribute learned across statuses 6-7
+    const learnedPerStatus = Math.floor((wordStats.learned || 0) / 2);
+    counts[6] = learnedPerStatus;
+    counts[7] = (wordStats.learned || 0) - learnedPerStatus;
+
+    const total =
+      (wordStats.toLearn || 0) +
+      (wordStats.toRepeat || 0) +
+      (wordStats.learned || 0);
+    return { counts, total };
+  };
+
+  const { counts: statusCounts, total: totalStatusWords } = getStatusCounts();
 
   // Calculate completeness from statusCounts using weighted average
   function calculateCompletenessFromCounts(counts: {
@@ -192,7 +167,7 @@ export const AnalysisCard: React.FC<AnalysisCardProps> = ({
               </p>
 
               {/* Completion Badge */}
-              {barChartStats && (
+              {totalStatusWords > 0 && (
                 <div className="flex items-center bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-3 py-1 rounded-full text-xs font-medium">
                   <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse" />
                   {completionPercentage}% Complete

@@ -1,121 +1,125 @@
 "use client";
 
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import { useAuthSync } from "@/shared/hooks/useAuthSync";
 import { useWordsRTK } from "@/features/words/lib/useWordsRTK";
 import { useWordFilters } from "@/features/words/lib/useWordFilters";
-import { WordsListRTKWithSuspense } from "@/features/words/components/WordsListRTKWithSuspense";
 import WordFilterControls from "@/shared/ui/WordFilterControls";
-import Pagination from "@/shared/ui/Pagination";
 import { LoadingSpinner } from "@/shared/ui/LoadingSpinner";
+import { useSelector, useDispatch } from "react-redux";
 import type { Word } from "@/types";
+import type { RootState, AppDispatch } from "@/shared/model/store";
+import { WordsListRTKWithSuspense } from "@/features/words/components/WordsListRTKWithSuspense";
+import Pagination from "@/shared/ui/Pagination";
+import {
+  reloadDefinition,
+  reloadTranslation,
+  deleteWord,
+  updateWordStatus,
+  setUpdating,
+  fetchWordsPage,
+} from "@/features/words/model/wordsSlice";
 
 export default function WordsPage() {
-  const [isClient, setIsClient] = useState(false);
   const { user } = useAuthSync();
-  const { error, pagination, fetchWords, clearError, setCurrentPage } =
-    useWordsRTK();
+  const dispatch = useDispatch<AppDispatch>();
+  const { error, clearError } = useWordsRTK();
 
-  const {
-    currentPage,
-    pageSize,
-    statusFilter,
-    search,
-    setCurrentPage: setFilterPage,
-    setPageSize: setFilterPageSize,
-    setStatusFilter,
-    setSearch,
-    STATUS_OPTIONS,
-    PAGE_SIZE_OPTIONS,
-  } = useWordFilters();
+  const { statusFilter, search, setStatusFilter, setSearch, STATUS_OPTIONS } =
+    useWordFilters();
 
-  const lastFetchRef = useRef<string>("");
+  // Pagination state
+  const [currentPage, setCurrentPage] = useState(1);
+  const pageSize = 20;
 
-  // Handle SSR
+  // Fetch words from Firestore with filters
   useEffect(() => {
-    setIsClient(true);
-  }, []);
+    if (!user?.uid) return;
+    dispatch(
+      fetchWordsPage({
+        userId: user.uid,
+        page: currentPage,
+        pageSize,
+        statusFilter,
+        search,
+      })
+    );
+  }, [user?.uid, currentPage, pageSize, statusFilter, search, dispatch]);
 
-  // Sync current page between hooks only once
-  useEffect(() => {
-    if (isClient) {
-      setCurrentPage(currentPage);
-    }
-  }, [currentPage, setCurrentPage, isClient]);
+  // Get pagination info from Redux
+  const pagination = useSelector((state: RootState) => state.words.pagination);
+  const words = useSelector((state: RootState) => state.words.words) as Word[];
 
-  // Fetch words when dependencies change
-  useEffect(() => {
-    if (!isClient || !user?.uid) return;
+  // Calculate pagination
+  const totalPages = Math.ceil((pagination?.totalWords || 0) / pageSize);
 
-    const fetchKey = `${user.uid}-${currentPage}-${pageSize}-${JSON.stringify(
-      statusFilter
-    )}`;
+  // Handle page change
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
 
-    // Only fetch if the key has changed
-    if (lastFetchRef.current !== fetchKey) {
-      lastFetchRef.current = fetchKey;
-      fetchWords(user.uid, currentPage, pageSize, statusFilter);
-    }
-  }, [isClient, user?.uid, currentPage, pageSize, statusFilter]);
-
-  const handleWordAction = (action: string, _word: Word) => {
+  // Handle word actions (like status changes)
+  const handleWordAction = async (
+    action: string,
+    word: Word,
+    data?: unknown
+  ) => {
     if (!user?.uid) return;
 
-    switch (action) {
-      case "delete":
-        // Handle delete action
-        // TODO: Implement delete functionality
-        break;
-      case "reload-definition":
-        // Handle reload definition action
-        // TODO: Implement reload definition functionality
-        break;
-      case "reload-translation":
-        // Handle reload translation action
-        // TODO: Implement reload translation functionality
-        break;
-      case "update-status":
-        // Handle update status action
-        // TODO: Implement update status functionality
-        break;
-      default:
-        break;
+    try {
+      switch (action) {
+        case "reload-definition":
+          dispatch(setUpdating(word.id));
+          await dispatch(reloadDefinition({ word })).unwrap();
+          break;
+
+        case "reload-translation":
+          dispatch(setUpdating(word.id));
+          await dispatch(reloadTranslation({ word })).unwrap();
+          break;
+
+        case "delete":
+          if (confirm(`Are you sure you want to delete "${word.word}"?`)) {
+            await dispatch(
+              deleteWord({ wordId: word.id, userId: user.uid })
+            ).unwrap();
+            // Refresh the words list after deletion
+            dispatch(
+              fetchWordsPage({
+                userId: user.uid,
+                page: currentPage,
+                pageSize,
+                statusFilter,
+                search,
+              })
+            );
+          }
+          break;
+
+        case "update-status":
+          const newStatus = data as 1 | 2 | 3 | 4 | 5 | 6 | 7;
+          if (newStatus && newStatus >= 1 && newStatus <= 7) {
+            dispatch(setUpdating(word.id));
+            await dispatch(
+              updateWordStatus({
+                wordId: word.id,
+                status: newStatus,
+                userId: user.uid,
+                words,
+              })
+            ).unwrap();
+          }
+          break;
+
+        default:
+          console.warn("Unknown action:", action);
+      }
+    } catch (error) {
+      console.error("Error performing word action:", error);
+    } finally {
+      dispatch(setUpdating(null));
     }
   };
-
-  const handlePageChange = (page: number) => {
-    setFilterPage(page);
-  };
-
-  const handlePageSizeChange = (size: number) => {
-    setFilterPageSize(size);
-  };
-
-  const handleStatusFilterChange = (statuses: (string | number)[]) => {
-    // Convert string values to numbers for the filter
-    const numericStatuses = statuses
-      .map((s) => (typeof s === "string" ? parseInt(s) : s))
-      .filter((s) => !isNaN(s as number)) as number[];
-    setStatusFilter(numericStatuses);
-    setFilterPage(1); // Reset to first page when filter changes
-  };
-
-  const handleSearchChange = (searchTerm: string) => {
-    setSearch(searchTerm);
-    setFilterPage(1); // Reset to first page when search changes
-  };
-
-  // Calculate total pages
-  const totalPages = Math.ceil(pagination.totalWords / pageSize);
-
-  // Show loading during SSR or when not on client
-  if (!isClient) {
-    return (
-      <div className="flex justify-center items-center min-h-screen">
-        <LoadingSpinner />
-      </div>
-    );
-  }
 
   if (!user) {
     return (
@@ -129,15 +133,16 @@ export default function WordsPage() {
     <div className="container mx-auto px-4 py-8">
       <WordFilterControls
         selectedStatuses={statusFilter}
-        onStatusFilterChange={handleStatusFilterChange}
-        pageSize={pageSize}
-        onPageSizeChange={handlePageSizeChange}
+        onStatusFilterChange={(statuses) => {
+          // Convert string values to numbers for the filter
+          const numericStatuses = statuses
+            .map((s) => (typeof s === "string" ? parseInt(s) : s))
+            .filter((s) => !isNaN(s as number)) as number[];
+          setStatusFilter(numericStatuses);
+        }}
         search={search}
-        onSearchChange={handleSearchChange}
+        onSearchChange={setSearch}
         statusOptions={STATUS_OPTIONS}
-        pageSizeOptions={PAGE_SIZE_OPTIONS}
-        totalCount={pagination.totalWords}
-        filteredCount={pagination.totalWords}
       />
 
       {error && (
@@ -169,8 +174,8 @@ export default function WordsPage() {
 
         {/* Page info */}
         <div className="text-center text-sm text-gray-600">
-          Page {currentPage} of {totalPages} • {pagination.totalWords} total
-          words
+          Page {currentPage} of {totalPages} • {pagination?.totalWords || 0}{" "}
+          total words
         </div>
       </div>
     </div>

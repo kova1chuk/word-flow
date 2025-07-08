@@ -1,12 +1,11 @@
 import React, { Suspense } from "react";
-import { WordsListRTK } from "./WordsListRTK";
 import { WordsListRTKSkeleton } from "./WordsListRTKSkeleton";
 import type { Word } from "@/types";
 
 interface WordsListRTKWithSuspenseProps {
   currentPage: number;
   pageSize: number;
-  onWordAction: (action: string, word: Word) => void;
+  onWordAction: (action: string, word: Word, data?: unknown) => void;
 }
 
 // Lazy load the WordsListRTK component

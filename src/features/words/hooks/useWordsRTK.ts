@@ -13,7 +13,7 @@ import {
   selectWordsStats,
 } from "../model/selectors";
 import {
-  fetchWords,
+  fetchWordsPage,
   deleteWord,
   reloadDefinition,
   reloadTranslation,
@@ -34,7 +34,7 @@ export function useWordsRTK() {
   // Fetch words when user changes
   useEffect(() => {
     if (user?.uid) {
-      dispatch(fetchWords(user.uid));
+      dispatch(fetchWordsPage({ userId: user.uid, page: 1, pageSize: 12 }));
     }
   }, [dispatch, user?.uid]);
 
@@ -50,9 +50,8 @@ export function useWordsRTK() {
   };
 
   const handleReloadDefinition = async (word: Word) => {
-    if (!user?.uid) return;
     try {
-      await dispatch(reloadDefinition({ word, userId: user.uid })).unwrap();
+      await dispatch(reloadDefinition({ word })).unwrap();
     } catch (error) {
       console.error("Failed to reload definition:", error);
       throw error;
@@ -60,9 +59,8 @@ export function useWordsRTK() {
   };
 
   const handleReloadTranslation = async (word: Word) => {
-    if (!user?.uid) return;
     try {
-      await dispatch(reloadTranslation({ word, userId: user.uid })).unwrap();
+      await dispatch(reloadTranslation({ word })).unwrap();
     } catch (error) {
       console.error("Failed to reload translation:", error);
       throw error;

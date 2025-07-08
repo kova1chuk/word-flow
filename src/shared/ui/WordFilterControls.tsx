@@ -12,6 +12,11 @@ interface WordFilterControlsProps {
   search: string;
   onSearchChange: (value: string) => void;
   statusOptions: StatusOption[];
+  pageSize?: number;
+  onPageSizeChange?: (size: number) => void;
+  pageSizeOptions?: number[];
+  totalCount?: number;
+  filteredCount?: number;
   className?: string;
 }
 
@@ -21,6 +26,11 @@ const WordFilterControls: React.FC<WordFilterControlsProps> = ({
   search,
   onSearchChange,
   statusOptions,
+  pageSize,
+  onPageSizeChange,
+  pageSizeOptions,
+  totalCount,
+  filteredCount,
   className = "",
 }) => {
   const selectedStatusesSafe = selectedStatuses ?? [];
@@ -66,7 +76,7 @@ const WordFilterControls: React.FC<WordFilterControlsProps> = ({
 
       {/* Main content */}
       <div className="relative p-4 sm:p-6 mb-8">
-        {/* Controls Section (no title/stats) */}
+        {/* Controls Section */}
         <div className="relative w-full flex flex-col sm:flex-row sm:items-center sm:gap-6 gap-3 p-0 mb-4">
           {/* Search Input */}
           <div className="w-full sm:flex-1">
@@ -83,7 +93,40 @@ const WordFilterControls: React.FC<WordFilterControlsProps> = ({
               style={{ fontWeight: 500 }}
             />
           </div>
+
+          {/* Page Size Selector (if provided) */}
+          {pageSizeOptions && onPageSizeChange && (
+            <div className="flex items-center gap-2">
+              <label className="text-sm font-medium text-[#e5eaf2] whitespace-nowrap">
+                Show:
+              </label>
+              <select
+                value={pageSize}
+                onChange={(e) => onPageSizeChange(Number(e.target.value))}
+                className="px-3 py-2 rounded-lg border border-[#3a4152] bg-[#23272f] text-[#e5eaf2] focus:border-blue-400 focus:ring-2 focus:ring-blue-900/40 transition-all duration-200"
+              >
+                {pageSizeOptions.map((size) => (
+                  <option key={size} value={size}>
+                    {size}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
         </div>
+
+        {/* Stats Display (if provided) */}
+        {(totalCount !== undefined || filteredCount !== undefined) && (
+          <div className="mb-4 text-center">
+            <p className="text-sm text-[#7b8ca6]">
+              {totalCount !== undefined && filteredCount !== undefined
+                ? `Showing ${filteredCount} of ${totalCount} words`
+                : totalCount !== undefined
+                ? `Total: ${totalCount} words`
+                : `Showing: ${filteredCount} words`}
+            </p>
+          </div>
+        )}
 
         {/* Status Filters Section */}
         <div className="space-y-4 sm:space-y-6">

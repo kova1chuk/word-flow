@@ -38,7 +38,16 @@ export const store = configureStore({
         // Ignore these field paths in all actions
         ignoredActionPaths: ["meta.arg", "payload.timestamp"],
         // Ignore these paths in the state
-        ignoredPaths: ["items.dates", "words.pagination.loadedPages"],
+        ignoredPaths: [
+          "items.dates",
+          "words.pagination.loadedPages",
+          "words.words.deletedAt",
+          "words.words.updatedAt",
+          "words.words.createdAt",
+          "words.words.definedAt",
+          "words.words.translatedAt",
+          "words.words.lastTrainedAt",
+        ],
       },
     }),
 });

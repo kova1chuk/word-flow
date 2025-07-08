@@ -7,7 +7,7 @@ import type { Word } from "@/types";
 interface WordsListRTKProps {
   currentPage: number;
   pageSize: number;
-  onWordAction: (action: string, word: Word) => void;
+  onWordAction: (action: string, word: Word, data?: unknown) => void;
 }
 
 export const WordsListRTK: React.FC<WordsListRTKProps> = ({
@@ -21,7 +21,7 @@ export const WordsListRTK: React.FC<WordsListRTKProps> = ({
 
   // Throw a promise when loading to trigger Suspense
   if (loading) {
-    throw new Promise((_resolve) => {
+    throw new Promise(() => {
       // This promise will never resolve, but Suspense will catch it
       // and show the fallback until the loading state changes
     });
@@ -70,11 +70,11 @@ export const WordsListRTK: React.FC<WordsListRTKProps> = ({
 
   const handleStatusChange = (
     id: string,
-    _status: 1 | 2 | 3 | 4 | 5 | 6 | 7
+    status: 1 | 2 | 3 | 4 | 5 | 6 | 7
   ) => {
     const word = paginatedWords.find((w) => w.id === id);
     if (word) {
-      onWordAction("update-status", word);
+      onWordAction("update-status", word, status);
     }
   };
 

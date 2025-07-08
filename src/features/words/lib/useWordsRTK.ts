@@ -3,7 +3,6 @@ import { RootState } from "@/shared/model/store";
 import { AppDispatch } from "@/shared/model/store";
 import {
   fetchWordsPage,
-  fetchWordsWithFilters,
   deleteWord,
   reloadDefinition,
   reloadTranslation,
@@ -26,29 +25,22 @@ export const useWordsRTK = () => {
     userId: string,
     page: number,
     pageSize: number,
-    statusFilter?: number[]
-  ) => {
-    dispatch(fetchWordsPage({ userId, page, pageSize, statusFilter }));
-  };
-
-  const fetchWordsWithFiltersAction = (
-    userId: string,
     statusFilter?: number[],
     search?: string
   ) => {
-    dispatch(fetchWordsWithFilters({ userId, statusFilter, search }));
+    dispatch(fetchWordsPage({ userId, page, pageSize, statusFilter, search }));
   };
 
   const deleteWordAction = (wordId: string, userId: string) => {
     dispatch(deleteWord({ wordId, userId }));
   };
 
-  const reloadDefinitionAction = (word: Word, userId: string) => {
-    dispatch(reloadDefinition({ word, userId }));
+  const reloadDefinitionAction = (word: Word) => {
+    dispatch(reloadDefinition({ word }));
   };
 
-  const reloadTranslationAction = (word: Word, userId: string) => {
-    dispatch(reloadTranslation({ word, userId }));
+  const reloadTranslationAction = (word: Word) => {
+    dispatch(reloadTranslation({ word }));
   };
 
   const updateWordStatusAction = (
@@ -86,7 +78,6 @@ export const useWordsRTK = () => {
     updating,
     pagination,
     fetchWords,
-    fetchWordsWithFilters: fetchWordsWithFiltersAction,
     deleteWord: deleteWordAction,
     reloadDefinition: reloadDefinitionAction,
     reloadTranslation: reloadTranslationAction,

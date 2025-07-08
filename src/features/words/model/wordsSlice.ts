@@ -9,12 +9,11 @@ import {
   doc,
   updateDoc,
   orderBy,
-  limit,
-  startAfter,
 } from "firebase/firestore";
 import { config } from "@/lib/config";
 import { updateWordStatsOnStatusChange } from "@/features/word-management/lib/updateWordStatsOnStatusChange";
 import type { Word, WordDetails, Phonetic } from "@/types";
+import type { Timestamp } from "firebase/firestore";
 
 interface DictionaryApiResponse {
   phonetics: { text: string; audio: string }[];
@@ -57,6 +56,33 @@ const initialState: WordsState = {
   },
 };
 
+// Helper function to convert all Firestore Timestamps to serializable format
+const serializeTimestamps = (
+  data: Record<string, unknown>
+): Record<string, unknown> => {
+  if (!data || typeof data !== "object") return data;
+
+  const serialized = { ...data };
+
+  for (const [key, value] of Object.entries(serialized)) {
+    if (
+      value &&
+      typeof value === "object" &&
+      "toDate" in value &&
+      typeof (value as Timestamp).toDate === "function"
+    ) {
+      // This is a Firestore Timestamp
+      const timestamp = value as Timestamp;
+      serialized[key] = timestamp.toDate().toISOString();
+    } else if (value && typeof value === "object" && !Array.isArray(value)) {
+      // Recursively serialize nested objects
+      serialized[key] = serializeTimestamps(value as Record<string, unknown>);
+    }
+  }
+
+  return serialized;
+};
+
 // Async thunks
 export const fetchWordsPage = createAsyncThunk(
   "words/fetchWordsPage",
@@ -66,19 +92,25 @@ export const fetchWordsPage = createAsyncThunk(
       page,
       pageSize,
       statusFilter = [],
+      search = "",
     }: {
       userId: string;
       page: number;
       pageSize: number;
       statusFilter?: number[];
+      search?: string;
     },
     { getState }
   ) => {
     const state = getState() as { words: WordsState };
     const { pagination } = state.words;
 
-    // If we already have this page loaded, return existing data
-    if (pagination.loadedPages.includes(page)) {
+    // If we already have this page loaded and no search/filter changes, return existing data
+    if (
+      pagination.loadedPages.includes(page) &&
+      !search &&
+      statusFilter.length === 0
+    ) {
       const startIndex = (page - 1) * pageSize;
       const endIndex = startIndex + pageSize;
       const existingWords = state.words.words
@@ -91,8 +123,7 @@ export const fetchWordsPage = createAsyncThunk(
     let q = query(
       collection(db, "words"),
       where("userId", "==", userId),
-      orderBy("createdAt", "desc"),
-      limit(pageSize)
+      orderBy("createdAt", "desc")
     );
 
     // Add status filter if provided
@@ -101,160 +132,27 @@ export const fetchWordsPage = createAsyncThunk(
         collection(db, "words"),
         where("userId", "==", userId),
         where("status", "in", statusFilter),
-        orderBy("createdAt", "desc"),
-        limit(pageSize)
+        orderBy("createdAt", "desc")
       );
     }
 
-    // For pagination beyond first page, we need to use startAfter
-    // For now, we'll implement a simpler approach: fetch all words once and cache them
-    // This is still better than fetching all words on every page change
-    if (page === 1 || state.words.words.length === 0) {
-      // First page or no cached data - fetch with limit
-      const querySnapshot = await getDocs(q);
-      const wordsData = querySnapshot.docs.map((doc) => {
-        const data = doc.data();
-        return {
-          id: doc.id,
-          ...data,
-          // Convert Firestore Timestamp to ISO string for serialization
-          createdAt:
-            data.createdAt?.toDate?.()?.toISOString() ||
-            data.createdAt ||
-            new Date().toISOString(),
-        };
-      }) as Word[];
-
-      // For first page, we'll fetch a bit more to enable pagination
-      // This is a compromise between performance and functionality
-      if (page === 1) {
-        const extendedQuery = query(
-          collection(db, "words"),
-          where("userId", "==", userId),
-          orderBy("createdAt", "desc"),
-          limit(pageSize * 3) // Fetch 3 pages worth of data
-        );
-
-        const extendedSnapshot = await getDocs(extendedQuery);
-        const allWords = extendedSnapshot.docs.map((doc) => {
-          const data = doc.data();
-          return {
-            id: doc.id,
-            ...data,
-            createdAt:
-              data.createdAt?.toDate?.()?.toISOString() ||
-              data.createdAt ||
-              new Date().toISOString(),
-          };
-        }) as Word[];
-
-        const totalWords = allWords.length;
-        const hasMore = totalWords > pageSize;
-
-        return {
-          words: allWords.slice(0, pageSize), // Return first page
-          page,
-          totalWords,
-          hasMore,
-          isCached: false,
-          allWords, // Include all fetched words for caching
-        };
-      }
-    }
-
-    // For subsequent pages, use cached data if available
-    const startIndex = (page - 1) * pageSize;
-    const endIndex = startIndex + pageSize;
-    const cachedWords = state.words.words
-      .slice(startIndex, endIndex)
-      .filter(Boolean);
-
-    if (cachedWords.length > 0) {
-      return {
-        words: cachedWords,
-        page,
-        isCached: true,
-        totalWords: state.words.pagination.totalWords,
-        hasMore: state.words.pagination.hasMore,
-      };
-    }
-
-    // Fallback: fetch all words (this should rarely happen with proper caching)
-    const fallbackQuery = query(
-      collection(db, "words"),
-      where("userId", "==", userId),
-      orderBy("createdAt", "desc")
-    );
-
-    const querySnapshot = await getDocs(fallbackQuery);
-    const allWords = querySnapshot.docs.map((doc) => {
-      const data = doc.data();
-      return {
-        id: doc.id,
-        ...data,
-        createdAt:
-          data.createdAt?.toDate?.()?.toISOString() ||
-          data.createdAt ||
-          new Date().toISOString(),
-      };
-    }) as Word[];
-
-    const totalWords = allWords.length;
-    const hasMore = endIndex < totalWords;
-    const wordsData = allWords.slice(startIndex, endIndex);
-
-    return {
-      words: wordsData,
-      page,
-      totalWords,
-      hasMore,
-      isCached: false,
-      allWords, // Include all fetched words for caching
-    };
-  }
-);
-
-export const fetchWordsWithFilters = createAsyncThunk(
-  "words/fetchWordsWithFilters",
-  async ({
-    userId,
-    statusFilter = [],
-    search = "",
-  }: {
-    userId: string;
-    statusFilter?: number[];
-    search?: string;
-  }) => {
     // For search, we need to fetch all words and filter client-side
     // For status filter, we can use Firestore query
-    let q = query(
-      collection(db, "words"),
-      where("userId", "==", userId),
-      orderBy("createdAt", "desc")
-    );
-
-    if (statusFilter.length > 0) {
-      q = query(q, where("status", "in", statusFilter));
-    }
-
     const querySnapshot = await getDocs(q);
     let wordsData = querySnapshot.docs.map((doc) => {
       const data = doc.data();
       return {
         id: doc.id,
-        ...data,
-        // Convert Firestore Timestamp to ISO string for serialization
-        createdAt:
-          data.createdAt?.toDate?.()?.toISOString() ||
-          data.createdAt ||
-          new Date().toISOString(),
+        ...serializeTimestamps(data),
       };
     }) as Word[];
 
     // Sort by createdAt descending client-side
     wordsData.sort((a, b) => {
-      const aDate = a.createdAt ? new Date(a.createdAt).getTime() : 0;
-      const bDate = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+      const aDate =
+        typeof a.createdAt === "string" ? new Date(a.createdAt).getTime() : 0;
+      const bDate =
+        typeof b.createdAt === "string" ? new Date(b.createdAt).getTime() : 0;
       return bDate - aDate;
     });
 
@@ -266,17 +164,27 @@ export const fetchWordsWithFilters = createAsyncThunk(
       );
     }
 
+    // Handle pagination
+    const totalWords = wordsData.length;
+    const startIndex = (page - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+    const paginatedWords = wordsData.slice(startIndex, endIndex);
+    const hasMore = endIndex < totalWords;
+
     return {
-      words: wordsData,
-      totalWords: wordsData.length,
-      hasMore: false,
+      words: paginatedWords,
+      page,
+      totalWords,
+      hasMore,
+      isCached: false,
+      allWords: wordsData, // Include all filtered words for caching
     };
   }
 );
 
 export const deleteWord = createAsyncThunk(
   "words/deleteWord",
-  async ({ wordId, userId }: { wordId: string; userId: string }) => {
+  async ({ wordId }: { wordId: string; userId: string }) => {
     await deleteDoc(doc(db, "words", wordId));
     return wordId;
   }
@@ -284,7 +192,7 @@ export const deleteWord = createAsyncThunk(
 
 export const reloadDefinition = createAsyncThunk(
   "words/reloadDefinition",
-  async ({ word, userId }: { word: Word; userId: string }) => {
+  async ({ word }: { word: Word }) => {
     let definition = "";
     let details: WordDetails | undefined = undefined;
 
@@ -338,7 +246,7 @@ export const reloadDefinition = createAsyncThunk(
 
 export const reloadTranslation = createAsyncThunk(
   "words/reloadTranslation",
-  async ({ word, userId }: { word: Word; userId: string }) => {
+  async ({ word }: { word: Word }) => {
     let translation = "";
     const langPair = `en|uk`;
     const url = `${config.translationApi.baseUrl}?q=${encodeURIComponent(
@@ -451,7 +359,7 @@ const wordsSlice = createSlice({
 
             // Ensure array is large enough
             while (state.words.length < endIndex) {
-              state.words.push(null as any);
+              state.words.push(null as unknown as Word);
             }
 
             // Insert words at the correct positions
@@ -462,7 +370,7 @@ const wordsSlice = createSlice({
 
           // Mark page as loaded
           state.pagination.loadedPages.push(page);
-          state.pagination.hasMore = hasMore;
+          state.pagination.hasMore = hasMore || false;
 
           if (totalWords !== undefined) {
             state.pagination.totalWords = totalWords;
@@ -470,25 +378,6 @@ const wordsSlice = createSlice({
         }
       })
       .addCase(fetchWordsPage.rejected, (state, action) => {
-        state.loading = false;
-        state.error = action.error.message || "Failed to fetch words";
-      });
-
-    // Fetch words with filters
-    builder
-      .addCase(fetchWordsWithFilters.pending, (state) => {
-        state.loading = true;
-        state.error = null;
-      })
-      .addCase(fetchWordsWithFilters.fulfilled, (state, action) => {
-        state.loading = false;
-        const { words, totalWords, hasMore } = action.payload;
-        state.words = words;
-        state.pagination.totalWords = totalWords;
-        state.pagination.hasMore = hasMore;
-        state.pagination.loadedPages = [];
-      })
-      .addCase(fetchWordsWithFilters.rejected, (state, action) => {
         state.loading = false;
         state.error = action.error.message || "Failed to fetch words";
       });

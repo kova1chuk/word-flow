@@ -25,6 +25,11 @@ export const selectAuthError = createSelector(
   (auth) => auth.error
 );
 
+export const selectAuthInitialized = createSelector(
+  [selectAuthState],
+  (auth) => auth.initialized
+);
+
 export const selectUserId = createSelector([selectUser], (user) => user?.uid);
 
 export const selectUserEmail = createSelector(

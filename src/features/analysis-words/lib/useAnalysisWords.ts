@@ -247,7 +247,7 @@ export function useAnalysisWords(
     } finally {
       setLoading(false);
     }
-  }, [user, analysisId, pageSize, pageCursor, allWords.length, allWords]);
+  }, [user, analysisId, pageSize, pageCursor, allWords]);
 
   const refreshWords = useCallback(() => {
     setAllWords([]); // Clear cached words to force refetch

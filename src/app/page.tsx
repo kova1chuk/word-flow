@@ -1,6 +1,5 @@
 "use client";
 
-import { useSelector } from "react-redux";
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -12,11 +11,11 @@ import {
   Legend,
   ArcElement,
 } from "chart.js";
-import { selectUser } from "@/entities/user/model/selectors";
 import { useUserStats } from "@/shared/hooks/useUserStats";
 import WelcomeScreen from "./components/WelcomeScreen";
 import WordStatsChart from "./components/WordStatsChart";
 import NavigationLinks from "./components/NavigationLinks";
+import AuthGuard from "@/components/AuthGuard";
 
 ChartJS.register(
   CategoryScale,
@@ -29,18 +28,12 @@ ChartJS.register(
   ArcElement
 );
 
-export default function HomePage() {
-  const user = useSelector(selectUser);
+function AuthenticatedDashboard() {
   const { wordStats, loading, error } = useUserStats();
 
   // Prepare chart data (current snapshot)
   const statusCounts = [1, 2, 3, 4, 5, 6, 7].map((s) => wordStats?.[s] ?? 0);
 
-  if (!user) {
-    return <WelcomeScreen />;
-  }
-
-  // Authenticated dashboard
   return (
     <div className="bg-gray-50 dark:bg-gray-900">
       <div className="max-w-2xl mx-auto py-10 px-4">
@@ -54,5 +47,13 @@ export default function HomePage() {
         <NavigationLinks />
       </div>
     </div>
+  );
+}
+
+export default function HomePage() {
+  return (
+    <AuthGuard fallback={<WelcomeScreen />}>
+      <AuthenticatedDashboard />
+    </AuthGuard>
   );
 }

@@ -51,9 +51,16 @@ export const AnalysisCard: React.FC<AnalysisCardProps> = ({
       return { counts: {}, total: 0 };
     }
 
-    // If wordStats is already in the correct format (status counts)
-    if (typeof wordStats === "object" && wordStats[1] !== undefined) {
-      const counts = { ...wordStats };
+    // Check if wordStats is in the new format (status counts)
+    const hasStatusCounts =
+      typeof wordStats === "object" &&
+      wordStats !== null &&
+      !("toLearn" in wordStats) &&
+      !("toRepeat" in wordStats) &&
+      !("learned" in wordStats);
+
+    if (hasStatusCounts) {
+      const counts = { ...wordStats } as { [key: number]: number };
       const total = Object.values(counts).reduce(
         (sum: number, count: number) => sum + (count || 0),
         0

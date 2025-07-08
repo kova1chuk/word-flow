@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { useSelector } from "react-redux";
 import { selectUser } from "@/entities/user/model/selectors";
 import { db } from "@/lib/firebase";
@@ -12,29 +12,41 @@ export function useUserStats() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
+  const fetchStats = useCallback(async () => {
     if (!user) {
       setWordStats(null);
       setLoading(false);
       setError(null);
       return;
     }
+
     setLoading(true);
     setError(null);
-    getDoc(doc(db, "userStats", user.uid))
-      .then((snap) => {
-        if (snap.exists()) {
-          setWordStats(snap.data().wordStats || null);
-        } else {
-          setWordStats(null);
-        }
-      })
-      .catch((err) => {
-        setError(err.message || "Failed to fetch userStats");
+
+    try {
+      const snap = await getDoc(doc(db, "userStats", user.uid));
+      if (snap.exists()) {
+        setWordStats(snap.data().wordStats || null);
+      } else {
         setWordStats(null);
-      })
-      .finally(() => setLoading(false));
+      }
+    } catch (err: unknown) {
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to fetch userStats";
+      setError(errorMessage);
+      setWordStats(null);
+    } finally {
+      setLoading(false);
+    }
   }, [user]);
 
-  return { wordStats, loading, error };
+  const refetch = useCallback(async () => {
+    await fetchStats();
+  }, [fetchStats]);
+
+  useEffect(() => {
+    fetchStats();
+  }, [fetchStats]);
+
+  return { wordStats, loading, error, refetch };
 }

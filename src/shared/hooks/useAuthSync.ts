@@ -1,13 +1,24 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { onAuthStateChanged } from "firebase/auth";
-import { useDispatch } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
 import { setUser, setLoading } from "@/entities/user/model/authSlice";
+import { RootState } from "@/shared/model/store";
 import { auth } from "@/lib/firebase";
 
 export function useAuthSync() {
   const dispatch = useDispatch();
+  const { user, loading, initialized } = useSelector(
+    (state: RootState) => state.auth
+  );
+  const [isClient, setIsClient] = useState(false);
 
   useEffect(() => {
+    setIsClient(true);
+  }, []);
+
+  useEffect(() => {
+    if (!isClient) return;
+
     // Set loading to true when starting auth check
     dispatch(setLoading(true));
 
@@ -39,5 +50,12 @@ export function useAuthSync() {
     );
 
     return unsubscribe;
-  }, [dispatch]);
+  }, [dispatch, isClient]);
+
+  // Return safe defaults during SSR
+  if (!isClient) {
+    return { user: null, loading: true, initialized: false };
+  }
+
+  return { user, loading, initialized };
 }

@@ -1,5 +1,11 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
-import { getDocs, collection, query, where } from "firebase/firestore";
+import {
+  getDocs,
+  getCountFromServer,
+  collection,
+  query,
+  where,
+} from "firebase/firestore";
 import { db } from "@/lib/firebase";
 
 export interface TrainingStats {
@@ -31,36 +37,38 @@ export const fetchTrainingStats = createAsyncThunk<
     return { learned: 0, notLearned: 0, total: 0 };
   }
 
-  // Fetch the actual word documents
-  const words: Record<string, unknown>[] = [];
+  // Use getCountFromServer for efficient counting
+  let learnedCount = 0;
+  let notLearnedCount = 0;
 
   // Process words in chunks to avoid query limits
   const chunkSize = 10;
   for (let i = 0; i < wordIds.length; i += chunkSize) {
     const chunk = wordIds.slice(i, i + chunkSize);
-    const wordsQuery = query(
-      collection(db, "words"),
-      where("__name__", "in", chunk)
-    );
-    const wordsSnapshot = await getDocs(wordsQuery);
 
-    wordsSnapshot.forEach((doc) => {
-      words.push(doc.data());
-    });
+    // Count learned words (status >= 6)
+    const learnedQuery = query(
+      collection(db, "words"),
+      where("__name__", "in", chunk),
+      where("status", ">=", 6)
+    );
+    const learnedSnapshot = await getCountFromServer(learnedQuery);
+    learnedCount += learnedSnapshot.data().count;
+
+    // Count not learned words (status < 6 or no status)
+    const notLearnedQuery = query(
+      collection(db, "words"),
+      where("__name__", "in", chunk),
+      where("status", "<", 6)
+    );
+    const notLearnedSnapshot = await getCountFromServer(notLearnedQuery);
+    notLearnedCount += notLearnedSnapshot.data().count;
   }
 
-  // Compute stats
-  const learned = words.filter((w) => {
-    const status = w.status as number | undefined;
-    return status && status >= 6;
-  }).length;
+  const total = wordIds.length;
+  const notLearned = notLearnedCount; // Use the counted value
 
-  const notLearned = words.filter((w) => {
-    const status = w.status as number | undefined;
-    return !status || status < 6;
-  }).length;
-
-  return { learned, notLearned, total: words.length };
+  return { learned: learnedCount, notLearned, total };
 });
 
 const initialState: TrainingStatsState = {

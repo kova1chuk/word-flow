@@ -67,9 +67,9 @@ async function migrateInBackground() {
   let total = 0;
 
   try {
-    // Get total count for progress
-    const totalSnapshot = await db.collection("words").get();
-    total = totalSnapshot.size;
+    // Get total count for progress using getCountFromServer
+    const totalSnapshot = await db.collection("words").count().get();
+    total = totalSnapshot.data().count;
     await statusDoc.update({ total });
 
     while (hasMore) {

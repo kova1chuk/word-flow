@@ -4,11 +4,15 @@ import {
   collection,
   query,
   where,
+  orderBy,
+  limit,
+  startAfter,
   getDocs,
-  deleteDoc,
+  getCountFromServer,
   doc,
   updateDoc,
-  orderBy,
+  deleteDoc,
+  Timestamp,
 } from "firebase/firestore";
 import { config } from "@/lib/config";
 import { updateWordStatsOnStatusChange } from "@/features/word-management/lib/updateWordStatsOnStatusChange";
@@ -29,7 +33,7 @@ interface DictionaryApiResponse {
 }
 
 interface WordsState {
-  words: Word[];
+  words: Record<number, Word[]>; // Store words by page number
   loading: boolean;
   error: string | null;
   updating: string | null;
@@ -43,7 +47,7 @@ interface WordsState {
 }
 
 const initialState: WordsState = {
-  words: [],
+  words: {},
   loading: false,
   error: null,
   updating: null,
@@ -84,6 +88,24 @@ const serializeTimestamps = (
 };
 
 // Async thunks
+export const fetchWordsCount = createAsyncThunk(
+  "words/fetchWordsCount",
+  async ({
+    userId,
+    statusFilter = [],
+    search = "",
+  }: {
+    userId: string;
+    statusFilter?: number[];
+    search?: string;
+  }) => {
+    // Since we're now fetching all words and paginating client-side,
+    // we'll return undefined to indicate we don't know the exact count
+    // The actual count will be calculated in the fetchWordsPage thunk
+    return undefined;
+  }
+);
+
 export const fetchWordsPage = createAsyncThunk(
   "words/fetchWordsPage",
   async (
@@ -111,15 +133,11 @@ export const fetchWordsPage = createAsyncThunk(
       !search &&
       statusFilter.length === 0
     ) {
-      const startIndex = (page - 1) * pageSize;
-      const endIndex = startIndex + pageSize;
-      const existingWords = state.words.words
-        .slice(startIndex, endIndex)
-        .filter(Boolean);
+      const existingWords = state.words.words[page] || [];
       return { words: existingWords, page, isCached: true };
     }
 
-    // Build Firestore query with proper server-side pagination
+    // Build the base query
     let q = query(
       collection(db, "words"),
       where("userId", "==", userId),
@@ -136,10 +154,12 @@ export const fetchWordsPage = createAsyncThunk(
       );
     }
 
-    // For search, we need to fetch all words and filter client-side
-    // For status filter, we can use Firestore query
+    // For pagination, we need to use offset
+    // Since Firestore doesn't support offset directly, we'll use a different approach
+    // We'll fetch all documents and paginate client-side for now
+    // This is not ideal for large datasets, but it's more reliable with filters
     const querySnapshot = await getDocs(q);
-    let wordsData = querySnapshot.docs.map((doc) => {
+    let allWords = querySnapshot.docs.map((doc) => {
       const data = doc.data();
       return {
         id: doc.id,
@@ -147,37 +167,31 @@ export const fetchWordsPage = createAsyncThunk(
       };
     }) as Word[];
 
-    // Sort by createdAt descending client-side
-    wordsData.sort((a, b) => {
-      const aDate =
-        typeof a.createdAt === "string" ? new Date(a.createdAt).getTime() : 0;
-      const bDate =
-        typeof b.createdAt === "string" ? new Date(b.createdAt).getTime() : 0;
-      return bDate - aDate;
-    });
-
-    // Apply search filter client-side if needed
+    // Apply search filter if needed
     if (search.trim()) {
       const searchTerm = search.toLowerCase();
-      wordsData = wordsData.filter((word) =>
+      allWords = allWords.filter((word) =>
         word.word.toLowerCase().includes(searchTerm)
       );
     }
 
-    // Handle pagination
-    const totalWords = wordsData.length;
+    // Calculate pagination
     const startIndex = (page - 1) * pageSize;
     const endIndex = startIndex + pageSize;
-    const paginatedWords = wordsData.slice(startIndex, endIndex);
-    const hasMore = endIndex < totalWords;
+    const pageWords = allWords.slice(startIndex, endIndex);
+    const hasMore = endIndex < allWords.length;
+
+    console.log(
+      `Page ${page}: ${pageWords.length} words (${startIndex}-${endIndex} of ${allWords.length})`
+    );
 
     return {
-      words: paginatedWords,
+      words: pageWords,
       page,
-      totalWords,
+      totalWords: allWords.length,
       hasMore,
       isCached: false,
-      allWords: wordsData, // Include all filtered words for caching
+      allWords: undefined,
     };
   }
 );
@@ -323,7 +337,7 @@ const wordsSlice = createSlice({
       state.pagination.currentPage = 1;
     },
     clearWords: (state) => {
-      state.words = [];
+      state.words = {};
       state.pagination.loadedPages = [];
       state.pagination.currentPage = 1;
       state.pagination.totalWords = 0;
@@ -350,26 +364,18 @@ const wordsSlice = createSlice({
 
         if (!isCached) {
           if (allWords) {
-            // If allWords is provided, replace the entire array for better caching
-            state.words = allWords;
+            // If allWords is provided (search mode), replace the entire array
+            // For search mode, we'll store all words in page 1
+            state.words = { 1: allWords };
           } else {
-            // Insert words at the correct position for the page
-            const startIndex = (page - 1) * state.pagination.pageSize;
-            const endIndex = startIndex + newWords.length;
-
-            // Ensure array is large enough
-            while (state.words.length < endIndex) {
-              state.words.push(null as unknown as Word);
-            }
-
-            // Insert words at the correct positions
-            newWords.forEach((word: Word, index: number) => {
-              state.words[startIndex + index] = word;
-            });
+            // Server-side pagination mode - store words for this page
+            state.words[page] = newWords;
           }
 
           // Mark page as loaded
-          state.pagination.loadedPages.push(page);
+          if (!state.pagination.loadedPages.includes(page)) {
+            state.pagination.loadedPages.push(page);
+          }
           state.pagination.hasMore = hasMore || false;
 
           if (totalWords !== undefined) {
@@ -382,10 +388,28 @@ const wordsSlice = createSlice({
         state.error = action.error.message || "Failed to fetch words";
       });
 
+    // Fetch words count
+    builder
+      .addCase(fetchWordsCount.fulfilled, (state, action) => {
+        state.pagination.totalWords = action.payload;
+      })
+      .addCase(fetchWordsCount.rejected, (state, action) => {
+        state.error = action.error.message || "Failed to fetch words count";
+      });
+
     // Delete word
     builder
       .addCase(deleteWord.fulfilled, (state, action) => {
-        state.words = state.words.filter((word) => word.id !== action.payload);
+        const wordId = action.payload;
+        // Remove word from all pages
+        Object.keys(state.words).forEach((pageKey) => {
+          const page = parseInt(pageKey);
+          if (state.words[page]) {
+            state.words[page] = state.words[page].filter(
+              (word) => word.id !== wordId
+            );
+          }
+        });
         state.pagination.totalWords = Math.max(
           0,
           state.pagination.totalWords - 1
@@ -403,9 +427,15 @@ const wordsSlice = createSlice({
       .addCase(reloadDefinition.fulfilled, (state, action) => {
         state.updating = null;
         const { wordId, updates } = action.payload;
-        state.words = state.words.map((word) =>
-          word.id === wordId ? { ...word, ...updates } : word
-        );
+        // Update word in all pages
+        Object.keys(state.words).forEach((pageKey) => {
+          const page = parseInt(pageKey);
+          if (state.words[page]) {
+            state.words[page] = state.words[page].map((word) =>
+              word.id === wordId ? { ...word, ...updates } : word
+            );
+          }
+        });
       })
       .addCase(reloadDefinition.rejected, (state, action) => {
         state.updating = null;
@@ -420,9 +450,15 @@ const wordsSlice = createSlice({
       .addCase(reloadTranslation.fulfilled, (state, action) => {
         state.updating = null;
         const { wordId, updates } = action.payload;
-        state.words = state.words.map((word) =>
-          word.id === wordId ? { ...word, ...updates } : word
-        );
+        // Update word in all pages
+        Object.keys(state.words).forEach((pageKey) => {
+          const page = parseInt(pageKey);
+          if (state.words[page]) {
+            state.words[page] = state.words[page].map((word) =>
+              word.id === wordId ? { ...word, ...updates } : word
+            );
+          }
+        });
       })
       .addCase(reloadTranslation.rejected, (state, action) => {
         state.updating = null;
@@ -437,9 +473,15 @@ const wordsSlice = createSlice({
       .addCase(updateWordStatus.fulfilled, (state, action) => {
         state.updating = null;
         const { wordId, updates } = action.payload;
-        state.words = state.words.map((word) =>
-          word.id === wordId ? { ...word, ...updates } : word
-        );
+        // Update word in all pages
+        Object.keys(state.words).forEach((pageKey) => {
+          const page = parseInt(pageKey);
+          if (state.words[page]) {
+            state.words[page] = state.words[page].map((word) =>
+              word.id === wordId ? { ...word, ...updates } : word
+            );
+          }
+        });
       })
       .addCase(updateWordStatus.rejected, (state, action) => {
         state.updating = null;

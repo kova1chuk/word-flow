@@ -42,11 +42,8 @@ export async function POST() {
     let processed = 0;
     for (const user of users) {
       const userId = user.uid;
-      // Get user's words from top-level words collection
-      const wordsSnapshot = await db
-        .collection("words")
-        .where("userId", "==", userId)
-        .get();
+
+      // Use getCountFromServer for efficient counting
       const wordStats: Record<number, number> = {
         1: 0,
         2: 0,
@@ -56,12 +53,17 @@ export async function POST() {
         6: 0,
         7: 0,
       };
-      for (const wordDoc of wordsSnapshot.docs) {
-        const status = wordDoc.data().status;
-        if (typeof status === "number" && status >= 1 && status <= 7) {
-          wordStats[status] = (wordStats[status] || 0) + 1;
-        }
+
+      // Count words by status using getCountFromServer
+      for (let status = 1; status <= 7; status++) {
+        const statusQuery = db
+          .collection("words")
+          .where("userId", "==", userId)
+          .where("status", "==", status);
+        const statusSnapshot = await statusQuery.count().get();
+        wordStats[status] = statusSnapshot.data().count;
       }
+
       await db.collection("userStats").doc(userId).set({ wordStats });
       processed++;
     }

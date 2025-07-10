@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useTransition } from "react";
 import { useAuthSync } from "@/shared/hooks/useAuthSync";
 import { useWordsRTK } from "@/features/words/lib/useWordsRTK";
 import { useWordFilters } from "@/features/words/lib/useWordFilters";
@@ -11,6 +11,7 @@ import type { Word } from "@/types";
 import type { RootState, AppDispatch } from "@/shared/model/store";
 import { WordsListRTKWithSuspense } from "@/features/words/components/WordsListRTKWithSuspense";
 import Pagination from "@/shared/ui/Pagination";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   reloadDefinition,
   reloadTranslation,
@@ -18,21 +19,99 @@ import {
   updateWordStatus,
   setUpdating,
   fetchWordsPage,
+  clearWords,
 } from "@/features/words/model/wordsSlice";
+import { selectPaginatedWords } from "@/features/words/model/selectors";
+
+// Custom hook for debounced search
+const useDebouncedSearch = (search: string, delay: number = 500) => {
+  const [debouncedSearch, setDebouncedSearch] = useState(search);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(search);
+    }, delay);
+
+    return () => clearTimeout(timer);
+  }, [search, delay]);
+
+  return debouncedSearch;
+};
 
 export default function WordsPage() {
   const { user } = useAuthSync();
   const dispatch = useDispatch<AppDispatch>();
   const { error, clearError } = useWordsRTK();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [isPending, startTransition] = useTransition();
 
   const { statusFilter, search, setStatusFilter, setSearch, STATUS_OPTIONS } =
     useWordFilters();
 
-  // Pagination state
-  const [currentPage, setCurrentPage] = useState(1);
+  // Use debounced search to avoid too many API calls
+  const debouncedSearch = useDebouncedSearch(search, 500);
+
+  // Initialize currentPage from URL or default to 1
+  const [currentPage, setCurrentPage] = useState(() => {
+    const pageParam = searchParams.get("page");
+    return pageParam ? parseInt(pageParam, 10) : 1;
+  });
   const pageSize = 20;
 
-  // Fetch words from Firestore with filters
+  // Update URL when page changes
+  const updateURL = (page: number) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (page === 1) {
+      params.delete("page");
+    } else {
+      params.set("page", page.toString());
+    }
+    router.push(`/words?${params.toString()}`, { scroll: false });
+  };
+
+  // Scroll to top when page changes
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: "smooth" });
+  }, [currentPage]);
+
+  // Reset page to 1 and clear words when filters change
+  useEffect(() => {
+    if (currentPage !== 1) {
+      setCurrentPage(1);
+      updateURL(1);
+    }
+    // Clear words when status filter changes to ensure fresh data
+    dispatch(clearWords());
+  }, [statusFilter, dispatch]);
+
+  // Handle search changes with transition and clear words
+  useEffect(() => {
+    if (currentPage !== 1) {
+      startTransition(() => {
+        setCurrentPage(1);
+        updateURL(1);
+      });
+    }
+    // Clear words when search changes to ensure fresh data
+    // Use a small delay to ensure the clear operation completes
+    const timeoutId = setTimeout(() => {
+      dispatch(clearWords());
+    }, 0);
+
+    return () => clearTimeout(timeoutId);
+  }, [debouncedSearch, dispatch]);
+
+  // Handle URL changes (when someone navigates directly to a URL with page parameter)
+  useEffect(() => {
+    const pageParam = searchParams.get("page");
+    const pageFromURL = pageParam ? parseInt(pageParam, 10) : 1;
+    if (pageFromURL !== currentPage) {
+      setCurrentPage(pageFromURL);
+    }
+  }, [searchParams, currentPage]);
+
+  // Fetch words from Firestore with filters (use debounced search)
   useEffect(() => {
     if (!user?.uid) return;
     dispatch(
@@ -41,21 +120,32 @@ export default function WordsPage() {
         page: currentPage,
         pageSize,
         statusFilter,
-        search,
+        search: debouncedSearch,
       })
     );
-  }, [user?.uid, currentPage, pageSize, statusFilter, search, dispatch]);
+  }, [
+    user?.uid,
+    currentPage,
+    pageSize,
+    statusFilter,
+    debouncedSearch,
+    dispatch,
+  ]);
 
   // Get pagination info from Redux
+  const { totalPages, total, words } = useSelector((state: RootState) =>
+    selectPaginatedWords(state, { page: currentPage, pageSize })
+  );
   const pagination = useSelector((state: RootState) => state.words.pagination);
-  const words = useSelector((state: RootState) => state.words.words) as Word[];
 
-  // Calculate pagination
-  const totalPages = Math.ceil((pagination?.totalWords || 0) / pageSize);
+  // Show pagination only when there are multiple pages or when we have more pages to load
+  const shouldShowPagination =
+    (totalPages && totalPages > 1) || pagination.hasMore;
 
   // Handle page change
   const handlePageChange = (page: number) => {
     setCurrentPage(page);
+    updateURL(page);
   };
 
   // Handle word actions (like status changes)
@@ -90,7 +180,7 @@ export default function WordsPage() {
                 page: currentPage,
                 pageSize,
                 statusFilter,
-                search,
+                search: debouncedSearch,
               })
             );
           }
@@ -164,20 +254,29 @@ export default function WordsPage() {
       />
 
       {/* Pagination */}
-      <div className="mt-8">
-        <Pagination
-          currentPage={currentPage}
-          totalPages={totalPages}
-          onPageChange={handlePageChange}
-          className="mb-4"
-        />
+      {shouldShowPagination && (
+        <div className="mt-8">
+          <Pagination
+            currentPage={currentPage}
+            totalPages={totalPages || 0}
+            onPageChange={handlePageChange}
+            className="mb-4"
+          />
 
-        {/* Page info */}
-        <div className="text-center text-sm text-gray-600">
-          Page {currentPage} of {totalPages} • {pagination?.totalWords || 0}{" "}
-          total words
+          {/* Page info */}
+          <div className="text-center text-sm text-gray-600">
+            {totalPages ? (
+              <>
+                Page {currentPage} of {totalPages} • {total} total words
+              </>
+            ) : (
+              <>
+                Page {currentPage} • {total} words found
+              </>
+            )}
+          </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

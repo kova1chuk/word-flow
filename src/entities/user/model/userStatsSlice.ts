@@ -42,7 +42,7 @@ const userStatsSlice = createSlice({
       state.loading = false;
       state.error = null;
     },
-    clearError: (state) => {
+    clearUserStatsError: (state) => {
       state.error = null;
     },
     updateWordStats: (state, action: PayloadAction<Record<number, number>>) => {
@@ -67,7 +67,7 @@ const userStatsSlice = createSlice({
 });
 
 // Actions
-export const { clearUserStats, clearError, updateWordStats } =
+export const { clearUserStats, clearUserStatsError, updateWordStats } =
   userStatsSlice.actions;
 
 // Reducer

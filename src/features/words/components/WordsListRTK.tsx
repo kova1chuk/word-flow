@@ -1,6 +1,7 @@
 import React from "react";
 import { useSelector } from "react-redux";
 import { RootState } from "@/shared/model/store";
+import { selectPaginatedWords } from "@/features/words/model/selectors";
 import WordCard from "@/components/WordCard";
 import type { Word } from "@/types";
 
@@ -15,8 +16,13 @@ export const WordsListRTK: React.FC<WordsListRTKProps> = ({
   pageSize,
   onWordAction,
 }) => {
-  const { words, loading, error, updating } = useSelector(
+  const { loading, error, updating } = useSelector(
     (state: RootState) => state.words
+  );
+
+  // Use the new selector for paginated words
+  const { words: paginatedWords } = useSelector((state: RootState) =>
+    selectPaginatedWords(state, { page: currentPage, pageSize })
   );
 
   // Throw a promise when loading to trigger Suspense
@@ -26,13 +32,6 @@ export const WordsListRTK: React.FC<WordsListRTKProps> = ({
       // and show the fallback until the loading state changes
     });
   }
-
-  // Get words for the current page
-  const startIndex = (currentPage - 1) * pageSize;
-  const endIndex = startIndex + pageSize;
-  const paginatedWords = words
-    .slice(startIndex, endIndex)
-    .filter(Boolean) as Word[];
 
   if (error) {
     return (

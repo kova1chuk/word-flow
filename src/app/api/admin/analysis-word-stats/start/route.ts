@@ -51,20 +51,23 @@ export async function POST() {
         7: 0,
       };
       if (wordIds.length > 0) {
-        // Firestore 'in' queries are limited to 10, so chunk if needed
-        const chunkSize = 10;
-        for (let i = 0; i < wordIds.length; i += chunkSize) {
-          const chunk = wordIds.slice(i, i + chunkSize);
-          const wordsSnapshot = await db
-            .collection("words")
-            .where(FieldPath.documentId(), "in", chunk)
-            .get();
-          for (const wordDoc of wordsSnapshot.docs) {
-            const status = wordDoc.data().status;
-            if (typeof status === "number" && status >= 1 && status <= 7) {
-              wordStats[status] = (wordStats[status] || 0) + 1;
-            }
+        // Use getCountFromServer for efficient counting
+        for (let status = 1; status <= 7; status++) {
+          // Count words with this status that are in the analysis
+          const chunkSize = 10;
+          let statusCount = 0;
+
+          for (let i = 0; i < wordIds.length; i += chunkSize) {
+            const chunk = wordIds.slice(i, i + chunkSize);
+            const statusQuery = db
+              .collection("words")
+              .where(FieldPath.documentId(), "in", chunk)
+              .where("status", "==", status);
+            const statusSnapshot = await statusQuery.count().get();
+            statusCount += statusSnapshot.data().count;
           }
+
+          wordStats[status] = statusCount;
         }
       }
       // Update summary.wordStats

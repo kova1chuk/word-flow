@@ -1,5 +1,6 @@
 import { createSelector } from "@reduxjs/toolkit";
 import type { RootState } from "@/shared/model/store";
+import type { Word } from "@/entities/word/types";
 
 // Basic selectors
 export const selectWords = (state: RootState) => state.words.words;
@@ -7,24 +8,34 @@ export const selectWordsLoading = (state: RootState) => state.words.loading;
 export const selectWordsError = (state: RootState) => state.words.error;
 export const selectWordsUpdating = (state: RootState) => state.words.updating;
 
+// Helper function to get all words from all pages
+const getAllWords = (wordsByPage: Record<number, Word[]>): Word[] => {
+  return Object.values(wordsByPage).flat();
+};
+
 // Memoized selectors
 export const selectWordsByStatus = createSelector(
   [selectWords, (_state: RootState, status: number) => status],
-  (words, status) => words.filter((word) => word.status === status)
+  (wordsByPage, status) =>
+    getAllWords(wordsByPage).filter((word) => word.status === status)
 );
 
 export const selectWordsByStatuses = createSelector(
   [selectWords, (_state: RootState, statuses: number[]) => statuses],
-  (words, statuses) =>
-    words.filter((word) => word.status && statuses.includes(word.status))
+  (wordsByPage, statuses) =>
+    getAllWords(wordsByPage).filter(
+      (word) => word.status && statuses.includes(word.status)
+    )
 );
 
 export const selectWordsBySearch = createSelector(
   [selectWords, (_state: RootState, searchTerm: string) => searchTerm],
-  (words, searchTerm) => {
-    if (!searchTerm.trim()) return words;
+  (wordsByPage, searchTerm) => {
+    if (!searchTerm.trim()) return getAllWords(wordsByPage);
     const term = searchTerm.toLowerCase();
-    return words.filter((word) => word.word.toLowerCase().includes(term));
+    return getAllWords(wordsByPage).filter((word) =>
+      word.word.toLowerCase().includes(term)
+    );
   }
 );
 
@@ -34,8 +45,8 @@ export const selectFilteredWords = createSelector(
     (_state: RootState, filters: { statuses?: number[]; search?: string }) =>
       filters,
   ],
-  (words, { statuses, search }) => {
-    let filtered = words;
+  (wordsByPage, { statuses, search }) => {
+    let filtered = getAllWords(wordsByPage);
 
     // Filter by statuses
     if (statuses && statuses.length > 0) {
@@ -56,7 +67,8 @@ export const selectFilteredWords = createSelector(
   }
 );
 
-export const selectWordsStats = createSelector([selectWords], (words) => {
+export const selectWordsStats = createSelector([selectWords], (wordsByPage) => {
+  const words = getAllWords(wordsByPage);
   const stats = {
     total: words.length,
     byStatus: {
@@ -84,49 +96,35 @@ export const selectWordsStats = createSelector([selectWords], (words) => {
 
 export const selectWordById = createSelector(
   [selectWords, (_state: RootState, wordId: string) => wordId],
-  (words, wordId) => words.find((word) => word.id === wordId)
+  (wordsByPage, wordId) =>
+    getAllWords(wordsByPage).find((word) => word.id === wordId)
 );
 
 export const selectPaginatedWords = createSelector(
   [
     selectWords,
+    (state: RootState) => state.words.pagination,
     (
       _state: RootState,
       options: {
         page: number;
         pageSize: number;
-        filters?: { statuses?: number[]; search?: string };
       }
     ) => options,
   ],
-  (words, { page, pageSize, filters }) => {
-    let filtered = words;
-
-    // Apply filters if provided
-    if (filters) {
-      if (filters.statuses && filters.statuses.length > 0) {
-        filtered = filtered.filter(
-          (word) => word.status && filters.statuses!.includes(word.status)
-        );
-      }
-      if (filters.search && filters.search.trim()) {
-        const term = filters.search.toLowerCase();
-        filtered = filtered.filter((word) =>
-          word.word.toLowerCase().includes(term)
-        );
-      }
-    }
-
-    // Apply pagination
-    const startIndex = (page - 1) * pageSize;
-    const endIndex = startIndex + pageSize;
+  (wordsByPage, pagination, { page, pageSize }) => {
+    // Get words for the current page
+    const pageWords = wordsByPage[page] || [];
 
     return {
-      words: filtered.slice(startIndex, endIndex),
-      total: filtered.length,
-      totalPages: Math.ceil(filtered.length / pageSize),
+      words: pageWords,
+      total: pagination.totalWords || 0,
+      totalPages:
+        pagination.totalWords !== undefined && pagination.totalWords > 0
+          ? Math.ceil(pagination.totalWords / pageSize)
+          : undefined, // undefined when we don't know total count (search mode)
       currentPage: page,
-      hasNextPage: endIndex < filtered.length,
+      hasNextPage: pagination.hasMore,
       hasPrevPage: page > 1,
     };
   }

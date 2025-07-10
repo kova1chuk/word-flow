@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 
 interface StatusOption {
   value: string | number;
@@ -33,6 +33,7 @@ const WordFilterControls: React.FC<WordFilterControlsProps> = ({
   filteredCount,
   className = "",
 }) => {
+  const [showFilters, setShowFilters] = useState(false);
   const selectedStatusesSafe = selectedStatuses ?? [];
 
   // Compute all status values except 'all'
@@ -78,20 +79,51 @@ const WordFilterControls: React.FC<WordFilterControlsProps> = ({
       <div className="relative p-4 sm:p-6 mb-8">
         {/* Controls Section */}
         <div className="relative w-full flex flex-col sm:flex-row sm:items-center sm:gap-6 gap-3 p-0 mb-4">
-          {/* Search Input */}
-          <div className="w-full sm:flex-1">
+          {/* Search Input with Gear Icon */}
+          <div className="w-full sm:flex-1 relative">
             <input
               type="text"
               value={search}
               onChange={(e) => onSearchChange(e.target.value)}
               placeholder="Search words..."
               className={
-                `w-full px-4 py-3 sm:px-6 rounded-2xl border border-[#3a4152] focus:border-blue-400 focus:ring-2 focus:ring-blue-900/40 transition-all duration-200 ` +
+                `w-full px-4 py-3 sm:px-6 pr-12 rounded-2xl border border-[#3a4152] focus:border-blue-400 focus:ring-2 focus:ring-blue-900/40 transition-all duration-200 ` +
                 `bg-[#23272f] text-[#e5eaf2] placeholder-[#7b8ca6] ` +
                 `shadow-sm text-base sm:text-lg`
               }
               style={{ fontWeight: 500 }}
             />
+
+            {/* Gear Icon Button */}
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className={`absolute right-3 top-1/2 -translate-y-1/2 p-2 rounded-lg transition-all duration-200 ${
+                showFilters
+                  ? "bg-blue-500 text-white shadow-lg"
+                  : "bg-[#3a4152] text-[#7b8ca6] hover:bg-[#4a5568] hover:text-[#e5eaf2]"
+              }`}
+              title={showFilters ? "Hide filters" : "Show filters"}
+            >
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                />
+              </svg>
+            </button>
           </div>
 
           {/* Page Size Selector (if provided) */}
@@ -128,33 +160,35 @@ const WordFilterControls: React.FC<WordFilterControlsProps> = ({
           </div>
         )}
 
-        {/* Status Filters Section */}
-        <div className="space-y-4 sm:space-y-6">
-          <div className="flex flex-wrap justify-center gap-3 sm:gap-4 w-full">
-            {statusOptions.map((option) => {
-              const isAllOption = option.value === "all";
-              const key = isAllOption ? "all" : String(option.value);
-              const selected = isAllOption
-                ? allSelected
-                : selectedStatusesSafe.includes(option.value);
-              return (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => handleStatusClick(option.value)}
-                  className={getStatusButtonStyle(key, selected)}
-                >
-                  <span
-                    className="block w-full text-center"
-                    style={{ lineHeight: 1.2 }}
+        {/* Status Filters Section - Now collapsible */}
+        {showFilters && (
+          <div className="space-y-4 sm:space-y-6 animate-in slide-in-from-top-2 duration-200">
+            <div className="flex flex-wrap justify-center gap-3 sm:gap-4 w-full">
+              {statusOptions.map((option) => {
+                const isAllOption = option.value === "all";
+                const key = isAllOption ? "all" : String(option.value);
+                const selected = isAllOption
+                  ? allSelected
+                  : selectedStatusesSafe.includes(option.value);
+                return (
+                  <button
+                    key={option.value}
+                    type="button"
+                    onClick={() => handleStatusClick(option.value)}
+                    className={getStatusButtonStyle(key, selected)}
                   >
-                    {option.label}
-                  </span>
-                </button>
-              );
-            })}
+                    <span
+                      className="block w-full text-center"
+                      style={{ lineHeight: 1.2 }}
+                    >
+                      {option.label}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

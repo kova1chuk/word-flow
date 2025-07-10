@@ -5,10 +5,7 @@ import {
   query,
   where,
   orderBy,
-  limit,
-  startAfter,
   getDocs,
-  getCountFromServer,
   doc,
   updateDoc,
   deleteDoc,
@@ -16,8 +13,8 @@ import {
 } from "firebase/firestore";
 import { config } from "@/lib/config";
 import { updateWordStatsOnStatusChange } from "@/features/word-management/lib/updateWordStatsOnStatusChange";
-import type { Word, WordDetails, Phonetic } from "@/types";
-import type { Timestamp } from "firebase/firestore";
+import type { Word } from "@/entities/word/types";
+import type { WordDetails, Phonetic } from "@/types";
 
 interface DictionaryApiResponse {
   phonetics: { text: string; audio: string }[];
@@ -90,15 +87,7 @@ const serializeTimestamps = (
 // Async thunks
 export const fetchWordsCount = createAsyncThunk(
   "words/fetchWordsCount",
-  async ({
-    userId,
-    statusFilter = [],
-    search = "",
-  }: {
-    userId: string;
-    statusFilter?: number[];
-    search?: string;
-  }) => {
+  async () => {
     // Since we're now fetching all words and paginating client-side,
     // we'll return undefined to indicate we don't know the exact count
     // The actual count will be calculated in the fetchWordsPage thunk
@@ -164,6 +153,7 @@ export const fetchWordsPage = createAsyncThunk(
       return {
         id: doc.id,
         ...serializeTimestamps(data),
+        userId: data.userId ?? "",
       };
     }) as Word[];
 
@@ -391,7 +381,7 @@ const wordsSlice = createSlice({
     // Fetch words count
     builder
       .addCase(fetchWordsCount.fulfilled, (state, action) => {
-        state.pagination.totalWords = action.payload;
+        state.pagination.totalWords = action.payload ?? 0;
       })
       .addCase(fetchWordsCount.rejected, (state, action) => {
         state.error = action.error.message || "Failed to fetch words count";

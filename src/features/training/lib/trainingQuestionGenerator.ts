@@ -81,8 +81,7 @@ export class TrainingQuestionGenerator {
   // 3. Usage in Context
   private static generateContextUsageQuestion(word: Word): TrainingQuestion {
     const example =
-      word.examples?.[0] ||
-      word.details?.meanings?.[0]?.definitions?.[0]?.example;
+      word.example || word.details?.meanings?.[0]?.definitions?.[0]?.example;
     const examples = example
       ? [example]
       : [`I need to use the word "${word.word}" in a sentence.`];
@@ -102,13 +101,9 @@ export class TrainingQuestionGenerator {
   // 4. Synonym/Antonym Match
   private static generateSynonymMatchQuestion(word: Word): TrainingQuestion {
     const synonyms =
-      word.synonyms ||
-      word.details?.meanings?.[0]?.definitions?.[0]?.synonyms ||
-      [];
+      word.details?.meanings?.[0]?.definitions?.[0]?.synonyms || [];
     const antonyms =
-      word.antonyms ||
-      word.details?.meanings?.[0]?.definitions?.[0]?.antonyms ||
-      [];
+      word.details?.meanings?.[0]?.definitions?.[0]?.antonyms || [];
 
     // Decide whether to ask for synonym or antonym
     const isSynonym = Math.random() > 0.5;
@@ -144,7 +139,7 @@ export class TrainingQuestionGenerator {
       type: "audio_dictation",
       question: `Listen to the audio and type what you hear:`,
       correctAnswer: word.word.toLowerCase().trim(),
-      audioUrl: word.audioUrl || word.details?.phonetics?.[0]?.audio,
+      audioUrl: word.details?.phonetics?.[0]?.audio,
     };
   }
 
@@ -169,7 +164,7 @@ export class TrainingQuestionGenerator {
 
     // Add context usage if word has examples
     if (
-      (word.examples && word.examples.length > 0) ||
+      word.example ||
       word.details?.meanings?.[0]?.definitions?.[0]?.example
     ) {
       availableTypes.push("context_usage");
@@ -177,8 +172,6 @@ export class TrainingQuestionGenerator {
 
     // Add synonym match if word has synonyms or antonyms
     if (
-      (word.synonyms && word.synonyms.length > 0) ||
-      (word.antonyms && word.antonyms.length > 0) ||
       word.details?.meanings?.[0]?.definitions?.[0]?.synonyms ||
       word.details?.meanings?.[0]?.definitions?.[0]?.antonyms
     ) {
@@ -186,7 +179,7 @@ export class TrainingQuestionGenerator {
     }
 
     // Add audio dictation if word has audio
-    if (word.audioUrl || word.details?.phonetics?.[0]?.audio) {
+    if (word.details?.phonetics?.[0]?.audio) {
       availableTypes.push("audio_dictation");
     }
 

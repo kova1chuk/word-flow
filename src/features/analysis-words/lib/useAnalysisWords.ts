@@ -9,8 +9,6 @@ import {
   doc,
   getDoc,
   orderBy,
-  limit,
-  startAfter,
   QueryDocumentSnapshot,
   DocumentData,
   Timestamp,
@@ -149,8 +147,8 @@ export function useAnalysisWords(
             collection(db, "analyses", analysisId, "words"),
             orderBy("word")
           );
-          refsQuery = query(refsQuery, startAfter(pageCursor));
-          refsQuery = query(refsQuery, limit(pageSize));
+          refsQuery = query(refsQuery, orderBy("word")); // Ensure orderBy is applied
+          refsQuery = query(refsQuery, orderBy("word")); // Ensure orderBy is applied
           const refsSnapshot = await getDocs(refsQuery);
           const wordIds = refsSnapshot.docs.map((doc) => doc.data().wordId);
           setNextCursor(

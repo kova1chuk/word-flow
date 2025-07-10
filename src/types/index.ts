@@ -1,4 +1,4 @@
-import type { Timestamp } from "firebase/firestore";
+export type { Word } from "@/entities/word/types";
 
 export interface Phonetic {
   text: string;
@@ -20,29 +20,6 @@ export interface Meaning {
 export interface WordDetails {
   phonetics: Phonetic[];
   meanings: Meaning[];
-}
-
-export interface Word {
-  id: string;
-  word: string;
-  translation?: string;
-  definition?: string;
-  examples?: string[];
-  audioUrl?: string;
-  synonyms?: string[];
-  antonyms?: string[];
-  analyses?: Record<string, { count: number }>;
-  definedAt?: Date;
-  translatedAt?: Date;
-  source?: string;
-  status?: 1 | 2 | 3 | 4 | 5 | 6 | 7;
-  createdAt: Timestamp;
-  details?: WordDetails;
-  isLearned?: boolean;
-  isInDictionary?: boolean;
-  usages?: string[];
-  analysisIds?: string[];
-  userId?: string;
 }
 
 export interface UserWord {

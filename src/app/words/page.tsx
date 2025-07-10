@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useTransition } from "react";
+import React, { useEffect, useState, useTransition, useCallback } from "react";
 import { useAuthSync } from "@/shared/hooks/useAuthSync";
 import { useWordsRTK } from "@/features/words/lib/useWordsRTK";
 import { useWordFilters } from "@/features/words/lib/useWordFilters";
@@ -62,15 +62,18 @@ export default function WordsPage() {
   const pageSize = 20;
 
   // Update URL when page changes
-  const updateURL = (page: number) => {
-    const params = new URLSearchParams(searchParams.toString());
-    if (page === 1) {
-      params.delete("page");
-    } else {
-      params.set("page", page.toString());
-    }
-    router.push(`/words?${params.toString()}`, { scroll: false });
-  };
+  const updateURL = useCallback(
+    (page: number) => {
+      const params = new URLSearchParams(searchParams.toString());
+      if (page === 1) {
+        params.delete("page");
+      } else {
+        params.set("page", page.toString());
+      }
+      router.push(`/words?${params.toString()}`, { scroll: false });
+    },
+    [router, searchParams]
+  );
 
   // Reset page to 1 and clear words when filters change
   useEffect(() => {
@@ -80,7 +83,7 @@ export default function WordsPage() {
     }
     // Clear words when status filter changes to ensure fresh data
     dispatch(clearWords());
-  }, [statusFilter, dispatch]);
+  }, [statusFilter, dispatch, currentPage, updateURL]);
 
   // Handle search changes with transition and clear words
   useEffect(() => {
@@ -97,7 +100,7 @@ export default function WordsPage() {
     }, 0);
 
     return () => clearTimeout(timeoutId);
-  }, [debouncedSearch, dispatch]);
+  }, [debouncedSearch, dispatch, currentPage, updateURL]);
 
   // Handle URL changes (when someone navigates directly to a URL with page parameter)
   useEffect(() => {

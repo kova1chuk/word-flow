@@ -51,6 +51,7 @@ export default function StatusSelector({
     return visualOption ? visualOption.label : "";
   };
 
+  const visualLabel = getVisualLabel();
   useLayoutEffect(() => {
     if (trackRef.current) {
       // No-op: thumb position is now handled by Radix and padding
@@ -61,7 +62,7 @@ export default function StatusSelector({
     if (labelRef.current) {
       setLabelWidth(labelRef.current.offsetWidth);
     }
-  }, [getVisualLabel()]);
+  }, [visualLabel]);
 
   // Update visual status when currentStatus changes (from API)
   useLayoutEffect(() => {

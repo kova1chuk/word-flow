@@ -53,9 +53,9 @@ export function ManualTrainingCard({
       {/* Word Display */}
       <div className="mb-6">
         <WordDisplay word={word} size="lg" />
-        {word.audioUrl && (
+        {word.details?.phonetics?.[0]?.audio && (
           <div className="mt-4 flex justify-center">
-            <AudioPlayer audioUrl={word.audioUrl} />
+            <AudioPlayer audioUrl={word.details.phonetics[0].audio} />
           </div>
         )}
       </div>
@@ -105,22 +105,15 @@ export function ManualTrainingCard({
           </p>
         </div>
 
-        {/* Examples */}
-        {word.examples && word.examples.length > 0 && (
+        {/* Example */}
+        {word.example && (
           <div>
             <h4 className="font-semibold text-gray-700 dark:text-gray-300 text-sm mb-2">
-              Examples:
+              Example:
             </h4>
-            <div className="space-y-2">
-              {word.examples.slice(0, 2).map((example, index) => (
-                <p
-                  key={index}
-                  className="text-gray-600 dark:text-gray-400 text-sm italic"
-                >
-                  &ldquo;{example}&rdquo;
-                </p>
-              ))}
-            </div>
+            <p className="text-gray-600 dark:text-gray-400 text-sm italic">
+              &ldquo;{word.example}&rdquo;
+            </p>
           </div>
         )}
       </div>

@@ -46,9 +46,11 @@ export const useWordsRTK = () => {
   const updateWordStatusAction = (
     wordId: string,
     status: 1 | 2 | 3 | 4 | 5 | 6 | 7,
-    userId: string
+    userId: string,
+    words: Record<number, Word[]>
   ) => {
-    dispatch(updateWordStatus({ wordId, status, userId, words }));
+    const allWords = Object.values(words).flat();
+    dispatch(updateWordStatus({ wordId, status, userId, words: allWords }));
   };
 
   const clearErrorAction = () => {

@@ -62,9 +62,6 @@ const transformApiResult = (
   fileName: string,
   userWords: UserWord[]
 ): AnalysisResult => {
-  // Log the API response for debugging
-  console.log("API response for analysis:", apiResponse);
-
   // Extract wordFrequency from all possible fields
   let wordFrequency = apiResponse.wordFrequency || {};
   if (
@@ -312,10 +309,6 @@ export const analyzeApi = {
         "No words to save for analysis",
         analysisRef.id,
         analysisResult
-      );
-    } else {
-      console.log(
-        `Saving ${allWords.length} words for analysis ${analysisRef.id}`
       );
     }
 

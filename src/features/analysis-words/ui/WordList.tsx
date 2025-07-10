@@ -1,6 +1,5 @@
 import { AnalysisWord } from "../lib/useAnalysisWords";
 import WordCard from "@/components/WordCard";
-import { Timestamp } from "firebase/firestore";
 
 interface WordListProps {
   words: AnalysisWord[];
@@ -34,18 +33,16 @@ export function WordList({
                 ...word,
                 definition: word.definition ?? "",
                 status: (word.status ?? 1) as 1 | 2 | 3 | 4 | 5 | 6 | 7,
-                createdAt: word.createdAt ?? new Timestamp(0, 0),
+                createdAt: word.createdAt
+                  ? word.createdAt.toDate
+                    ? word.createdAt.toDate().toISOString()
+                    : String(word.createdAt)
+                  : new Date(0).toISOString(),
+                userId: "", // AnalysisWord doesn't have userId, provide empty string
               }}
-              onStatusChange={
-                onStatusChange as (
-                  id: string,
-                  status: 1 | 2 | 3 | 4 | 5 | 6 | 7
-                ) => void
-              }
-              onReloadDefinition={(w) => onReloadDefinition(w as AnalysisWord)}
-              onReloadTranslation={(w) =>
-                onReloadTranslation(w as AnalysisWord)
-              }
+              onStatusChange={onStatusChange}
+              onReloadDefinition={() => onReloadDefinition(word)}
+              onReloadTranslation={() => onReloadTranslation(word)}
               updating={updating}
             />
           ))}

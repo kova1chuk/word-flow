@@ -38,23 +38,11 @@ export function useWords() {
     }
   }, [user, fetchWords]);
 
-  const updateWord = useCallback((wordId: string, updates: Partial<Word>) => {
-    setWords((prev) =>
-      prev.map((w) => (w.id === wordId ? { ...w, ...updates } : w))
-    );
-  }, []);
-
-  const removeWord = useCallback((wordId: string) => {
-    setWords((prev) => prev.filter((w) => w.id !== wordId));
-  }, []);
-
   return {
     words,
     loadingWords,
     error,
     setError,
     fetchWords,
-    updateWord,
-    removeWord,
   };
 }

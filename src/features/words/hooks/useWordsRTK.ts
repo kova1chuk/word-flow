@@ -8,9 +8,6 @@ import {
   selectWordsLoading,
   selectWordsError,
   selectWordsUpdating,
-  selectFilteredWords,
-  selectPaginatedWords,
-  selectWordsStats,
 } from "../model/selectors";
 import {
   fetchWordsPage,
@@ -73,8 +70,9 @@ export function useWordsRTK() {
   ) => {
     if (!user?.uid) return;
     try {
+      const allWords = Object.values(words).flat();
       await dispatch(
-        updateWordStatus({ wordId, status, userId: user.uid, words })
+        updateWordStatus({ wordId, status, userId: user.uid, words: allWords })
       ).unwrap();
     } catch (error) {
       console.error("Failed to update word status:", error);
@@ -99,10 +97,5 @@ export function useWordsRTK() {
     handleReloadTranslation,
     handleStatusChange,
     clearError: clearErrorAction,
-
-    // Selectors (for use in components)
-    selectFilteredWords,
-    selectPaginatedWords,
-    selectWordsStats,
   };
 }

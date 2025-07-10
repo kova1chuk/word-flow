@@ -3,6 +3,7 @@ import { TypedUseSelectorHook, useDispatch, useSelector } from "react-redux";
 
 // Import slices
 import authSlice from "@/entities/user/model/authSlice";
+import userStatsSlice from "@/entities/user/model/userStatsSlice";
 import wordSlice from "@/entities/word/model/wordSlice";
 import analysisSlice from "@/entities/analysis/model/analysisSlice";
 import analysesSlice from "@/features/analyses/model/analysesSlice";
@@ -18,6 +19,7 @@ import trainingSlice from "@/features/training/model/trainingSlice";
 export const store = configureStore({
   reducer: {
     auth: authSlice,
+    userStats: userStatsSlice,
     word: wordSlice,
     analysis: analysisSlice,
     analyses: analysesSlice,

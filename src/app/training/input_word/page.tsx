@@ -10,7 +10,7 @@ import {
   ChevronRightIcon,
   ArrowLeftIcon,
 } from "@heroicons/react/24/solid";
-import { useUserStats } from "@/shared/hooks/useUserStats";
+import { useUserStatsRTK } from "@/shared/hooks/useUserStatsRTK";
 import { useAnalysisFilteredStats } from "@/shared/hooks/useAnalysisFilteredStats";
 import { useTrainingSession } from "@/features/training/lib/useTrainingSession";
 import { TrainingQuestionCard } from "@/features/training/ui/TrainingQuestionCard";
@@ -66,7 +66,7 @@ export default function InputWordTrainingPage() {
   // Training settings
   const [sessionSize, setSessionSize] = useState(10);
 
-  const { wordStats: userWordStats } = useUserStats();
+  const { wordStats: userWordStats } = useUserStatsRTK();
   const { filteredWordStats } = useAnalysisFilteredStats(selectedAnalysisIds);
 
   // Training session

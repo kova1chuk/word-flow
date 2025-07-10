@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { selectUser } from "@/entities/user/model/selectors";
 import { useAnalyses } from "@/features/analyses/lib/useAnalyses";
 import { ChevronDownIcon, ChevronRightIcon } from "@heroicons/react/24/solid";
-import { useUserStats } from "@/shared/hooks/useUserStats";
+import { useUserStatsRTK } from "@/shared/hooks/useUserStatsRTK";
 import { useAnalysisFilteredStats } from "@/shared/hooks/useAnalysisFilteredStats";
 import Link from "next/link";
 
@@ -51,7 +51,7 @@ export default function TrainingPage() {
     router.replace(newUrl, { scroll: false });
   }, [selectedAnalysisIds, router, searchParams]);
 
-  const { wordStats: userWordStats } = useUserStats();
+  const { wordStats: userWordStats } = useUserStatsRTK();
   const { filteredWordStats } = useAnalysisFilteredStats(selectedAnalysisIds);
 
   const TRAINING_TYPE_OPTIONS = [

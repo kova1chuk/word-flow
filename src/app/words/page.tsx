@@ -10,6 +10,7 @@ import { useSelector, useDispatch } from "react-redux";
 import type { Word } from "@/types";
 import type { RootState, AppDispatch } from "@/shared/model/store";
 import { WordsListRTKWithSuspense } from "@/features/words/components/WordsListRTKWithSuspense";
+import { WordsListRTKSkeleton } from "@/features/words/components/WordsListRTKSkeleton";
 import Pagination from "@/shared/ui/Pagination";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -44,7 +45,8 @@ export default function WordsPage() {
   const { error, clearError } = useWordsRTK();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [isPending, startTransition] = useTransition();
+  const [, startTransition] = useTransition();
+  const [isPageLoading, setIsPageLoading] = useState(false);
 
   const { statusFilter, search, setStatusFilter, setSearch, STATUS_OPTIONS } =
     useWordFilters();
@@ -69,11 +71,6 @@ export default function WordsPage() {
     }
     router.push(`/words?${params.toString()}`, { scroll: false });
   };
-
-  // Scroll to top when page changes
-  useEffect(() => {
-    window.scrollTo({ top: 0, behavior: "smooth" });
-  }, [currentPage]);
 
   // Reset page to 1 and clear words when filters change
   useEffect(() => {
@@ -114,6 +111,8 @@ export default function WordsPage() {
   // Fetch words from Firestore with filters (use debounced search)
   useEffect(() => {
     if (!user?.uid) return;
+
+    setIsPageLoading(true);
     dispatch(
       fetchWordsPage({
         userId: user.uid,
@@ -122,7 +121,12 @@ export default function WordsPage() {
         statusFilter,
         search: debouncedSearch,
       })
-    );
+    ).finally(() => {
+      // Add a small delay to ensure the loading state is visible
+      setTimeout(() => {
+        setIsPageLoading(false);
+      }, 300);
+    });
   }, [
     user?.uid,
     currentPage,
@@ -142,8 +146,15 @@ export default function WordsPage() {
   const shouldShowPagination =
     (totalPages && totalPages > 1) || pagination.hasMore;
 
-  // Handle page change
+  // Handle page change with smooth scrolling and loading state
   const handlePageChange = (page: number) => {
+    // Smooth scroll to top
+    window.scrollTo({ top: 0, behavior: "smooth" });
+
+    // Set loading state
+    setIsPageLoading(true);
+
+    // Update page and URL
     setCurrentPage(page);
     updateURL(page);
   };
@@ -247,11 +258,16 @@ export default function WordsPage() {
         </div>
       )}
 
-      <WordsListRTKWithSuspense
-        currentPage={currentPage}
-        pageSize={pageSize}
-        onWordAction={handleWordAction}
-      />
+      {/* Show skeleton loading during page transitions */}
+      {isPageLoading ? (
+        <WordsListRTKSkeleton count={pageSize} />
+      ) : (
+        <WordsListRTKWithSuspense
+          currentPage={currentPage}
+          pageSize={pageSize}
+          onWordAction={handleWordAction}
+        />
+      )}
 
       {/* Pagination */}
       {shouldShowPagination && (

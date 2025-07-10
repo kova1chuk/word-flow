@@ -187,7 +187,6 @@ export default function WordCard({
           word={word}
           onStatusChange={onStatusChange}
           updating={updating}
-          className="mb-4"
         />
 
         {/* Examples Section */}

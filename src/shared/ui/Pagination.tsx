@@ -7,6 +7,16 @@ interface PaginationProps {
   className?: string;
 }
 
+const CupIcon = () => (
+  <svg
+    className="inline-block w-4 h-4 mr-1 text-yellow-500 align-middle"
+    fill="currentColor"
+    viewBox="0 0 20 20"
+  >
+    <path d="M6 2a1 1 0 00-1 1v2a5 5 0 004 4.9V13H7a1 1 0 000 2h6a1 1 0 100-2h-2V9.9A5 5 0 0015 5V3a1 1 0 00-1-1H6zm1 2V4h6v1a3 3 0 01-6 0z" />
+  </svg>
+);
+
 const Pagination: React.FC<PaginationProps> = ({
   currentPage,
   totalPages,
@@ -74,10 +84,11 @@ const Pagination: React.FC<PaginationProps> = ({
               onClick={() => onPageChange(page as number)}
               className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
                 currentPage === page
-                  ? "bg-blue-600 text-white"
-                  : "text-gray-700 hover:text-gray-900 hover:bg-gray-100"
+                  ? "bg-blue-600 text-white flex items-center cursor-default"
+                  : "text-gray-700 hover:text-gray-900 hover:bg-gray-100 cursor-pointer"
               }`}
             >
+              {currentPage === page && <CupIcon />}
               {page}
             </button>
           )}

@@ -78,7 +78,7 @@ const WordFilterControls: React.FC<WordFilterControlsProps> = ({
       {/* Main content */}
       <div className="relative p-4 sm:p-6 mb-8">
         {/* Controls Section */}
-        <div className="relative w-full flex flex-col sm:flex-row sm:items-center sm:gap-6 gap-3 p-0 mb-4">
+        <div className="relative w-full flex flex-col sm:flex-row sm:items-center sm:gap-6 gap-3 p-0">
           {/* Search Input with Gear Icon */}
           <div className="w-full sm:flex-1 relative">
             <input
@@ -162,7 +162,7 @@ const WordFilterControls: React.FC<WordFilterControlsProps> = ({
 
         {/* Status Filters Section - Now collapsible */}
         {showFilters && (
-          <div className="space-y-4 sm:space-y-6 animate-in slide-in-from-top-2 duration-200">
+          <div className="space-y-4 sm:space-y-6 animate-in slide-in-from-top-2 duration-200 mt-4">
             <div className="flex flex-wrap justify-center gap-3 sm:gap-4 w-full">
               {statusOptions.map((option) => {
                 const isAllOption = option.value === "all";

@@ -29,7 +29,6 @@ export default function StatusSelector({
 
   // For label positioning
   const trackRef = useRef<HTMLDivElement>(null);
-  const [thumbLeft, setThumbLeft] = useState(0);
   const [labelWidth, setLabelWidth] = useState(80);
   const labelRef = useRef<HTMLDivElement>(null);
 
@@ -54,11 +53,7 @@ export default function StatusSelector({
 
   useLayoutEffect(() => {
     if (trackRef.current) {
-      const track = trackRef.current;
-      const rect = track.getBoundingClientRect();
-      // 0 to 1
-      const percent = (visualStatus - 1) / 6;
-      setThumbLeft(rect.width * percent);
+      // No-op: thumb position is now handled by Radix and padding
     }
   }, [visualStatus]);
 
@@ -118,7 +113,7 @@ export default function StatusSelector({
       >
         {/* Dots with bigger clickable areas */}
         <div
-          className="absolute left-0 right-0 top-1/2 -translate-y-1/2 flex justify-between w-full px-3"
+          className="absolute left-0 right-0 top-1/2 -translate-y-1/2 flex justify-between w-full px-6"
           style={{ zIndex: 2 }}
         >
           {STATUS_OPTIONS.map((opt) => (
@@ -166,11 +161,14 @@ export default function StatusSelector({
               if (!trackRef.current) return 0;
               const trackWidth = trackRef.current.offsetWidth;
               const thumbWidth = 20;
-              let left = thumbLeft - labelWidth / 2 + thumbWidth / 2;
+              let left =
+                ((visualStatus - 1) / 6) * (trackWidth - 0) -
+                labelWidth / 2 +
+                thumbWidth / 2;
               left = Math.max(0, Math.min(left, trackWidth - labelWidth));
               return left;
             })(),
-            top: -25, // Moved up for more space
+            top: -15, // Moved up for more space
             minWidth: 80,
             textAlign: "center",
             pointerEvents: "none",
@@ -187,7 +185,7 @@ export default function StatusSelector({
 
         {/* Radix Slider with bigger track */}
         <RadixSlider.Root
-          className="relative w-full h-4 flex items-center select-none touch-none" // Increased height
+          className="relative w-full h-4 flex items-center select-none touch-none px-6" // Added px-6 for padding
           min={1}
           max={7}
           step={1}
@@ -214,7 +212,7 @@ export default function StatusSelector({
             />
           </RadixSlider.Track>
           <RadixSlider.Thumb
-            className="block w-6 h-6 rounded-full shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 hover:scale-110 transition-transform" // Bigger thumb with hover effect
+            className="block w-6 h-6 rounded-full shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 hover:scale-110 transition-transform flex items-center justify-center" // Added flex for centering spinner
             style={{
               background: getVisualColor(),
               border: "2px solid white",
@@ -222,18 +220,30 @@ export default function StatusSelector({
               transition: "background 0.2s, transform 0.1s",
             }}
             aria-label="Status"
-          />
-        </RadixSlider.Root>
-
-        {/* Visual feedback indicator */}
-        {isChanging && (
-          <div
-            className="absolute -top-8 left-1/2 transform -translate-x-1/2 text-xs text-gray-500 dark:text-gray-400"
-            style={{ zIndex: 15 }}
           >
-            Updating...
-          </div>
-        )}
+            {isChanging && (
+              <svg
+                className="w-3 h-3 text-white animate-spin"
+                fill="none"
+                viewBox="0 0 24 24"
+              >
+                <circle
+                  className="opacity-25"
+                  cx="12"
+                  cy="12"
+                  r="10"
+                  stroke="currentColor"
+                  strokeWidth="4"
+                />
+                <path
+                  className="opacity-75"
+                  fill="currentColor"
+                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                />
+              </svg>
+            )}
+          </RadixSlider.Thumb>
+        </RadixSlider.Root>
       </div>
     </div>
   );

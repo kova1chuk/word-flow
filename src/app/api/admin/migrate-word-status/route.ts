@@ -4,6 +4,7 @@ import { getFirestore } from "firebase-admin/firestore";
 
 import { NextResponse } from "next/server";
 
+
 export async function POST() {
   const logs: string[] = [];
 

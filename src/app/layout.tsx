@@ -4,6 +4,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 
 import Header from "@/components/Header";
 
+
 import { AuthSyncProvider } from "@/providers/AuthSyncProvider";
 import { NotificationProvider } from "@/providers/NotificationProvider";
 import { PWAProvider } from "@/providers/PWAProvider";

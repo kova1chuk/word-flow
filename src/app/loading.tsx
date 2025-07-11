@@ -1,24 +1,32 @@
 import { SparklesIcon } from "@heroicons/react/24/outline";
 
+import { colors, getPageBackground } from "@/shared/config/colors";
+
 export default function Loading() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center">
+    <div
+      className={`min-h-screen ${getPageBackground()} flex items-center justify-center`}
+    >
       <div className="text-center">
         {/* Animated Logo */}
         <div className="flex items-center justify-center mb-8">
-          <div className="p-4 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl shadow-lg animate-pulse">
+          <div
+            className={`p-4 bg-gradient-to-r ${colors.primary.light} rounded-2xl ${colors.shadow.card} animate-pulse`}
+          >
             <SparklesIcon className="h-10 w-10 text-white animate-bounce" />
           </div>
         </div>
 
         {/* Loading Text */}
-        <h1 className="text-3xl font-bold text-gray-900 mb-4">
-          <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-            Word Flow
-          </span>
+        <h1
+          className={`text-3xl font-bold ${colors.text.primary.light} dark:${colors.text.primary.dark} mb-4`}
+        >
+          <span className={colors.gradientText.primary}>Word Flow</span>
         </h1>
 
-        <p className="text-lg text-gray-600 mb-8">
+        <p
+          className={`text-lg ${colors.text.secondary.light} dark:${colors.text.secondary.dark} mb-8`}
+        >
           Loading your learning experience...
         </p>
 
@@ -40,16 +48,18 @@ export default function Loading() {
 
         {/* Progress Bar */}
         <div className="mt-8 max-w-xs mx-auto">
-          <div className="bg-gray-200 rounded-full h-2 overflow-hidden">
+          <div className="bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
             <div
-              className="bg-gradient-to-r from-blue-500 to-purple-600 h-2 rounded-full animate-pulse"
+              className={`bg-gradient-to-r ${colors.primary.light} h-2 rounded-full animate-pulse`}
               style={{ width: "60%" }}
             ></div>
           </div>
         </div>
 
         {/* Loading Tips */}
-        <div className="mt-8 text-sm text-gray-500 max-w-md mx-auto">
+        <div
+          className={`mt-8 text-sm ${colors.text.muted.light} dark:${colors.text.muted.dark} max-w-md mx-auto`}
+        >
           <p>Preparing your vocabulary journey...</p>
         </div>
       </div>

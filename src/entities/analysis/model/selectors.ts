@@ -1,6 +1,6 @@
 import { createSelector } from "@reduxjs/toolkit";
 
-import { RootState } from "@/shared/model/store";
+import type { RootState } from "@/shared/model/store";
 
 // Base selectors
 const selectAnalysisState = (state: RootState) => state.analysis;
@@ -24,6 +24,33 @@ export const selectAnalysisLoading = createSelector(
 export const selectAnalysisError = createSelector(
   [selectAnalysisState],
   (analysis) => analysis.error
+);
+
+// Pagination selectors
+export const selectSentencesLoading = createSelector(
+  [selectAnalysisState],
+  (analysis) => analysis.sentencesLoading
+);
+
+export const selectHasMore = createSelector(
+  [selectAnalysisState],
+  (analysis) => analysis.hasMore
+);
+
+export const selectLastDoc = createSelector(
+  [selectAnalysisState],
+  (analysis) => analysis.lastDoc
+);
+
+// Training stats selectors
+export const selectTrainingStats = createSelector(
+  [selectAnalysisState],
+  (analysis) => analysis.trainingStats
+);
+
+export const selectTrainingLoading = createSelector(
+  [selectAnalysisState],
+  (analysis) => analysis.trainingLoading
 );
 
 // Translation selectors

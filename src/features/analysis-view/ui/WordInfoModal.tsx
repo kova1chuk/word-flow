@@ -1,4 +1,4 @@
-import { WordInfo } from "@/entities/analysis";
+import type { WordInfo } from "@/entities/analysis/types";
 
 interface WordInfoModalProps {
   selectedWord: WordInfo | null;

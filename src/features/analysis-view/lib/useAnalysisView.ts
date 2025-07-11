@@ -1,7 +1,17 @@
-import { useEffect, useCallback } from "react";
+import { useEffect, useCallback, useState } from "react";
 
 import { useSelector } from "react-redux";
 
+import {
+  setAnalysis,
+  setSentences,
+  setLoading,
+  setError,
+  setViewMode,
+  setIsFullScreen,
+  setShowSettings,
+  setSelectedWord,
+} from "@/entities/analysis/model/analysisSlice";
 import {
   selectAnalysis,
   selectSentences,
@@ -21,27 +31,21 @@ import {
   selectTotalPages,
   selectCurrentSentences,
   selectStartIndex,
-
-  setAnalysis,
-  setSentences,
-  setLoading,
-  setError,
-  setViewMode,
-  setIsFullScreen,
-  setShowSettings,
-  setSelectedWord, WordInfo } from "@/entities/analysis";
+} from "@/entities/analysis/model/selectors";
+import type { WordInfo } from "@/entities/analysis/types";
+import { FirestoreDocSnapshot } from "@/entities/analysis/types";
 import { selectUser } from "@/entities/user/model/selectors";
 
 import { useAppDispatch, useAppSelector } from "@/shared/model/store";
 
-import { fetchAnalysisDetails } from "./analysisApi";
-
-
-
+import { fetchAnalysisDetails, fetchSentencesPage } from "./analysisApi";
 
 export const useAnalysisView = (analysisId: string) => {
   const dispatch = useAppDispatch();
   const user = useSelector(selectUser);
+  const [sentencesLoading, setSentencesLoading] = useState(false);
+  const [lastDoc, setLastDoc] = useState<FirestoreDocSnapshot | null>(null);
+  const [hasMore, setHasMore] = useState(true);
 
   // Selectors
   const analysis = useAppSelector(selectAnalysis);
@@ -69,10 +73,11 @@ export const useAnalysisView = (analysisId: string) => {
 
     try {
       dispatch(setLoading(true));
-      const { analysis: analysisData, sentences: sentencesData } =
-        await fetchAnalysisDetails(analysisId, user.uid);
+      const { analysis: analysisData } = await fetchAnalysisDetails(
+        analysisId,
+        user.uid
+      );
       dispatch(setAnalysis(analysisData));
-      dispatch(setSentences(sentencesData));
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : "Failed to load analysis details.";
@@ -82,16 +87,63 @@ export const useAnalysisView = (analysisId: string) => {
     }
   }, [user, analysisId, dispatch]);
 
+  // Load sentences for a specific page
+  const loadSentencesPage = useCallback(
+    async (page: number) => {
+      if (!user || !analysisId) return;
+
+      try {
+        setSentencesLoading(true);
+        const {
+          sentences: sentencesData,
+          hasMore: more,
+          lastDoc: newLastDoc,
+        } = await fetchSentencesPage(
+          analysisId,
+          page,
+          sentencesPerPage,
+          lastDoc ?? undefined
+        );
+
+        setLastDoc(newLastDoc);
+        setHasMore(more);
+
+        // Update sentences in store
+        if (page === 1) {
+          dispatch(setSentences(sentencesData));
+        } else {
+          // Append to existing sentences for pagination
+          dispatch(setSentences([...sentences, ...sentencesData]));
+        }
+      } catch (err) {
+        const errorMessage =
+          err instanceof Error ? err.message : "Failed to load sentences.";
+        dispatch(setError(errorMessage));
+      } finally {
+        setSentencesLoading(false);
+      }
+    },
+    [user, analysisId, sentencesPerPage, lastDoc, sentences, dispatch]
+  );
+
   // Initialize data
   useEffect(() => {
     loadAnalysis();
   }, [loadAnalysis]);
+
+  // Load initial sentences
+  useEffect(() => {
+    if (analysis && sentences.length === 0) {
+      loadSentencesPage(1);
+    }
+  }, [analysis, sentences.length, loadSentencesPage]);
 
   return {
     // State
     analysis,
     sentences,
     loading,
+    sentencesLoading,
     error,
     translatedSentences,
     translatingSentenceId,
@@ -107,6 +159,7 @@ export const useAnalysisView = (analysisId: string) => {
     totalPages,
     currentSentences,
     startIndex,
+    hasMore,
 
     // Actions
     setViewMode: (mode: "list" | "columns") => dispatch(setViewMode(mode)),
@@ -114,5 +167,6 @@ export const useAnalysisView = (analysisId: string) => {
       dispatch(setIsFullScreen(fullScreen)),
     setShowSettings: (show: boolean) => dispatch(setShowSettings(show)),
     setSelectedWord: (word: WordInfo | null) => dispatch(setSelectedWord(word)),
+    loadSentencesPage,
   };
 };

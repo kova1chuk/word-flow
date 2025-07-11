@@ -1,4 +1,4 @@
-import { Analysis } from "@/entities/analysis";
+import type { Analysis } from "@/entities/analysis/types";
 
 interface AnalysisSummaryProps {
   analysis: Analysis;

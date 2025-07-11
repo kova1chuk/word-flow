@@ -19,7 +19,6 @@ import formSlice from "@/shared/model/formSlice";
 import notificationSlice from "@/shared/model/notificationSlice";
 import uiSlice from "@/shared/model/uiSlice";
 
-
 export const store = configureStore({
   reducer: {
     auth: authSlice,

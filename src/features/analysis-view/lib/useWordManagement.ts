@@ -3,12 +3,12 @@ import { useCallback } from "react";
 import {
   setReloadingDefinition,
   setReloadingTranslation,
- WordInfo } from "@/entities/analysis";
+} from "@/entities/analysis/model/analysisSlice";
+import type { WordInfo } from "@/entities/analysis/types";
 
 import { useAppDispatch } from "@/shared/model/store";
 
 import { fetchWordInfo, translateSentence } from "./analysisApi";
-
 
 export const useWordManagement = (
   selectedWord: WordInfo | null,

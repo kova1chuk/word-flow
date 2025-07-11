@@ -1,12 +1,50 @@
-import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 
+import {
+  fetchAnalysisDetails,
+  fetchSentencesPage,
+} from "../api/analysisService";
 import {
   AnalysisState,
   AnalysisViewState,
   Analysis,
   Sentence,
   WordInfo,
+  TrainingStats,
+  FirestoreDocSnapshot,
 } from "../types";
+
+// Async thunks
+export const fetchAnalysis = createAsyncThunk(
+  "analysis/fetchAnalysis",
+  async ({ analysisId, userId }: { analysisId: string; userId: string }) => {
+    const { analysis } = await fetchAnalysisDetails(analysisId, userId);
+    return analysis;
+  }
+);
+
+export const fetchSentences = createAsyncThunk(
+  "analysis/fetchSentences",
+  async ({
+    analysisId,
+    page,
+    pageSize,
+    lastDoc,
+  }: {
+    analysisId: string;
+    page: number;
+    pageSize: number;
+    lastDoc?: FirestoreDocSnapshot;
+  }) => {
+    const result = await fetchSentencesPage(
+      analysisId,
+      page,
+      pageSize,
+      lastDoc
+    );
+    return result;
+  }
+);
 
 const initialState: AnalysisState = {
   analysis: null,
@@ -19,6 +57,13 @@ const initialState: AnalysisState = {
   wordInfoLoading: false,
   reloadingDefinition: false,
   reloadingTranslation: false,
+  // Pagination states
+  sentencesLoading: false,
+  hasMore: true,
+  lastDoc: null,
+  // Training stats states
+  trainingStats: null,
+  trainingLoading: false,
 };
 
 const initialViewState: AnalysisViewState = {
@@ -44,12 +89,34 @@ const analysisSlice = createSlice({
     setSentences: (state, action: PayloadAction<Sentence[]>) => {
       state.sentences = action.payload;
     },
+    appendSentences: (state, action: PayloadAction<Sentence[]>) => {
+      state.sentences = [...state.sentences, ...action.payload];
+    },
     setLoading: (state, action: PayloadAction<boolean>) => {
       state.loading = action.payload;
     },
     setError: (state, action: PayloadAction<string | null>) => {
       state.error = action.payload;
       state.loading = false;
+    },
+
+    // Pagination actions
+    setSentencesLoading: (state, action: PayloadAction<boolean>) => {
+      state.sentencesLoading = action.payload;
+    },
+    setHasMore: (state, action: PayloadAction<boolean>) => {
+      state.hasMore = action.payload;
+    },
+    setLastDoc: (state, action: PayloadAction<FirestoreDocSnapshot | null>) => {
+      state.lastDoc = action.payload;
+    },
+
+    // Training stats actions
+    setTrainingStats: (state, action: PayloadAction<TrainingStats | null>) => {
+      state.trainingStats = action.payload;
+    },
+    setTrainingLoading: (state, action: PayloadAction<boolean>) => {
+      state.trainingLoading = action.payload;
     },
 
     // Translation actions
@@ -106,13 +173,60 @@ const analysisSlice = createSlice({
       return { ...initialState, view: initialViewState };
     },
   },
+  extraReducers: (builder) => {
+    // Fetch analysis
+    builder
+      .addCase(fetchAnalysis.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(fetchAnalysis.fulfilled, (state, action) => {
+        state.loading = false;
+        state.analysis = action.payload;
+        state.error = null;
+      })
+      .addCase(fetchAnalysis.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message || "Failed to load analysis";
+      });
+
+    // Fetch sentences
+    builder
+      .addCase(fetchSentences.pending, (state) => {
+        state.sentencesLoading = true;
+      })
+      .addCase(fetchSentences.fulfilled, (state, action) => {
+        state.sentencesLoading = false;
+        const { sentences, hasMore, lastDoc } = action.payload;
+
+        // If it's the first page, replace sentences, otherwise append
+        if (state.sentences.length === 0) {
+          state.sentences = sentences;
+        } else {
+          state.sentences = [...state.sentences, ...sentences];
+        }
+
+        state.hasMore = hasMore;
+        state.lastDoc = lastDoc;
+      })
+      .addCase(fetchSentences.rejected, (state, action) => {
+        state.sentencesLoading = false;
+        state.error = action.error.message || "Failed to load sentences";
+      });
+  },
 });
 
 export const {
   setAnalysis,
   setSentences,
+  appendSentences,
   setLoading,
   setError,
+  setSentencesLoading,
+  setHasMore,
+  setLastDoc,
+  setTrainingStats,
+  setTrainingLoading,
   setTranslatedSentences,
   addTranslation,
   setTranslatingSentenceId,

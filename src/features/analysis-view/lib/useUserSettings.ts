@@ -3,10 +3,10 @@ import { useEffect, useCallback } from "react";
 import { useSelector } from "react-redux";
 
 import {
-  Sentence,
   setCurrentPage,
   setSentencesPerPage,
-} from "@/entities/analysis";
+} from "@/entities/analysis/model/analysisSlice";
+import type { Sentence } from "@/entities/analysis/types";
 import { selectUser } from "@/entities/user/model/selectors";
 
 import { useAppDispatch } from "@/shared/model/store";

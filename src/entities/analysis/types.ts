@@ -15,6 +15,7 @@ export interface Analysis {
     uniqueWords: number;
     knownWords: number;
     unknownWords: number;
+    wordStats?: { [key: number]: number };
   };
 }
 
@@ -41,6 +42,19 @@ export interface UserSettings {
   sentencesPerPage: number;
 }
 
+export interface TrainingStats {
+  learned: number;
+  notLearned: number;
+  total: number;
+}
+
+// Firestore document snapshot type
+export interface FirestoreDocSnapshot {
+  id: string;
+  exists: () => boolean;
+  data: () => Record<string, unknown>;
+}
+
 export interface AnalysisState {
   analysis: Analysis | null;
   sentences: Sentence[];
@@ -52,6 +66,13 @@ export interface AnalysisState {
   wordInfoLoading: boolean;
   reloadingDefinition: boolean;
   reloadingTranslation: boolean;
+  // Pagination states
+  sentencesLoading: boolean;
+  hasMore: boolean;
+  lastDoc: FirestoreDocSnapshot | null;
+  // Training stats states
+  trainingStats: TrainingStats | null;
+  trainingLoading: boolean;
 }
 
 export interface AnalysisViewState {

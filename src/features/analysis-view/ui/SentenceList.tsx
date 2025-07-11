@@ -1,14 +1,4 @@
-import { useRef, useEffect } from "react";
-
-import {
-  AutoSizer,
-  List,
-  CellMeasurer,
-  CellMeasurerCache,
-} from "react-virtualized";
-
-import "react-virtualized/styles.css";
-import { Sentence } from "@/entities/analysis";
+import type { Sentence } from "@/entities/analysis/types";
 
 interface SentenceListProps {
   sentences: Sentence[];
@@ -18,6 +8,7 @@ interface SentenceListProps {
   translatingSentenceId: string | null;
   onWordClick: (word: string) => void;
   onTranslate: (sentenceId: string, text: string) => void;
+  loading?: boolean;
 }
 
 export const SentenceList: React.FC<SentenceListProps> = ({
@@ -28,32 +19,8 @@ export const SentenceList: React.FC<SentenceListProps> = ({
   translatingSentenceId,
   onWordClick,
   onTranslate,
+  loading = false,
 }) => {
-  const listRef = useRef<List | null>(null);
-
-  const cache = useRef(
-    new CellMeasurerCache({
-      fixedWidth: true,
-      defaultHeight: 50,
-    })
-  );
-
-  // Clear cache when view mode changes
-  useEffect(() => {
-    cache.current.clearAll();
-    if (listRef.current) {
-      listRef.current.forceUpdateGrid();
-    }
-  }, [viewMode]);
-
-  // Clear cache when translations change
-  useEffect(() => {
-    cache.current.clearAll();
-    if (listRef.current) {
-      listRef.current.forceUpdateGrid();
-    }
-  }, [translatedSentences]);
-
   // Highlight words in text and make them clickable
   const renderClickableText = (text: string) => {
     const words = text.split(/(\s+)/);
@@ -64,7 +31,7 @@ export const SentenceList: React.FC<SentenceListProps> = ({
           <span key={index}>
             <button
               onClick={() => onWordClick(cleanWord.toLowerCase())}
-              className="hover:bg-yellow-200 dark:hover:bg-yellow-800 px-1 rounded transition-colors"
+              className="hover:bg-yellow-200 dark:hover:bg-yellow-800 hover:text-gray-900 dark:hover:text-yellow-100 px-1 rounded transition-all duration-200 font-medium"
               title={`Click to see info about "${cleanWord}"`}
             >
               {word}
@@ -76,101 +43,271 @@ export const SentenceList: React.FC<SentenceListProps> = ({
     });
   };
 
-  return (
-    <div className={`${isFullScreen ? "flex-1" : "h-[600px]"}`}>
-      <AutoSizer>
-        {({ width, height }) => (
-          <List
-            ref={listRef}
-            className="sentence-list"
-            width={width}
-            height={height}
-            rowCount={sentences.length}
-            deferredMeasurementCache={cache.current}
-            rowHeight={cache.current.rowHeight}
-            rowRenderer={({ index, key, style, parent }) => {
-              const sentence = sentences[index];
-              const translation = translatedSentences[sentence.id];
-              const isTranslating = translatingSentenceId === sentence.id;
+  if (loading) {
+    return (
+      <div className="space-y-4 p-6">
+        {Array.from({ length: 5 }).map((_, index) => (
+          <div
+            key={index}
+            className="flex items-start gap-4 p-4 border-b border-gray-100 dark:border-gray-700 last:border-b-0"
+          >
+            {/* Sentence Number Skeleton */}
+            <div className="flex-shrink-0 w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse" />
 
-              return (
-                <CellMeasurer
-                  key={key}
-                  cache={cache.current}
-                  parent={parent}
-                  columnIndex={0}
-                  rowIndex={index}
-                >
-                  <div style={style} className="py-2 pr-2">
-                    <div className="flex items-start">
-                      <span className="text-gray-500 dark:text-gray-400 text-base mr-4 w-8 pt-1">
-                        {index + 1}.
-                      </span>
-                      <div className="flex-1">
-                        {viewMode === "columns" && (
-                          <div className="grid grid-cols-2 gap-4">
-                            <p className="text-gray-800 dark:text-gray-200 text-lg leading-relaxed">
-                              {renderClickableText(sentence.text)}
-                            </p>
-                            <div className="border-l border-gray-200 dark:border-gray-700 pl-4">
-                              {translation && (
-                                <p className="text-blue-500 dark:text-blue-400 text-lg leading-relaxed">
-                                  {translation}
-                                </p>
-                              )}
-                              {!translation && (
-                                <button
-                                  onClick={() =>
-                                    onTranslate(sentence.id, sentence.text)
-                                  }
-                                  disabled={isTranslating}
-                                  className="text-sm text-blue-600 hover:underline disabled:opacity-50"
+            {/* Content Skeleton */}
+            <div className="flex-1 space-y-3">
+              {/* Sentence Text Skeleton */}
+              <div className="space-y-2">
+                <div className="w-full h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                <div className="w-3/4 h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+              </div>
+
+              {/* Translation Skeleton */}
+              <div className="w-1/2 h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  if (sentences.length === 0) {
+    return (
+      <div className="flex items-center justify-center p-12">
+        <div className="text-center">
+          <svg
+            className="w-12 h-12 text-gray-400 mx-auto mb-4"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+            />
+          </svg>
+          <p className="text-gray-500 dark:text-gray-400 text-lg">
+            No sentences found
+          </p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div
+      className={`${
+        isFullScreen
+          ? "flex-1 overflow-y-auto"
+          : "max-h-[600px] overflow-y-auto"
+      }`}
+    >
+      <div className="space-y-0">
+        {sentences.map((sentence, index) => {
+          const translation = translatedSentences[sentence.id];
+          const isTranslating = translatingSentenceId === sentence.id;
+
+          return (
+            <div
+              key={sentence.id}
+              className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 last:border-b-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors duration-200"
+            >
+              <div className="flex items-start gap-4">
+                {/* Sentence Number */}
+                <div className="flex-shrink-0 w-8 h-8 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center text-sm font-semibold">
+                  {index + 1}
+                </div>
+
+                {/* Content */}
+                <div className="flex-1 min-w-0">
+                  {viewMode === "columns" && (
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                      {/* Original Text */}
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2">
+                          <svg
+                            className="w-4 h-4 text-gray-400"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"
+                            />
+                          </svg>
+                          <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                            Original
+                          </span>
+                        </div>
+                        <p className="text-gray-900 dark:text-gray-100 text-lg leading-relaxed">
+                          {renderClickableText(sentence.text)}
+                        </p>
+                      </div>
+
+                      {/* Translation */}
+                      <div className="space-y-3">
+                        <div className="flex items-center gap-2">
+                          <svg
+                            className="w-4 h-4 text-blue-400"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"
+                            />
+                          </svg>
+                          <span className="text-xs font-medium text-blue-500 dark:text-blue-400 uppercase tracking-wide">
+                            Translation
+                          </span>
+                        </div>
+                        {translation ? (
+                          <p className="text-blue-600 dark:text-blue-400 text-lg leading-relaxed">
+                            {translation}
+                          </p>
+                        ) : (
+                          <button
+                            onClick={() =>
+                              onTranslate(sentence.id, sentence.text)
+                            }
+                            disabled={isTranslating}
+                            className="inline-flex items-center gap-2 px-4 py-2 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {isTranslating ? (
+                              <>
+                                <svg
+                                  className="animate-spin w-4 h-4"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
                                 >
-                                  {isTranslating
-                                    ? "Translating..."
-                                    : "Translate"}
-                                </button>
-                              )}
-                            </div>
-                          </div>
-                        )}
-                        {viewMode === "list" && (
-                          <div>
-                            <p className="text-gray-800 dark:text-gray-200 text-lg leading-relaxed">
-                              {renderClickableText(sentence.text)}
-                            </p>
-                            <div className="mt-3">
-                              {translation && (
-                                <p className="text-blue-500 dark:text-blue-400 text-base leading-relaxed pl-3 border-l-2 border-blue-500">
-                                  {translation}
-                                </p>
-                              )}
-                              {!translation && (
-                                <button
-                                  onClick={() =>
-                                    onTranslate(sentence.id, sentence.text)
-                                  }
-                                  disabled={isTranslating}
-                                  className="text-sm text-blue-600 hover:underline disabled:opacity-50"
+                                  <circle
+                                    className="opacity-25"
+                                    cx="12"
+                                    cy="12"
+                                    r="10"
+                                    stroke="currentColor"
+                                    strokeWidth="4"
+                                  ></circle>
+                                  <path
+                                    className="opacity-75"
+                                    fill="currentColor"
+                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                  ></path>
+                                </svg>
+                                Translating...
+                              </>
+                            ) : (
+                              <>
+                                <svg
+                                  className="w-4 h-4"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
                                 >
-                                  {isTranslating
-                                    ? "Translating..."
-                                    : "Translate"}
-                                </button>
-                              )}
-                            </div>
-                          </div>
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"
+                                  />
+                                </svg>
+                                Translate
+                              </>
+                            )}
+                          </button>
                         )}
                       </div>
                     </div>
-                  </div>
-                </CellMeasurer>
-              );
-            }}
-            overscanRowCount={5}
-          />
-        )}
-      </AutoSizer>
+                  )}
+
+                  {viewMode === "list" && (
+                    <div className="space-y-4">
+                      {/* Original Text */}
+                      <div>
+                        <p className="text-gray-900 dark:text-gray-100 text-lg leading-relaxed">
+                          {renderClickableText(sentence.text)}
+                        </p>
+                      </div>
+
+                      {/* Translation */}
+                      {translation && (
+                        <div className="pl-4 border-l-4 border-blue-500 bg-blue-50 dark:bg-blue-900/20 rounded-r-lg p-4">
+                          <p className="text-blue-600 dark:text-blue-400 text-base leading-relaxed">
+                            {translation}
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Translate Button */}
+                      {!translation && (
+                        <div className="pl-4">
+                          <button
+                            onClick={() =>
+                              onTranslate(sentence.id, sentence.text)
+                            }
+                            disabled={isTranslating}
+                            className="inline-flex items-center gap-2 px-4 py-2 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            {isTranslating ? (
+                              <>
+                                <svg
+                                  className="animate-spin w-4 h-4"
+                                  fill="none"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <circle
+                                    className="opacity-25"
+                                    cx="12"
+                                    cy="12"
+                                    r="10"
+                                    stroke="currentColor"
+                                    strokeWidth="4"
+                                  ></circle>
+                                  <path
+                                    className="opacity-75"
+                                    fill="currentColor"
+                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                                  ></path>
+                                </svg>
+                                Translating...
+                              </>
+                            ) : (
+                              <>
+                                <svg
+                                  className="w-4 h-4"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  viewBox="0 0 24 24"
+                                >
+                                  <path
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                    strokeWidth={2}
+                                    d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"
+                                  />
+                                </svg>
+                                Translate
+                              </>
+                            )}
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 };

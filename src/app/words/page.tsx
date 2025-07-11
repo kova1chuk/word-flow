@@ -1,6 +1,12 @@
 "use client";
 
-import React, { useEffect, useState, useTransition, useCallback } from "react";
+import React, {
+  useEffect,
+  useState,
+  useTransition,
+  useCallback,
+  useRef,
+} from "react";
 
 import { useRouter, useSearchParams } from "next/navigation";
 
@@ -19,6 +25,7 @@ import {
   setUpdating,
   fetchWordsPage,
   clearWords,
+  silentRefetchPage,
 } from "@/features/words/model/wordsSlice";
 
 import { useAuthSync } from "@/shared/hooks/useAuthSync";
@@ -90,31 +97,46 @@ export default function WordsPage() {
     [router]
   );
 
-  // Reset page to 1 and clear words when filters change
+  // Track previous filter values to detect actual changes
+  const prevStatusFilter = useRef(statusFilter);
+  const prevDebouncedSearch = useRef(debouncedSearch);
+
+  // Reset page to 1 and clear words when filters actually change
   useEffect(() => {
-    // Only reset page if we're not on page 1 and filters have changed
-    if (currentPage !== 1) {
-      updateURLForFilters(1);
+    const statusFilterChanged =
+      JSON.stringify(prevStatusFilter.current) !== JSON.stringify(statusFilter);
+
+    if (statusFilterChanged) {
+      // Only reset page if we're not on page 1 and filters have actually changed
+      if (currentPage !== 1) {
+        updateURLForFilters(1);
+      }
+      // Clear words when status filter changes to ensure fresh data
+      dispatch(clearWords());
+      prevStatusFilter.current = statusFilter;
     }
-    // Clear words when status filter changes to ensure fresh data
-    dispatch(clearWords());
   }, [statusFilter, dispatch, updateURLForFilters, currentPage]);
 
   // Handle search changes with transition and clear words
   useEffect(() => {
-    // Only reset page if we're not on page 1 and search has changed
-    if (currentPage !== 1) {
-      startTransition(() => {
-        updateURLForFilters(1);
-      });
-    }
-    // Clear words when search changes to ensure fresh data
-    // Use a small delay to ensure the clear operation completes
-    const timeoutId = setTimeout(() => {
-      dispatch(clearWords());
-    }, 0);
+    const searchChanged = prevDebouncedSearch.current !== debouncedSearch;
 
-    return () => clearTimeout(timeoutId);
+    if (searchChanged) {
+      // Only reset page if we're not on page 1 and search has actually changed
+      if (currentPage !== 1) {
+        startTransition(() => {
+          updateURLForFilters(1);
+        });
+      }
+      // Clear words when search changes to ensure fresh data
+      // Use a small delay to ensure the clear operation completes
+      const timeoutId = setTimeout(() => {
+        dispatch(clearWords());
+      }, 0);
+
+      prevDebouncedSearch.current = debouncedSearch;
+      return () => clearTimeout(timeoutId);
+    }
   }, [debouncedSearch, dispatch, updateURLForFilters, currentPage]);
 
   // Fetch words from Firestore with filters (use debounced search)
@@ -179,9 +201,9 @@ export default function WordsPage() {
             await dispatch(
               deleteWord({ wordId: word.id, userId: user.uid })
             ).unwrap();
-            // Refresh the words list after deletion
+            // Silently refetch the page in the background without showing loading states
             dispatch(
-              fetchWordsPage({
+              silentRefetchPage({
                 userId: user.uid,
                 page: currentPage,
                 pageSize,

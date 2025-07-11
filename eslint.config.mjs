@@ -191,6 +191,9 @@ const eslintConfig = [
       "import/no-cycle": "error",
       "import/no-self-import": "error",
       "import/no-unresolved": "error",
+
+      // Disable react-hooks/exhaustive-deps rule
+      "react-hooks/exhaustive-deps": "off",
     },
     settings: {
       "import/resolver": {

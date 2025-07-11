@@ -12,7 +12,6 @@ import {
 
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 
-
 import { updateWordStatsOnStatusChange } from "@/features/word-management/lib/updateWordStatsOnStatusChange";
 
 import type { Word } from "@/entities/word/types";
@@ -202,6 +201,76 @@ export const deleteWord = createAsyncThunk(
   async ({ wordId }: { wordId: string; userId: string }) => {
     await deleteDoc(doc(db, "words", wordId));
     return wordId;
+  }
+);
+
+// New action for silent background refetch
+export const silentRefetchPage = createAsyncThunk(
+  "words/silentRefetchPage",
+  async ({
+    userId,
+    page,
+    pageSize,
+    statusFilter = [],
+    search = "",
+  }: {
+    userId: string;
+    page: number;
+    pageSize: number;
+    statusFilter?: number[];
+    search?: string;
+  }) => {
+    // Use the same logic as fetchWordsPage but without triggering loading states
+    // Build the base query
+    let q = query(
+      collection(db, "words"),
+      where("userId", "==", userId),
+      orderBy("createdAt", "desc")
+    );
+
+    // Add status filter if provided
+    if (statusFilter.length > 0) {
+      q = query(
+        collection(db, "words"),
+        where("userId", "==", userId),
+        where("status", "in", statusFilter),
+        orderBy("createdAt", "desc")
+      );
+    }
+
+    // Fetch all documents and paginate client-side (same as fetchWordsPage)
+    const querySnapshot = await getDocs(q);
+    let allWords = querySnapshot.docs.map((doc) => {
+      const data = doc.data();
+      return {
+        id: doc.id,
+        ...serializeTimestamps(data),
+        userId: data.userId ?? "",
+      };
+    }) as Word[];
+
+    // Apply search filter if needed
+    if (search.trim()) {
+      const searchTerm = search.toLowerCase();
+      allWords = allWords.filter((word) =>
+        word.word.toLowerCase().includes(searchTerm)
+      );
+    }
+
+    // Calculate pagination
+    const startIndex = (page - 1) * pageSize;
+    const endIndex = startIndex + pageSize;
+    const pageWords = allWords.slice(startIndex, endIndex);
+    const hasMore = endIndex < allWords.length;
+
+    return {
+      words: pageWords,
+      page,
+      totalWords: allWords.length,
+      hasMore,
+      isCached: false,
+      allWords: undefined,
+    };
   }
 );
 
@@ -402,13 +471,44 @@ const wordsSlice = createSlice({
             );
           }
         });
+
+        // Update total words count
         state.pagination.totalWords = Math.max(
           0,
           state.pagination.totalWords - 1
         );
+
+        // Don't modify currentPage here - let URL-based pagination handle page navigation
+        // The URL should be the single source of truth for current page
       })
       .addCase(deleteWord.rejected, (state, action) => {
         state.error = action.error.message || "Failed to delete word";
+      });
+
+    // Silent refetch page (no loading states)
+    builder
+      .addCase(silentRefetchPage.fulfilled, (state, action) => {
+        const { words: newWords, page, totalWords, hasMore } = action.payload;
+
+        // Update the page data without triggering loading states
+        state.words[page] = newWords;
+        state.pagination.hasMore = hasMore || false;
+
+        if (totalWords !== undefined) {
+          state.pagination.totalWords = totalWords;
+        }
+
+        // Mark page as loaded if not already
+        if (!state.pagination.loadedPages.includes(page)) {
+          state.pagination.loadedPages.push(page);
+        }
+
+        // Don't update currentPage here - let deleteWord.fulfilled handle pagination adjustments
+        // This prevents silentRefetchPage from overriding pagination changes made by deleteWord
+      })
+      .addCase(silentRefetchPage.rejected, (state, action) => {
+        // Don't set error for silent refetch to avoid showing error messages
+        console.warn("Silent refetch failed:", action.error.message);
       });
 
     // Reload definition

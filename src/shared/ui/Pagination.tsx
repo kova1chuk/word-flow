@@ -23,7 +23,8 @@ const Pagination: React.FC<PaginationProps> = ({
   onPageChange,
   className = "",
 }) => {
-  if (totalPages <= 1) {
+  // Don't show pagination if there are no pages or only one page
+  if (!totalPages || totalPages <= 1) {
     return null;
   }
 
@@ -81,7 +82,9 @@ const Pagination: React.FC<PaginationProps> = ({
             <span className="px-3 py-2 text-gray-500">...</span>
           ) : (
             <button
-              onClick={() => onPageChange(page as number)}
+              onClick={() => {
+                onPageChange(page as number);
+              }}
               className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
                 currentPage === page
                   ? "bg-blue-600 text-white flex items-center cursor-default"
@@ -97,7 +100,9 @@ const Pagination: React.FC<PaginationProps> = ({
 
       {/* Next button */}
       <button
-        onClick={() => onPageChange(currentPage + 1)}
+        onClick={() => {
+          onPageChange(currentPage + 1);
+        }}
         disabled={currentPage === totalPages}
         className={`px-3 py-2 text-sm font-medium rounded-md transition-colors ${
           currentPage === totalPages

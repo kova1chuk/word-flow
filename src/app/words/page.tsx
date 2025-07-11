@@ -54,43 +54,53 @@ export default function WordsPage() {
   // Use debounced search to avoid too many API calls
   const debouncedSearch = useDebouncedSearch(search, 500);
 
-  // Initialize currentPage from URL or default to 1
-  const [currentPage, setCurrentPage] = useState(() => {
-    const pageParam = searchParams.get("page");
-    return pageParam ? parseInt(pageParam, 10) : 1;
-  });
+  // Get current page from URL params
+  const currentPage = parseInt(searchParams.get("page") || "1", 10);
   const pageSize = 20;
 
   // Update URL when page changes
-  const updateURL = useCallback(
+  const handlePageChange = useCallback(
     (page: number) => {
-      const params = new URLSearchParams(searchParams.toString());
-      if (page === 1) {
-        params.delete("page");
-      } else {
-        params.set("page", page.toString());
-      }
-      router.push(`/words?${params.toString()}`, { scroll: false });
+      // Don't do anything if we're already on this page
+      if (page === currentPage) return;
+
+      // Smooth scroll to top
+      window.scrollTo({ top: 0, behavior: "smooth" });
+
+      // Update URL using the simple approach
+      const params = new URLSearchParams();
+      if (page > 1) params.set("page", page.toString());
+      router.push(`?${params.toString()}`);
     },
-    [router, searchParams]
+    [currentPage, router]
+  );
+
+  // Update URL when filters change (separate function to avoid recursion)
+  const updateURLForFilters = useCallback(
+    (page: number) => {
+      const params = new URLSearchParams();
+      if (page > 1) params.set("page", page.toString());
+      router.push(`?${params.toString()}`);
+    },
+    [router]
   );
 
   // Reset page to 1 and clear words when filters change
   useEffect(() => {
+    // Only reset page if we're not on page 1 and filters have changed
     if (currentPage !== 1) {
-      setCurrentPage(1);
-      updateURL(1);
+      updateURLForFilters(1);
     }
     // Clear words when status filter changes to ensure fresh data
     dispatch(clearWords());
-  }, [statusFilter, dispatch, currentPage, updateURL]);
+  }, [statusFilter, dispatch, updateURLForFilters]);
 
   // Handle search changes with transition and clear words
   useEffect(() => {
+    // Only reset page if we're not on page 1 and search has changed
     if (currentPage !== 1) {
       startTransition(() => {
-        setCurrentPage(1);
-        updateURL(1);
+        updateURLForFilters(1);
       });
     }
     // Clear words when search changes to ensure fresh data
@@ -100,16 +110,7 @@ export default function WordsPage() {
     }, 0);
 
     return () => clearTimeout(timeoutId);
-  }, [debouncedSearch, dispatch, currentPage, updateURL]);
-
-  // Handle URL changes (when someone navigates directly to a URL with page parameter)
-  useEffect(() => {
-    const pageParam = searchParams.get("page");
-    const pageFromURL = pageParam ? parseInt(pageParam, 10) : 1;
-    if (pageFromURL !== currentPage) {
-      setCurrentPage(pageFromURL);
-    }
-  }, [searchParams, currentPage]);
+  }, [debouncedSearch, dispatch, updateURLForFilters]);
 
   // Fetch words from Firestore with filters (use debounced search)
   useEffect(() => {
@@ -145,22 +146,8 @@ export default function WordsPage() {
   );
   const pagination = useSelector((state: RootState) => state.words.pagination);
 
-  // Show pagination only when there are multiple pages or when we have more pages to load
-  const shouldShowPagination =
-    (totalPages && totalPages > 1) || pagination.hasMore;
-
-  // Handle page change with smooth scrolling and loading state
-  const handlePageChange = (page: number) => {
-    // Smooth scroll to top
-    window.scrollTo({ top: 0, behavior: "smooth" });
-
-    // Set loading state
-    setIsPageLoading(true);
-
-    // Update page and URL
-    setCurrentPage(page);
-    updateURL(page);
-  };
+  // Show pagination when there are words and either multiple pages or more data to load
+  const shouldShowPagination = total > pageSize || pagination.hasMore;
 
   // Handle word actions (like status changes)
   const handleWordAction = async (
@@ -277,7 +264,7 @@ export default function WordsPage() {
         <div className="mt-8">
           <Pagination
             currentPage={currentPage}
-            totalPages={totalPages || 0}
+            totalPages={totalPages || Math.ceil(total / pageSize) || 1}
             onPageChange={handlePageChange}
             className="mb-4"
           />

@@ -87,11 +87,11 @@ const serializeTimestamps = (
 // Async thunks
 export const fetchWordsCount = createAsyncThunk(
   "words/fetchWordsCount",
-  async () => {
-    // Since we're now fetching all words and paginating client-side,
-    // we'll return undefined to indicate we don't know the exact count
-    // The actual count will be calculated in the fetchWordsPage thunk
-    return undefined;
+  async ({ userId }: { userId: string }) => {
+    // Fetch the total count of words for the user
+    const q = query(collection(db, "words"), where("userId", "==", userId));
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.size;
   }
 );
 
@@ -123,7 +123,14 @@ export const fetchWordsPage = createAsyncThunk(
       statusFilter.length === 0
     ) {
       const existingWords = state.words.words[page] || [];
-      return { words: existingWords, page, isCached: true };
+      return {
+        words: existingWords,
+        page,
+        isCached: true,
+        totalWords: pagination.totalWords,
+        hasMore: pagination.hasMore,
+        allWords: undefined,
+      };
     }
 
     // Build the base query
@@ -171,11 +178,7 @@ export const fetchWordsPage = createAsyncThunk(
     const pageWords = allWords.slice(startIndex, endIndex);
     const hasMore = endIndex < allWords.length;
 
-    console.log(
-      `Page ${page}: ${pageWords.length} words (${startIndex}-${endIndex} of ${allWords.length})`
-    );
-
-    return {
+    const result = {
       words: pageWords,
       page,
       totalWords: allWords.length,
@@ -183,6 +186,8 @@ export const fetchWordsPage = createAsyncThunk(
       isCached: false,
       allWords: undefined,
     };
+
+    return result;
   }
 );
 
@@ -376,15 +381,6 @@ const wordsSlice = createSlice({
       .addCase(fetchWordsPage.rejected, (state, action) => {
         state.loading = false;
         state.error = action.error.message || "Failed to fetch words";
-      });
-
-    // Fetch words count
-    builder
-      .addCase(fetchWordsCount.fulfilled, (state, action) => {
-        state.pagination.totalWords = action.payload ?? 0;
-      })
-      .addCase(fetchWordsCount.rejected, (state, action) => {
-        state.error = action.error.message || "Failed to fetch words count";
       });
 
     // Delete word

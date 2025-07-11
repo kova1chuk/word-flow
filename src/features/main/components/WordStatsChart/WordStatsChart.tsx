@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, lazy } from "react";
+
 import WordStatsChartSkeleton from "./WordStatsChartSkeleton";
 import "./chartConfig";
 

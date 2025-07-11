@@ -1,4 +1,3 @@
-import { db } from "@/lib/firebase";
 import {
   doc,
   getDoc,
@@ -9,13 +8,17 @@ import {
   Timestamp,
   setDoc,
 } from "firebase/firestore";
+
 import {
   Analysis,
   Sentence,
   ReadingProgress,
   UserSettings,
 } from "@/entities/analysis";
+
 import { API_ENDPOINTS } from "@/shared/config/api";
+
+import { db } from "@/lib/firebase";
 
 // Helper function to convert Firestore Timestamp to serializable format
 const convertTimestamp = (timestamp: Timestamp) => {

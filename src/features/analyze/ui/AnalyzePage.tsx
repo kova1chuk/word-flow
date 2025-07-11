@@ -1,9 +1,11 @@
 import { useState } from "react";
+
+import { AnalysisResult } from "../lib/analyzeApi";
 import { useAnalyze } from "../lib/useAnalyze";
+
+import { AnalysisResults } from "./AnalysisResults";
 import { FileUpload } from "./FileUpload";
 import { TextInput } from "./TextInput";
-import { AnalysisResults } from "./AnalysisResults";
-import { AnalysisResult } from "../lib/analyzeApi";
 
 export const AnalyzePage: React.FC = () => {
   const {

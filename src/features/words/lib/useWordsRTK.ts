@@ -1,6 +1,7 @@
 import { useDispatch, useSelector } from "react-redux";
-import { RootState } from "@/shared/model/store";
-import { AppDispatch } from "@/shared/model/store";
+
+import { RootState , AppDispatch } from "@/shared/model/store";
+
 import {
   fetchWordsPage,
   deleteWord,
@@ -13,6 +14,7 @@ import {
   setPageSize,
   clearWords,
 } from "../model/wordsSlice";
+
 import type { Word } from "@/types";
 
 export const useWordsRTK = () => {

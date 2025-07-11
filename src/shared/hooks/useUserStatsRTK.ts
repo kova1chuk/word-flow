@@ -1,16 +1,19 @@
 import { useEffect } from "react";
-import { useAppDispatch, useAppSelector } from "@/shared/model/store";
+
 import { useSelector } from "react-redux";
+
 import { selectUser } from "@/entities/user/model/selectors";
-import {
-  fetchUserStats,
-  clearUserStats,
-} from "@/entities/user/model/userStatsSlice";
 import {
   selectWordStats,
   selectUserStatsLoading,
   selectUserStatsError,
 } from "@/entities/user/model/userStatsSelectors";
+import {
+  fetchUserStats,
+  clearUserStats,
+} from "@/entities/user/model/userStatsSlice";
+
+import { useAppDispatch, useAppSelector } from "@/shared/model/store";
 
 export function useUserStatsRTK() {
   const dispatch = useAppDispatch();

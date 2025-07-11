@@ -1,12 +1,12 @@
 "use client";
 
-import { useParams, useRouter } from "next/navigation";
-import { useAppDispatch } from "@/shared/model/store";
 import { useCallback } from "react";
-import PageLoader from "@/components/PageLoader";
-import Link from "next/link";
 
-// Import analysis view components and hooks
+import Link from "next/link";
+import { useParams, useRouter } from "next/navigation";
+
+import PageLoader from "@/components/PageLoader";
+
 import {
   useAnalysisView,
   useTrainingStats,
@@ -18,8 +18,8 @@ import {
   WordInfoModal,
   SettingsModal,
 } from "@/features/analysis-view";
+import { translateSentence } from "@/features/analysis-view/lib/analysisApi";
 
-// Import analysis actions
 import {
   setCurrentPage,
   setSentencesPerPage,
@@ -27,8 +27,7 @@ import {
   setTranslatingSentenceId,
 } from "@/entities/analysis";
 
-// Import API functions
-import { translateSentence } from "@/features/analysis-view/lib/analysisApi";
+import { useAppDispatch } from "@/shared/model/store";
 
 export default function SingleAnalysisPage() {
   const params = useParams();

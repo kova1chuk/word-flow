@@ -1,5 +1,6 @@
-import { AnalysisWord } from "../lib/useAnalysisWords";
 import WordCard from "@/components/WordCard";
+
+import { AnalysisWord } from "../lib/useAnalysisWords";
 
 interface WordListProps {
   words: AnalysisWord[];

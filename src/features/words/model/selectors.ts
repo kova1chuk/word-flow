@@ -1,6 +1,8 @@
 import { createSelector } from "@reduxjs/toolkit";
-import type { RootState } from "@/shared/model/store";
+
 import type { Word } from "@/entities/word/types";
+
+import type { RootState } from "@/shared/model/store";
 
 // Basic selectors
 export const selectWords = (state: RootState) => state.words.words;

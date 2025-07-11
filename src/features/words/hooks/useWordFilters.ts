@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
+
 import type { Word } from "@/types";
 
 export function useWordFilters(words: Word[]) {

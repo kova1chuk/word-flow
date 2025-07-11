@@ -1,7 +1,10 @@
 import React, { useState } from "react";
-import type { TrainingQuestion, Word } from "@/types";
+
 import AudioPlayer from "@/components/shared/AudioPlayer";
+
 import { ManualTrainingCard } from "./ManualTrainingCard";
+
+import type { TrainingQuestion, Word } from "@/types";
 
 interface TrainingQuestionCardProps {
   question: TrainingQuestion;

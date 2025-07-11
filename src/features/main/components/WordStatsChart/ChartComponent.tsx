@@ -1,7 +1,9 @@
 "use client";
 
 import { Doughnut } from "react-chartjs-2";
+
 import { STATUS_LABELS, STATUS_COLORS } from "@/shared/constants/colors";
+
 import { useChartComponentData } from "./hooks";
 
 export default function ChartComponent() {

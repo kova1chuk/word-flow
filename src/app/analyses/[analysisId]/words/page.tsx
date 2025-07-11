@@ -1,21 +1,28 @@
 "use client";
 
+import React, { useState } from "react";
+
 import { useParams } from "next/navigation";
-import { useSelector } from "react-redux";
-import { selectUser } from "@/entities/user/model/selectors";
-import { useAnalysisWords } from "@/features/analysis-words";
-import LoadingSpinner from "@/components/LoadingSpinner";
-import { WordList } from "@/features/analysis-words/ui/WordList";
-import { AnalysisWordsHeader } from "@/features/analysis-words/ui/AnalysisWordsHeader";
-import WordFilterControls from "@/shared/ui/WordFilterControls";
-import { useState } from "react";
-import React from "react";
+
 import type { QueryDocumentSnapshot, DocumentData } from "firebase/firestore";
 import { updateDoc, doc } from "firebase/firestore";
-import { db } from "@/lib/firebase";
-import { config } from "@/lib/config";
-import { updateWordStatsOnStatusChange } from "@/features/word-management/lib/updateWordStatsOnStatusChange";
+
+import { useSelector } from "react-redux";
+
+import LoadingSpinner from "@/components/LoadingSpinner";
+
+import { useAnalysisWords } from "@/features/analysis-words";
 import type { AnalysisWord } from "@/features/analysis-words/lib/useAnalysisWords";
+import { AnalysisWordsHeader } from "@/features/analysis-words/ui/AnalysisWordsHeader";
+import { WordList } from "@/features/analysis-words/ui/WordList";
+import { updateWordStatsOnStatusChange } from "@/features/word-management/lib/updateWordStatsOnStatusChange";
+
+import { selectUser } from "@/entities/user/model/selectors";
+
+import WordFilterControls from "@/shared/ui/WordFilterControls";
+
+import { config } from "@/lib/config";
+import { db } from "@/lib/firebase";
 
 export default function AnalysisWordsPage() {
   const user = useSelector(selectUser);

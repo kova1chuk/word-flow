@@ -1,4 +1,3 @@
-import { db } from "@/lib/firebase";
 import {
   collection,
   addDoc,
@@ -10,7 +9,9 @@ import {
   CollectionReference,
   DocumentSnapshot,
 } from "firebase/firestore";
+
 import { config } from "@/lib/config";
+import { db } from "@/lib/firebase";
 
 export interface AnalysisResult {
   title: string;

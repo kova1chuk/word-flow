@@ -1,8 +1,13 @@
 import { useEffect, useState } from "react";
+
 import { onAuthStateChanged } from "firebase/auth";
+
 import { useDispatch, useSelector } from "react-redux";
+
 import { setUser, setLoading } from "@/entities/user/model/authSlice";
+
 import { RootState } from "@/shared/model/store";
+
 import { auth } from "@/lib/firebase";
 
 export function useAuthSync() {

@@ -6,6 +6,7 @@ import {
   signOut,
   User,
 } from "firebase/auth";
+
 import { auth } from "@/lib/firebase";
 
 export interface AuthError {

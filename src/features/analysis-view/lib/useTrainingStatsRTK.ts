@@ -1,11 +1,11 @@
 import { useEffect, useCallback } from "react";
-import { useAppDispatch, useAppSelector } from "@/shared/model/store";
+
 import { useSelector } from "react-redux";
+
 import { selectUser } from "@/entities/user/model/selectors";
-import {
-  fetchTrainingStats,
-  clearTrainingStats,
-} from "../model/trainingStatsSlice";
+
+import { useAppDispatch, useAppSelector } from "@/shared/model/store";
+
 import {
   selectTrainingStats,
   selectTrainingStatsLoading,
@@ -13,6 +13,10 @@ import {
   selectHasTrainingData,
   selectTrainingProgress,
 } from "../model/selectors";
+import {
+  fetchTrainingStats,
+  clearTrainingStats,
+} from "../model/trainingStatsSlice";
 
 export const useTrainingStatsRTK = (analysisId: string) => {
   const dispatch = useAppDispatch();

@@ -1,8 +1,12 @@
 import { useEffect, useState, useCallback } from "react";
-import { useSelector } from "react-redux";
-import { selectUser } from "@/entities/user/model/selectors";
-import { db } from "@/lib/firebase";
+
 import { doc, getDoc } from "firebase/firestore";
+
+import { useSelector } from "react-redux";
+
+import { selectUser } from "@/entities/user/model/selectors";
+
+import { db } from "@/lib/firebase";
 
 export function useUserStats() {
   const user = useSelector(selectUser);

@@ -1,5 +1,5 @@
-import { initializeApp } from "firebase/app";
 import { getAnalytics, isSupported } from "firebase/analytics";
+import { initializeApp } from "firebase/app";
 import { getAuth } from "firebase/auth";
 import { getFirestore } from "firebase/firestore";
 
@@ -17,11 +17,17 @@ const app = initializeApp(firebaseConfig);
 const auth = getAuth(app);
 const db = getFirestore(app);
 
-let analytics;
-if (typeof window !== "undefined") {
-  isSupported().then((ok: boolean) => {
-    if (ok) analytics = getAnalytics(app);
-  });
-}
+// Initialize analytics conditionally
+const initializeAnalytics = async () => {
+  if (typeof window !== "undefined") {
+    const isAnalyticsSupported = await isSupported();
+    if (isAnalyticsSupported) {
+      return getAnalytics(app);
+    }
+  }
+  return null;
+};
+
+const analytics = initializeAnalytics();
 
 export { app, analytics, auth, db };

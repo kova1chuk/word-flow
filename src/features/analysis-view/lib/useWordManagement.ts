@@ -1,11 +1,14 @@
 import { useCallback } from "react";
-import { useAppDispatch } from "@/shared/model/store";
+
 import {
   setReloadingDefinition,
   setReloadingTranslation,
-} from "@/entities/analysis";
+ WordInfo } from "@/entities/analysis";
+
+import { useAppDispatch } from "@/shared/model/store";
+
 import { fetchWordInfo, translateSentence } from "./analysisApi";
-import { WordInfo } from "@/entities/analysis";
+
 
 export const useWordManagement = (
   selectedWord: WordInfo | null,

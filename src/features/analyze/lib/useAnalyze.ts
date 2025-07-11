@@ -1,12 +1,17 @@
 import { useState, useCallback } from "react";
-import { useSelector } from "react-redux";
-import { selectUser } from "@/entities/user/model/selectors";
-import { useNotifications } from "@/providers/NotificationProvider";
-import { analyzeApi, AnalysisResult } from "./analyzeApi";
+
 import { getDocs, collection, query, where } from "firebase/firestore";
+
+import { useSelector } from "react-redux";
+
+
+import { selectUser } from "@/entities/user/model/selectors";
+
 import { db } from "@/lib/firebase";
-import { config } from "./analyzeApi";
-import { transformApiResult } from "./analyzeApi";
+
+import { useNotifications } from "@/providers/NotificationProvider";
+
+import { analyzeApi, AnalysisResult , config , transformApiResult } from "./analyzeApi";
 import type { UserWord } from "./analyzeApi";
 
 async function fetchStatusesForWords(

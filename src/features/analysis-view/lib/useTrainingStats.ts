@@ -1,7 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
-import { useSelector } from "react-redux";
-import { selectUser } from "@/entities/user/model/selectors";
+
 import { getDocs, collection, query, where } from "firebase/firestore";
+
+import { useSelector } from "react-redux";
+
+import { selectUser } from "@/entities/user/model/selectors";
+
 import { db } from "@/lib/firebase";
 
 interface TrainingStats {

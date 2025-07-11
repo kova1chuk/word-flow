@@ -1,21 +1,30 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useSelector } from "react-redux";
+
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { selectUser } from "@/entities/user/model/selectors";
-import { useAnalyses } from "@/features/analyses/lib/useAnalyses";
+
+import { useSelector } from "react-redux";
+
+
+
 import {
   ChevronDownIcon,
   ChevronRightIcon,
   ArrowLeftIcon,
 } from "@heroicons/react/24/solid";
-import { useUserStatsRTK } from "@/shared/hooks/useUserStatsRTK";
-import { useAnalysisFilteredStats } from "@/shared/hooks/useAnalysisFilteredStats";
+
+import { useAnalyses } from "@/features/analyses/lib/useAnalyses";
 import { useTrainingSession } from "@/features/training/lib/useTrainingSession";
 import { TrainingQuestionCard } from "@/features/training/ui/TrainingQuestionCard";
 import { TrainingSessionSummary } from "@/features/training/ui/TrainingSessionSummary";
-import Link from "next/link";
+
+import { selectUser } from "@/entities/user/model/selectors";
+
+import { useAnalysisFilteredStats } from "@/shared/hooks/useAnalysisFilteredStats";
+import { useUserStatsRTK } from "@/shared/hooks/useUserStatsRTK";
+
 
 export default function AudioDictationTrainingPage() {
   const user = useSelector(selectUser);

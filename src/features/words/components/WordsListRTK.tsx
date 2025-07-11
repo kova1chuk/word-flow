@@ -1,8 +1,13 @@
 import React from "react";
+
 import { useSelector } from "react-redux";
-import { RootState } from "@/shared/model/store";
-import { selectPaginatedWords } from "@/features/words/model/selectors";
+
 import WordCard from "@/components/WordCard";
+
+import { selectPaginatedWords } from "@/features/words/model/selectors";
+
+import { RootState } from "@/shared/model/store";
+
 import type { Word } from "@/types";
 
 interface WordsListRTKProps {

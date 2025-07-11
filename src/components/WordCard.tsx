@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from "react";
-import { db } from "@/lib/firebase";
+
 import {
   collectionGroup,
   query,
@@ -7,10 +7,15 @@ import {
   limit,
   getDoc,
 } from "firebase/firestore";
-import type { Word } from "@/types";
-import WordDisplay from "./shared/WordDisplay";
-import StatusSelector from "./shared/StatusSelector";
+
+import { db } from "@/lib/firebase";
+
 import ReloadButton from "./shared/ReloadButton";
+import StatusSelector from "./shared/StatusSelector";
+import WordDisplay from "./shared/WordDisplay";
+
+import type { Word } from "@/types";
+
 
 interface Sentence {
   id: string;

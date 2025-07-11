@@ -1,9 +1,10 @@
-import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
-import { analyzeApi, AnalysisResult } from "../lib/analyzeApi";
 import { getDocs, collection, query, where } from "firebase/firestore";
+
+import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
+
 import { db } from "@/lib/firebase";
-import { config } from "../lib/analyzeApi";
-import { transformApiResult } from "../lib/analyzeApi";
+
+import { analyzeApi, AnalysisResult , config , transformApiResult } from "../lib/analyzeApi";
 import type { UserWord } from "../lib/analyzeApi";
 
 async function fetchStatusesForWords(

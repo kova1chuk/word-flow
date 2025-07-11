@@ -1,5 +1,3 @@
-import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
-import { db } from "@/lib/firebase";
 import {
   collection,
   query,
@@ -11,9 +9,17 @@ import {
   deleteDoc,
   Timestamp,
 } from "firebase/firestore";
-import { config } from "@/lib/config";
+
+import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
+
+
 import { updateWordStatsOnStatusChange } from "@/features/word-management/lib/updateWordStatsOnStatusChange";
+
 import type { Word } from "@/entities/word/types";
+
+import { config } from "@/lib/config";
+import { db } from "@/lib/firebase";
+
 import type { WordDetails, Phonetic } from "@/types";
 
 interface DictionaryApiResponse {

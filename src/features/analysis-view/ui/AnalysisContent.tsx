@@ -1,7 +1,8 @@
 import { Sentence } from "@/entities/analysis";
+
 import { AnalysisControls } from "./AnalysisControls";
-import { SentenceList } from "./SentenceList";
 import { Pagination } from "./Pagination";
+import { SentenceList } from "./SentenceList";
 
 interface AnalysisContentProps {
   sentences: Sentence[];

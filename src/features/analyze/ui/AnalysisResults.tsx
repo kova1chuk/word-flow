@@ -1,4 +1,5 @@
 import { useState } from "react";
+
 import { AnalysisResult } from "../lib/analyzeApi";
 
 interface AnalysisResultsProps {

@@ -1,6 +1,8 @@
 import Link from "next/link";
-import type { Word } from "@/types";
+
 import AudioPlayer from "./AudioPlayer";
+
+import type { Word } from "@/types";
 
 interface WordDisplayProps {
   word: Word;

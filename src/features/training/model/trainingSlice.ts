@@ -1,5 +1,6 @@
-import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import type { Timestamp } from "firebase/firestore";
+
+import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 interface TrainingState {
   mode: "word" | "sentence";

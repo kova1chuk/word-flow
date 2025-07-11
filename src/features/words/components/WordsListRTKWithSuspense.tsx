@@ -1,5 +1,7 @@
 import React, { Suspense } from "react";
+
 import { WordsListRTKSkeleton } from "./WordsListRTKSkeleton";
+
 import type { Word } from "@/types";
 
 interface WordsListRTKWithSuspenseProps {

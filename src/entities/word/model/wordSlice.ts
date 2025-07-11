@@ -1,4 +1,5 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
+
 import { Word, WordState, UpdateWordRequest } from "../types";
 
 const initialState: WordState = {

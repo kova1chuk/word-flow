@@ -1,9 +1,11 @@
 import React from "react";
-import type { Word } from "@/types";
-import WordDisplay from "@/components/shared/WordDisplay";
-import StatusSelector from "@/components/shared/StatusSelector";
+
 import AudioPlayer from "@/components/shared/AudioPlayer";
 import ReloadButton from "@/components/shared/ReloadButton";
+import StatusSelector from "@/components/shared/StatusSelector";
+import WordDisplay from "@/components/shared/WordDisplay";
+
+import type { Word } from "@/types";
 
 interface ManualTrainingCardProps {
   word: Word;

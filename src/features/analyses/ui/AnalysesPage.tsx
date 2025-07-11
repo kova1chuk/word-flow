@@ -1,8 +1,10 @@
+import PageLoader from "@/components/PageLoader";
+
 import { useAnalyses } from "../lib/useAnalyses";
+
 import { AnalysisCard } from "./AnalysisCard";
 import { EmptyState } from "./EmptyState";
 import { ErrorMessage } from "./ErrorMessage";
-import PageLoader from "@/components/PageLoader";
 
 export const AnalysesPage: React.FC = () => {
   const { analyses, loading, error, refreshAnalyses } = useAnalyses();

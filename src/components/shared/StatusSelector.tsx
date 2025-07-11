@@ -1,6 +1,8 @@
-import * as RadixSlider from "@radix-ui/react-slider";
-import type { Word } from "@/types";
 import { useRef, useLayoutEffect, useState } from "react";
+
+import * as RadixSlider from "@radix-ui/react-slider";
+
+import type { Word } from "@/types";
 
 const STATUS_OPTIONS = [
   { value: 1, color: "#6b7280", label: "Not Learned" }, // gray-500

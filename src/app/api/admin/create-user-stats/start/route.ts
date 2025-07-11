@@ -1,7 +1,9 @@
-import { NextResponse } from "next/server";
+
 import { initializeApp, getApps, cert } from "firebase-admin/app";
-import { getFirestore } from "firebase-admin/firestore";
 import { getAuth, UserRecord } from "firebase-admin/auth";
+import { getFirestore } from "firebase-admin/firestore";
+
+import { NextResponse } from "next/server";
 
 const projectId = process.env.FIREBASE_PROJECT_ID;
 const clientEmail = process.env.FIREBASE_CLIENT_EMAIL;

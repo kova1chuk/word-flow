@@ -1,9 +1,14 @@
 import { useCallback } from "react";
-import { useAppDispatch, useAppSelector } from "@/shared/model/store";
+
 import { useSelector } from "react-redux";
+
+
 import { selectUser } from "@/entities/user/model/selectors";
+
+import { useAppDispatch, useAppSelector } from "@/shared/model/store";
+
 import { useNotifications } from "@/providers/NotificationProvider";
-import { AnalysisResult } from "../lib/analyzeApi";
+
 import {
   analyzeText,
   uploadSubtitleFile,
@@ -25,6 +30,8 @@ import {
   selectAnalysisSummary,
   selectUniqueWords,
 } from "../model/selectors";
+
+import { AnalysisResult } from "./analyzeApi";
 
 export const useAnalyzeRTK = () => {
   const dispatch = useAppDispatch();

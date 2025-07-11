@@ -1,20 +1,24 @@
 import { configureStore } from "@reduxjs/toolkit";
+
 import { TypedUseSelectorHook, useDispatch, useSelector } from "react-redux";
 
 // Import slices
+import analysesSlice from "@/features/analyses/model/analysesSlice";
+import trainingStatsSlice from "@/features/analysis-view/model/trainingStatsSlice";
+import analysisWordsSlice from "@/features/analysis-words/model/analysisWordsSlice";
+import analyzeSlice from "@/features/analyze/model/analyzeSlice";
+import trainingSlice from "@/features/training/model/trainingSlice";
+import { wordsReducer } from "@/features/words/model";
+
+import analysisSlice from "@/entities/analysis/model/analysisSlice";
 import authSlice from "@/entities/user/model/authSlice";
 import userStatsSlice from "@/entities/user/model/userStatsSlice";
 import wordSlice from "@/entities/word/model/wordSlice";
-import analysisSlice from "@/entities/analysis/model/analysisSlice";
-import analysesSlice from "@/features/analyses/model/analysesSlice";
-import analysisWordsSlice from "@/features/analysis-words/model/analysisWordsSlice";
-import trainingStatsSlice from "@/features/analysis-view/model/trainingStatsSlice";
-import analyzeSlice from "@/features/analyze/model/analyzeSlice";
-import { wordsReducer } from "@/features/words/model";
-import uiSlice from "@/shared/model/uiSlice";
+
 import formSlice from "@/shared/model/formSlice";
 import notificationSlice from "@/shared/model/notificationSlice";
-import trainingSlice from "@/features/training/model/trainingSlice";
+import uiSlice from "@/shared/model/uiSlice";
+
 
 export const store = configureStore({
   reducer: {

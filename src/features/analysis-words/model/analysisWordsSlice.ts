@@ -1,5 +1,7 @@
-import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import { getDocs, collection, query, where } from "firebase/firestore";
+
+import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
+
 import { db } from "@/lib/firebase";
 
 export interface AnalysisWord {

@@ -1,4 +1,5 @@
 import WordCard from "@/components/WordCard";
+
 import type { Word, WordDetails } from "@/types";
 
 interface WordsListProps {

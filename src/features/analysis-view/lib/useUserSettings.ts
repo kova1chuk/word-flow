@@ -1,12 +1,16 @@
 import { useEffect, useCallback } from "react";
-import { useAppDispatch } from "@/shared/model/store";
+
 import { useSelector } from "react-redux";
-import { selectUser } from "@/entities/user/model/selectors";
+
 import {
   Sentence,
   setCurrentPage,
   setSentencesPerPage,
 } from "@/entities/analysis";
+import { selectUser } from "@/entities/user/model/selectors";
+
+import { useAppDispatch } from "@/shared/model/store";
+
 import {
   saveReadingProgress,
   loadReadingProgress,

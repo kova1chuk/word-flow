@@ -1,4 +1,3 @@
-import { db } from "@/lib/firebase";
 import {
   collection,
   query,
@@ -9,6 +8,8 @@ import {
   updateDoc,
   getDoc,
 } from "firebase/firestore";
+
+import { db } from "@/lib/firebase";
 
 export interface Analysis {
   id: string;

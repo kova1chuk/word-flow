@@ -1,18 +1,16 @@
 "use client";
 
 import React, { useEffect, useState, useTransition, useCallback } from "react";
-import { useAuthSync } from "@/shared/hooks/useAuthSync";
-import { useWordsRTK } from "@/features/words/lib/useWordsRTK";
-import { useWordFilters } from "@/features/words/lib/useWordFilters";
-import WordFilterControls from "@/shared/ui/WordFilterControls";
-import { LoadingSpinner } from "@/shared/ui/LoadingSpinner";
-import { useSelector, useDispatch } from "react-redux";
-import type { Word } from "@/types";
-import type { RootState, AppDispatch } from "@/shared/model/store";
-import { WordsListRTKWithSuspense } from "@/features/words/components/WordsListRTKWithSuspense";
-import { WordsListRTKSkeleton } from "@/features/words/components/WordsListRTKSkeleton";
-import Pagination from "@/shared/ui/Pagination";
+
 import { useRouter, useSearchParams } from "next/navigation";
+
+import { useSelector, useDispatch } from "react-redux";
+
+import { WordsListRTKSkeleton } from "@/features/words/components/WordsListRTKSkeleton";
+import { WordsListRTKWithSuspense } from "@/features/words/components/WordsListRTKWithSuspense";
+import { useWordFilters } from "@/features/words/lib/useWordFilters";
+import { useWordsRTK } from "@/features/words/lib/useWordsRTK";
+import { selectPaginatedWords } from "@/features/words/model/selectors";
 import {
   reloadDefinition,
   reloadTranslation,
@@ -22,7 +20,14 @@ import {
   fetchWordsPage,
   clearWords,
 } from "@/features/words/model/wordsSlice";
-import { selectPaginatedWords } from "@/features/words/model/selectors";
+
+import { useAuthSync } from "@/shared/hooks/useAuthSync";
+import type { RootState, AppDispatch } from "@/shared/model/store";
+import { LoadingSpinner } from "@/shared/ui/LoadingSpinner";
+import Pagination from "@/shared/ui/Pagination";
+import WordFilterControls from "@/shared/ui/WordFilterControls";
+
+import type { Word } from "@/types";
 
 // Custom hook for debounced search
 const useDebouncedSearch = (search: string, delay: number = 500) => {
@@ -93,7 +98,7 @@ export default function WordsPage() {
     }
     // Clear words when status filter changes to ensure fresh data
     dispatch(clearWords());
-  }, [statusFilter, dispatch, updateURLForFilters]);
+  }, [statusFilter, dispatch, updateURLForFilters, currentPage]);
 
   // Handle search changes with transition and clear words
   useEffect(() => {
@@ -110,7 +115,7 @@ export default function WordsPage() {
     }, 0);
 
     return () => clearTimeout(timeoutId);
-  }, [debouncedSearch, dispatch, updateURLForFilters]);
+  }, [debouncedSearch, dispatch, updateURLForFilters, currentPage]);
 
   // Fetch words from Firestore with filters (use debounced search)
   useEffect(() => {

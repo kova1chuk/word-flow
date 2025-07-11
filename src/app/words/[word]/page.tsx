@@ -1,9 +1,10 @@
 "use client";
 
 import { useState, useEffect, useRef, useCallback } from "react";
-import { useSelector } from "react-redux";
-import { selectUser } from "@/entities/user/model/selectors";
-import { db } from "@/lib/firebase";
+
+import Link from "next/link";
+import { useParams } from "next/navigation";
+
 import {
   collection,
   query,
@@ -15,11 +16,19 @@ import {
   doc,
   updateDoc,
 } from "firebase/firestore";
-import { useParams } from "next/navigation";
-import Link from "next/link";
-import { config } from "@/lib/config";
-import type { Word, WordDetails, Phonetic } from "@/types";
+
+import { useSelector } from "react-redux";
+
 import PageLoader from "@/components/PageLoader";
+
+import { selectUser } from "@/entities/user/model/selectors";
+
+import { config } from "@/lib/config";
+import { db } from "@/lib/firebase";
+
+
+import type { Word, WordDetails, Phonetic } from "@/types";
+
 
 // --- Data Interfaces ---
 interface DictionaryApiResponse {

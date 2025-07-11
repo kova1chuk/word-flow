@@ -1,4 +1,5 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
+
 import { analysesApi, Analysis } from "../lib/analysesApi";
 
 export interface AnalysesState {

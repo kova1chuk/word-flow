@@ -1,9 +1,15 @@
-import Link from "next/link";
 import { useState } from "react";
-import { Analysis, analysesApi } from "../lib/analysesApi";
-import { LearningOverview } from "@/components/LearningOverview";
+
+import Link from "next/link";
+
+
 import { useSelector } from "react-redux";
+
+import { LearningOverview } from "@/components/LearningOverview";
+
 import { selectUser } from "@/entities/user/model/selectors";
+
+import { Analysis, analysesApi } from "../lib/analysesApi";
 
 interface AnalysisCardProps {
   analysis: Analysis;

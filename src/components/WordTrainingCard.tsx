@@ -1,7 +1,8 @@
-import type { Word } from "@/types";
-import WordDisplay from "./shared/WordDisplay";
-import StatusSelector from "./shared/StatusSelector";
 import ReloadButton from "./shared/ReloadButton";
+import StatusSelector from "./shared/StatusSelector";
+import WordDisplay from "./shared/WordDisplay";
+
+import type { Word } from "@/types";
 
 export default function WordTrainingCard({
   word,

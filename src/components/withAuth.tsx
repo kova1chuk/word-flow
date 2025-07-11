@@ -1,6 +1,7 @@
 "use client";
 
 import { ComponentType } from "react";
+
 import AuthGuard from "./AuthGuard";
 
 interface WithAuthOptions {

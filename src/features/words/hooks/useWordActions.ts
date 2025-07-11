@@ -1,10 +1,17 @@
 import { useState, useCallback } from "react";
-import { useSelector } from "react-redux";
-import { selectUser } from "@/entities/user/model/selectors";
-import { db } from "@/lib/firebase";
+
 import { deleteDoc, doc, updateDoc } from "firebase/firestore";
-import { config } from "@/lib/config";
+
+import { useSelector } from "react-redux";
+
 import { updateWordStatsOnStatusChange } from "@/features/word-management/lib/updateWordStatsOnStatusChange";
+
+import { selectUser } from "@/entities/user/model/selectors";
+
+import { config } from "@/lib/config";
+import { db } from "@/lib/firebase";
+
+
 import type { Word, WordDetails, Phonetic } from "@/types";
 
 interface DictionaryApiResponse {

@@ -1,14 +1,22 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useSelector } from "react-redux";
-import { useRouter, useSearchParams } from "next/navigation";
-import { selectUser } from "@/entities/user/model/selectors";
-import { useAnalyses } from "@/features/analyses/lib/useAnalyses";
-import { ChevronDownIcon, ChevronRightIcon } from "@heroicons/react/24/solid";
-import { useUserStatsRTK } from "@/shared/hooks/useUserStatsRTK";
-import { useAnalysisFilteredStats } from "@/shared/hooks/useAnalysisFilteredStats";
+
 import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+
+import { useSelector } from "react-redux";
+
+import { ChevronDownIcon, ChevronRightIcon } from "@heroicons/react/24/solid";
+
+import { useAnalyses } from "@/features/analyses/lib/useAnalyses";
+
+import { selectUser } from "@/entities/user/model/selectors";
+
+
+
+import { useAnalysisFilteredStats } from "@/shared/hooks/useAnalysisFilteredStats";
+import { useUserStatsRTK } from "@/shared/hooks/useUserStatsRTK";
 
 export default function TrainingPage() {
   const user = useSelector(selectUser);

@@ -1,8 +1,12 @@
-import { useRouter } from "next/navigation";
-import { Analysis } from "../lib/useAnalysisWords";
 import { useState } from "react";
+
+import { useRouter } from "next/navigation";
+
 import { doc, updateDoc } from "firebase/firestore";
+
 import { db } from "@/lib/firebase";
+
+import { Analysis } from "../lib/useAnalysisWords";
 
 interface AnalysisWordsHeaderProps {
   analysis: Analysis | null;

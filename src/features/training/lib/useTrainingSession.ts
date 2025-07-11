@@ -1,7 +1,5 @@
 import { useState, useCallback } from "react";
-import { useSelector } from "react-redux";
-import { selectUser } from "@/entities/user/model/selectors";
-import { db } from "@/lib/firebase";
+
 import {
   collection,
   query,
@@ -13,6 +11,21 @@ import {
   addDoc,
   serverTimestamp,
 } from "firebase/firestore";
+
+import { useSelector } from "react-redux";
+
+import {
+  updateWordStatsOnStatusChange,
+  updateWordStatsOnDeletion,
+} from "@/features/word-management/lib/updateWordStatsOnStatusChange";
+
+import { selectUser } from "@/entities/user/model/selectors";
+
+import { config } from "@/lib/config";
+import { db } from "@/lib/firebase";
+
+import { TrainingQuestionGenerator } from "./trainingQuestionGenerator";
+
 import type {
   Word,
   TrainingQuestion,
@@ -20,12 +33,9 @@ import type {
   TrainingSession as TrainingSessionType,
   TrainingResult,
 } from "@/types";
-import { TrainingQuestionGenerator } from "./trainingQuestionGenerator";
-import {
-  updateWordStatsOnStatusChange,
-  updateWordStatsOnDeletion,
-} from "@/features/word-management/lib/updateWordStatsOnStatusChange";
-import { config } from "@/lib/config";
+
+
+
 
 interface UseTrainingSessionProps {
   selectedStatuses: number[];

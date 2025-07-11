@@ -1,6 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import { useSelector } from "react-redux";
-import { selectUser } from "@/entities/user/model/selectors";
+
 import {
   collection,
   query,
@@ -13,6 +12,11 @@ import {
   DocumentData,
   Timestamp,
 } from "firebase/firestore";
+
+import { useSelector } from "react-redux";
+
+import { selectUser } from "@/entities/user/model/selectors";
+
 import { db } from "@/lib/firebase";
 
 export interface AnalysisWord {

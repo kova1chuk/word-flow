@@ -1,10 +1,12 @@
 import { useRef, useEffect } from "react";
+
 import {
   AutoSizer,
   List,
   CellMeasurer,
   CellMeasurerCache,
 } from "react-virtualized";
+
 import "react-virtualized/styles.css";
 import { Sentence } from "@/entities/analysis";
 

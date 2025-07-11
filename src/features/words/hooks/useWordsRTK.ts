@@ -1,8 +1,12 @@
 import { useEffect } from "react";
+
 import { useSelector } from "react-redux";
-import { useAppDispatch } from "@/shared/model/store";
+
 import { selectUser } from "@/entities/user/model/selectors";
-import type { Word } from "@/types";
+
+import { useAppDispatch } from "@/shared/model/store";
+
+
 import {
   selectWords,
   selectWordsLoading,
@@ -17,6 +21,8 @@ import {
   updateWordStatus,
   clearError,
 } from "../model/wordsSlice";
+
+import type { Word } from "@/types";
 
 export function useWordsRTK() {
   const dispatch = useAppDispatch();

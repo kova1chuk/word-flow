@@ -1,6 +1,8 @@
 import { createSelector } from "@reduxjs/toolkit";
-import type { RootState } from "@/shared/model/store";
+
 import type { Word } from "@/entities/word/types";
+
+import type { RootState } from "@/shared/model/store";
 
 // Base selectors
 export const selectAllWords = (state: RootState) => state.word.words;

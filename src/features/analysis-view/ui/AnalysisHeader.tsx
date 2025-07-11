@@ -1,7 +1,11 @@
-import Link from "next/link";
-import { Analysis } from "@/entities/analysis";
 import { useState } from "react";
+
+import Link from "next/link";
+
 import { doc, updateDoc } from "firebase/firestore";
+
+import { Analysis } from "@/entities/analysis";
+
 import { db } from "@/lib/firebase";
 
 interface AnalysisHeaderProps {

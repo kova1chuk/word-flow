@@ -1,11 +1,17 @@
 "use client";
 
-import Link from "next/link";
-import { signOut } from "firebase/auth";
-import { auth } from "@/lib/firebase";
 import { useState, useEffect, useRef } from "react";
+
+import Link from "next/link";
+
+import { signOut } from "firebase/auth";
+
 import { useSelector } from "react-redux";
+
 import { selectUser } from "@/entities/user/model/selectors";
+
+import { auth } from "@/lib/firebase";
+
 import LoadingSpinner from "./LoadingSpinner";
 
 export default function Header() {

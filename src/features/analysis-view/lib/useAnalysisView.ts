@@ -1,5 +1,7 @@
 import { useEffect, useCallback } from "react";
-import { useAppDispatch, useAppSelector } from "@/shared/model/store";
+
+import { useSelector } from "react-redux";
+
 import {
   selectAnalysis,
   selectSentences,
@@ -19,8 +21,7 @@ import {
   selectTotalPages,
   selectCurrentSentences,
   selectStartIndex,
-} from "@/entities/analysis";
-import {
+
   setAnalysis,
   setSentences,
   setLoading,
@@ -28,12 +29,15 @@ import {
   setViewMode,
   setIsFullScreen,
   setShowSettings,
-  setSelectedWord,
-} from "@/entities/analysis";
-import { fetchAnalysisDetails } from "./analysisApi";
-import { WordInfo } from "@/entities/analysis";
-import { useSelector } from "react-redux";
+  setSelectedWord, WordInfo } from "@/entities/analysis";
 import { selectUser } from "@/entities/user/model/selectors";
+
+import { useAppDispatch, useAppSelector } from "@/shared/model/store";
+
+import { fetchAnalysisDetails } from "./analysisApi";
+
+
+
 
 export const useAnalysisView = (analysisId: string) => {
   const dispatch = useAppDispatch();

@@ -4,15 +4,13 @@ import { getDocs, collection, query, where } from "firebase/firestore";
 
 import { useSelector } from "react-redux";
 
-
 import { selectUser } from "@/entities/user/model/selectors";
 
 import { db } from "@/lib/firebase";
 
 import { useNotifications } from "@/providers/NotificationProvider";
 
-
-import { analyzeApi, AnalysisResult , config , transformApiResult } from "./analyzeApi";
+import { analyzeApi, AnalysisResult, transformApiResult } from "./analyzeApi";
 import type { UserWord } from "./analyzeApi";
 
 async function fetchStatusesForWords(
@@ -60,7 +58,7 @@ export const useAnalyze = () => {
       try {
         const formData = new FormData();
         formData.append("file", file);
-        const response = await fetch(config.subtitleAnalysisUrl, {
+        const response = await fetch("/api/subtitle", {
           method: "POST",
           body: formData,
         });
@@ -112,7 +110,7 @@ export const useAnalyze = () => {
       try {
         const formData = new FormData();
         formData.append("file", file);
-        const response = await fetch(config.uploadServiceUrl, {
+        const response = await fetch("/api/upload", {
           method: "POST",
           body: formData,
         });
@@ -171,7 +169,7 @@ export const useAnalyze = () => {
     setLoadingAnalysis(true);
 
     try {
-      const response = await fetch(config.textAnalysisUrl, {
+      const response = await fetch("/api/text", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",

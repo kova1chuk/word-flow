@@ -10,15 +10,18 @@ interface AnalysisControlsProps {
 }
 
 export const AnalysisControls: React.FC<AnalysisControlsProps> = ({
-  sentencesLength,
-  currentPage,
-  totalPages,
   viewMode,
   isFullScreen,
+  sentencesLength,
   onViewModeChange,
   onFullScreenToggle,
   onSettingsToggle,
 }) => {
+  // Helper function to format numbers consistently
+  const formatNumber = (num: number) => {
+    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  };
+
   return (
     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 p-4 bg-gray-50 dark:bg-gray-800/50 rounded-lg border border-gray-200 dark:border-gray-700">
       {/* Left side - Info */}
@@ -37,9 +40,9 @@ export const AnalysisControls: React.FC<AnalysisControlsProps> = ({
               d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
             />
           </svg>
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
-            Sentences ({sentencesLength.toLocaleString()})
-          </h2>
+          <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            Sentences ({formatNumber(sentencesLength)})
+          </span>
         </div>
         <div className="hidden sm:flex items-center gap-2 text-sm text-gray-500 dark:text-gray-400">
           <span>Page</span>

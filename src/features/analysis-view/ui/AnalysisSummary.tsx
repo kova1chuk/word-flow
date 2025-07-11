@@ -7,6 +7,11 @@ interface AnalysisSummaryProps {
 export const AnalysisSummary: React.FC<AnalysisSummaryProps> = ({
   analysis,
 }) => {
+  // Helper function to format numbers consistently
+  const formatNumber = (num: number) => {
+    return num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  };
+
   return (
     <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
       <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
@@ -14,7 +19,7 @@ export const AnalysisSummary: React.FC<AnalysisSummaryProps> = ({
           Total Words
         </div>
         <div className="text-2xl font-bold text-gray-800 dark:text-white">
-          {analysis.summary.totalWords.toLocaleString()}
+          {formatNumber(analysis.summary.totalWords)}
         </div>
       </div>
       <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
@@ -22,7 +27,7 @@ export const AnalysisSummary: React.FC<AnalysisSummaryProps> = ({
           Unique Words
         </div>
         <div className="text-2xl font-bold text-gray-800 dark:text-white">
-          {analysis.summary.uniqueWords.toLocaleString()}
+          {formatNumber(analysis.summary.uniqueWords)}
         </div>
       </div>
       <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
@@ -30,7 +35,7 @@ export const AnalysisSummary: React.FC<AnalysisSummaryProps> = ({
           Known Words
         </div>
         <div className="text-2xl font-bold text-green-600">
-          {analysis.summary.knownWords.toLocaleString()}
+          {formatNumber(analysis.summary.knownWords)}
         </div>
       </div>
       <div className="bg-white dark:bg-gray-800 p-4 rounded-lg shadow">
@@ -38,7 +43,7 @@ export const AnalysisSummary: React.FC<AnalysisSummaryProps> = ({
           Unknown Words
         </div>
         <div className="text-2xl font-bold text-red-600">
-          {analysis.summary.unknownWords.toLocaleString()}
+          {formatNumber(analysis.summary.unknownWords)}
         </div>
       </div>
     </div>

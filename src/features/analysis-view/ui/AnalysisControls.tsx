@@ -16,6 +16,8 @@ export const AnalysisControls: React.FC<AnalysisControlsProps> = ({
   onViewModeChange,
   onFullScreenToggle,
   onSettingsToggle,
+  currentPage,
+  totalPages,
 }) => {
   // Helper function to format numbers consistently
   const formatNumber = (num: number) => {

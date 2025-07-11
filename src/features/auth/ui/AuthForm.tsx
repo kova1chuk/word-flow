@@ -44,7 +44,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({
             type="email"
             autoComplete="email"
             required
-            className="appearance-none rounded-none relative block w-full px-4 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 text-base bg-white rounded-t-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:z-10"
+            className="appearance-none rounded-none relative block w-full px-4 py-3 border border-gray-300 dark:border-gray-700 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-gray-100 text-base bg-white dark:bg-gray-800 rounded-t-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:z-10 transition-colors"
             placeholder="Email address"
             value={email}
             onChange={(e) => onEmailChange(e.target.value)}
@@ -62,9 +62,9 @@ export const AuthForm: React.FC<AuthFormProps> = ({
               showConfirmPassword ? "new-password" : "current-password"
             }
             required
-            className={`appearance-none rounded-none relative block w-full px-4 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 text-base bg-white ${
+            className={`appearance-none rounded-none relative block w-full px-4 py-3 border border-gray-300 dark:border-gray-700 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-gray-100 text-base bg-white dark:bg-gray-800 ${
               showConfirmPassword ? "" : "rounded-b-md"
-            } focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:z-10`}
+            } focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:z-10 transition-colors`}
             placeholder="Password"
             value={password}
             onChange={(e) => onPasswordChange(e.target.value)}
@@ -81,7 +81,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({
               type="password"
               autoComplete="new-password"
               required
-              className="appearance-none rounded-none relative block w-full px-4 py-3 border border-gray-300 placeholder-gray-500 text-gray-900 text-base bg-white rounded-b-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:z-10"
+              className="appearance-none rounded-none relative block w-full px-4 py-3 border border-gray-300 dark:border-gray-700 placeholder-gray-500 dark:placeholder-gray-400 text-gray-900 dark:text-gray-100 text-base bg-white dark:bg-gray-800 rounded-b-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:z-10 transition-colors"
               placeholder="Confirm Password"
               value={confirmPassword}
               onChange={(e) => onConfirmPasswordChange?.(e.target.value)}
@@ -105,10 +105,10 @@ export const AuthForm: React.FC<AuthFormProps> = ({
       <div className="mt-6">
         <div className="relative">
           <div className="absolute inset-0 flex items-center">
-            <div className="w-full border-t border-gray-300" />
+            <div className="w-full border-t border-gray-300 dark:border-gray-700 transition-colors" />
           </div>
           <div className="relative flex justify-center text-sm">
-            <span className="px-2 bg-gray-50 text-gray-500">
+            <span className="px-2 bg-gray-50 dark:bg-gray-900 text-gray-500 dark:text-gray-400 transition-colors">
               Or continue with
             </span>
           </div>

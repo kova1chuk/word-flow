@@ -4,18 +4,24 @@ import { useState } from "react";
 
 import Link from "next/link";
 
+import { colors, getPageBackground } from "@/shared/config/colors";
+
 export default function WelcomeScreen() {
   const [isHovered, setIsHovered] = useState(false);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 flex items-center justify-center p-4 pt-26">
+    <div
+      className={`min-h-screen ${getPageBackground()} flex items-center justify-center p-4 pt-26`}
+    >
       <div className="max-w-4xl mx-auto text-center">
         {/* Hero Section */}
         <div className="mb-12">
           {/* Animated Icon */}
           <div className="mb-8 flex justify-center">
             <div className="relative">
-              <div className="w-24 h-24 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-2xl flex items-center justify-center shadow-2xl transform hover:scale-110 transition-transform duration-300">
+              <div
+                className={`w-24 h-24 bg-gradient-to-r ${colors.primary.light} rounded-2xl flex items-center justify-center ${colors.shadow.card} transform hover:scale-110 transition-transform duration-300`}
+              >
                 <svg
                   className="w-12 h-12 text-white"
                   fill="none"
@@ -37,12 +43,16 @@ export default function WelcomeScreen() {
           </div>
 
           {/* Main Heading */}
-          <h1 className="text-5xl md:text-6xl font-bold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent mb-6">
+          <h1
+            className={`text-5xl md:text-6xl font-bold ${colors.gradientText.primary} mb-6`}
+          >
             Welcome to Word Flow
           </h1>
 
           {/* Subtitle */}
-          <p className="text-xl md:text-2xl text-gray-600 dark:text-gray-300 mb-8 max-w-2xl mx-auto leading-relaxed">
+          <p
+            className={`text-xl md:text-2xl ${colors.text.secondary.light} dark:${colors.text.secondary.dark} mb-8 max-w-2xl mx-auto leading-relaxed`}
+          >
             Master vocabulary through intelligent analysis, personalized
             training, and seamless learning experiences
           </p>
@@ -50,10 +60,14 @@ export default function WelcomeScreen() {
 
         {/* Features Grid */}
         <div className="grid md:grid-cols-3 gap-6 mb-12 max-w-4xl mx-auto">
-          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow duration-300">
-            <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center mb-4 mx-auto">
+          <div
+            className={`${colors.background.card.light} dark:${colors.background.card.dark} rounded-xl p-6 ${colors.shadow.card} ${colors.shadow.cardHover} transition-shadow duration-300`}
+          >
+            <div
+              className={`w-12 h-12 ${colors.features.analysis.icon.light} dark:${colors.features.analysis.icon.dark} rounded-lg flex items-center justify-center mb-4 mx-auto`}
+            >
               <svg
-                className="w-6 h-6 text-blue-600 dark:text-blue-400"
+                className={`w-6 h-6 ${colors.features.analysis.text.light} dark:${colors.features.analysis.text.dark}`}
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -66,19 +80,27 @@ export default function WelcomeScreen() {
                 />
               </svg>
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+            <h3
+              className={`text-lg font-semibold ${colors.text.primary.light} dark:${colors.text.primary.dark} mb-2`}
+            >
               Smart Analysis
             </h3>
-            <p className="text-gray-600 dark:text-gray-400">
+            <p
+              className={`${colors.text.secondary.light} dark:${colors.text.secondary.dark}`}
+            >
               Upload texts and get intelligent word analysis with difficulty
               levels and learning recommendations
             </p>
           </div>
 
-          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow duration-300">
-            <div className="w-12 h-12 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center mb-4 mx-auto">
+          <div
+            className={`${colors.background.card.light} dark:${colors.background.card.dark} rounded-xl p-6 ${colors.shadow.card} ${colors.shadow.cardHover} transition-shadow duration-300`}
+          >
+            <div
+              className={`w-12 h-12 ${colors.features.training.icon.light} dark:${colors.features.training.icon.dark} rounded-lg flex items-center justify-center mb-4 mx-auto`}
+            >
               <svg
-                className="w-6 h-6 text-green-600 dark:text-green-400"
+                className={`w-6 h-6 ${colors.features.training.text.light} dark:${colors.features.training.text.dark}`}
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -91,19 +113,27 @@ export default function WelcomeScreen() {
                 />
               </svg>
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+            <h3
+              className={`text-lg font-semibold ${colors.text.primary.light} dark:${colors.text.primary.dark} mb-2`}
+            >
               Interactive Training
             </h3>
-            <p className="text-gray-600 dark:text-gray-400">
+            <p
+              className={`${colors.text.secondary.light} dark:${colors.text.secondary.dark}`}
+            >
               Engage with various training modes including quizzes,
               translations, and context exercises
             </p>
           </div>
 
-          <div className="bg-white dark:bg-gray-800 rounded-xl p-6 shadow-lg hover:shadow-xl transition-shadow duration-300">
-            <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 rounded-lg flex items-center justify-center mb-4 mx-auto">
+          <div
+            className={`${colors.background.card.light} dark:${colors.background.card.dark} rounded-xl p-6 ${colors.shadow.card} ${colors.shadow.cardHover} transition-shadow duration-300`}
+          >
+            <div
+              className={`w-12 h-12 ${colors.features.progress.icon.light} dark:${colors.features.progress.icon.dark} rounded-lg flex items-center justify-center mb-4 mx-auto`}
+            >
               <svg
-                className="w-6 h-6 text-purple-600 dark:text-purple-400"
+                className={`w-6 h-6 ${colors.features.progress.text.light} dark:${colors.features.progress.text.dark}`}
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -116,10 +146,14 @@ export default function WelcomeScreen() {
                 />
               </svg>
             </div>
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+            <h3
+              className={`text-lg font-semibold ${colors.text.primary.light} dark:${colors.text.primary.dark} mb-2`}
+            >
               Progress Tracking
             </h3>
-            <p className="text-gray-600 dark:text-gray-400">
+            <p
+              className={`${colors.text.secondary.light} dark:${colors.text.secondary.dark}`}
+            >
               Monitor your learning progress with detailed statistics and
               personalized insights
             </p>
@@ -133,8 +167,8 @@ export default function WelcomeScreen() {
               href="/auth/signin"
               className={`inline-flex items-center justify-center px-8 py-4 text-lg font-semibold rounded-xl transition-all duration-300 transform hover:scale-105 ${
                 isHovered
-                  ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg"
-                  : "bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-md hover:shadow-lg"
+                  ? `bg-gradient-to-r ${colors.primary.hover} ${colors.button.primary.text} ${colors.shadow.buttonHover}`
+                  : `bg-gradient-to-r ${colors.button.primary.background} ${colors.button.primary.text} ${colors.shadow.button}`
               }`}
               onMouseEnter={() => setIsHovered(true)}
               onMouseLeave={() => setIsHovered(false)}
@@ -157,7 +191,7 @@ export default function WelcomeScreen() {
 
             <Link
               href="/auth/signup"
-              className="inline-flex items-center justify-center px-8 py-4 text-lg font-semibold border-2 border-blue-500 text-blue-600 dark:text-blue-400 rounded-xl hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all duration-300"
+              className={`inline-flex items-center justify-center px-8 py-4 text-lg font-semibold ${colors.button.secondary.background} ${colors.button.secondary.text.light} dark:${colors.button.secondary.text.dark} rounded-xl ${colors.button.secondary.hover.light} dark:${colors.button.secondary.hover.dark} transition-all duration-300`}
             >
               <svg
                 className="w-5 h-5 mr-2"
@@ -176,7 +210,9 @@ export default function WelcomeScreen() {
             </Link>
           </div>
 
-          <p className="text-sm text-gray-500 dark:text-gray-400">
+          <p
+            className={`text-sm ${colors.text.muted.light} dark:${colors.text.muted.dark}`}
+          >
             Join thousands of learners improving their vocabulary with Word Flow
           </p>
         </div>

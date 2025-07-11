@@ -116,7 +116,7 @@ export default function StatusSelector({
       >
         {/* Dots with bigger clickable areas */}
         <div
-          className="absolute left-0 right-0 top-1/2 -translate-y-1/2 flex justify-between w-full px-6"
+          className="absolute left-0 right-0 top-1/2 -translate-y-1/2 flex justify-between w-full"
           style={{ zIndex: 2 }}
         >
           {STATUS_OPTIONS.map((opt) => (
@@ -188,7 +188,7 @@ export default function StatusSelector({
 
         {/* Radix Slider with bigger track */}
         <RadixSlider.Root
-          className="relative w-full h-4 flex items-center select-none touch-none px-6" // Added px-6 for padding
+          className="relative w-full h-4 flex items-center select-none touch-none" // Added px-6 for padding
           min={1}
           max={7}
           step={1}

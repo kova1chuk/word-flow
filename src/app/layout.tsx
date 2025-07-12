@@ -2,15 +2,13 @@ import type { Metadata } from "next";
 
 import { Geist, Geist_Mono } from "next/font/google";
 
-import Footer from "@/components/Footer";
-import Header from "@/components/Header";
-
 import { AuthSyncProvider } from "@/providers/AuthSyncProvider";
 import { NotificationProvider } from "@/providers/NotificationProvider";
 import { PWAProvider } from "@/providers/PWAProvider";
 import { StoreProvider } from "@/providers/StoreProvider";
 
 import "./globals.css";
+import MainLayout from "../components/MainLayout";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -75,9 +73,7 @@ export default function RootLayout({
           <AuthSyncProvider />
           <PWAProvider>
             <NotificationProvider>
-              <Header />
-              <main className="min-h-screen">{children}</main>
-              <Footer />
+              <MainLayout>{children}</MainLayout>
             </NotificationProvider>
           </PWAProvider>
         </StoreProvider>

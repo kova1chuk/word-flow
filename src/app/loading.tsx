@@ -46,16 +46,6 @@ export default function Loading() {
           ></div>
         </div>
 
-        {/* Progress Bar */}
-        <div className="mt-8 max-w-xs mx-auto">
-          <div className="bg-gray-200 dark:bg-gray-700 rounded-full h-2 overflow-hidden">
-            <div
-              className={`bg-gradient-to-r ${colors.primary.light} h-2 rounded-full animate-pulse`}
-              style={{ width: "60%" }}
-            ></div>
-          </div>
-        </div>
-
         {/* Loading Tips */}
         <div
           className={`mt-8 text-sm ${colors.text.muted.light} dark:${colors.text.muted.dark} max-w-md mx-auto`}

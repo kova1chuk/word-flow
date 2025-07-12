@@ -29,10 +29,6 @@ export default function Footer() {
                 Word Flow
               </h3>
             </div>
-            <p className="text-gray-600 dark:text-gray-400 mb-4 max-w-md">
-              Master vocabulary through intelligent analysis, personalized
-              training, and seamless learning experiences.
-            </p>
             <div className="flex flex-wrap gap-4 text-sm text-gray-500 dark:text-gray-400">
               <span className="flex items-center">
                 <span className="mr-1">✨</span> Free to use

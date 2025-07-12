@@ -13,7 +13,7 @@ const MainLayout: React.FC<MainLayoutProps> = ({ children }) => {
   return (
     <>
       <Header />
-      <main className={`min-h-screen pt-24 ${getPageBackground()}`}>
+      <main className={`min-h-screen px-4 pt-24 ${getPageBackground()}`}>
         {children}
       </main>
       <Footer />

@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 
 import { signOut } from "firebase/auth";
 
@@ -16,6 +17,7 @@ import LoadingSpinner from "./LoadingSpinner";
 
 export default function Header() {
   const user = useSelector(selectUser);
+  const pathname = usePathname();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isVisible, setIsVisible] = useState(true);
@@ -75,6 +77,14 @@ export default function Header() {
     }
   };
 
+  // Helper function to check if a link is active
+  const isLinkActive = (href: string) => {
+    if (href === "/") {
+      return pathname === "/";
+    }
+    return pathname.startsWith(href);
+  };
+
   const navLinks = [
     { href: "/words", label: "My Words" },
     { href: "/analyze", label: "Analyze Text" },
@@ -129,16 +139,23 @@ export default function Header() {
             <div className="hidden md:flex items-center space-x-1">
               {user && (
                 <>
-                  {navLinks.map((link) => (
-                    <Link
-                      key={link.href}
-                      href={link.href}
-                      onClick={closeMenus}
-                      className="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-white hover:bg-gray-100/50 dark:hover:bg-gray-700/50 px-3 py-2 rounded-xl text-sm font-medium transition-all duration-200"
-                    >
-                      {link.label}
-                    </Link>
-                  ))}
+                  {navLinks.map((link) => {
+                    const isActive = isLinkActive(link.href);
+                    return (
+                      <Link
+                        key={link.href}
+                        href={link.href}
+                        onClick={closeMenus}
+                        className={`px-3 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
+                          isActive
+                            ? "text-blue-600 dark:text-blue-400 bg-gray-100/50 dark:bg-gray-700/50"
+                            : "text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-white hover:bg-gray-100/50 dark:hover:bg-gray-700/50"
+                        }`}
+                      >
+                        {link.label}
+                      </Link>
+                    );
+                  })}
                   {/* User menu */}
                   <div className="relative" ref={userMenuRef}>
                     <button
@@ -230,16 +247,23 @@ export default function Header() {
                 <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
                   {user && (
                     <>
-                      {navLinks.map((link) => (
-                        <Link
-                          key={link.href}
-                          href={link.href}
-                          onClick={closeMenus}
-                          className="text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-white hover:bg-gray-100/50 dark:hover:bg-gray-700/50 block px-3 py-2 rounded-xl text-base font-medium transition-all duration-200"
-                        >
-                          {link.label}
-                        </Link>
-                      ))}
+                      {navLinks.map((link) => {
+                        const isActive = isLinkActive(link.href);
+                        return (
+                          <Link
+                            key={link.href}
+                            href={link.href}
+                            onClick={closeMenus}
+                            className={`block px-3 py-2 rounded-xl text-base font-medium transition-all duration-200 ${
+                              isActive
+                                ? "text-blue-600 dark:text-blue-400 bg-gray-100/50 dark:bg-gray-700/50"
+                                : "text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-white hover:bg-gray-100/50 dark:hover:bg-gray-700/50"
+                            }`}
+                          >
+                            {link.label}
+                          </Link>
+                        );
+                      })}
                       <div className="border-t border-gray-200/50 dark:border-gray-700/50 my-2 pt-4">
                         <div className="px-3 py-2">
                           <p className="text-sm font-medium text-gray-500 dark:text-gray-400">

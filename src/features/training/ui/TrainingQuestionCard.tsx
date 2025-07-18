@@ -199,9 +199,41 @@ export function TrainingQuestionCard({
       case "synonym_match":
         return (
           <div className="space-y-6">
-            <div className="text-xl font-medium text-gray-800 dark:text-gray-200 leading-relaxed">
-              {question.question}
+            <div className="flex items-center justify-between">
+              <div className="text-xl font-medium text-gray-800 dark:text-gray-200 leading-relaxed">
+                {question.question}
+              </div>
+              {onReloadTranslation && (
+                <button
+                  onClick={() => onReloadTranslation()}
+                  disabled={updating === word.id}
+                  className="flex items-center gap-2 px-3 py-2 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-xl hover:bg-green-200 dark:hover:bg-green-900/50 transition-all duration-200 font-medium text-sm"
+                  title="Reload translation"
+                >
+                  <ArrowPathIcon
+                    className={`h-4 w-4 ${
+                      updating === word.id ? "animate-spin" : ""
+                    }`}
+                  />
+                  {updating === word.id ? "Reloading..." : "Reload Translation"}
+                </button>
+              )}
             </div>
+
+            {/* Translation Display */}
+            {word.translation && (
+              <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-2xl border-2 border-blue-200 dark:border-blue-700">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-sm font-semibold text-blue-700 dark:text-blue-300">
+                    Current Translation:
+                  </span>
+                </div>
+                <p className="text-blue-800 dark:text-blue-200 font-medium">
+                  {word.translation}
+                </p>
+              </div>
+            )}
+
             <div className="grid grid-cols-1 gap-4">
               {question.options?.map((option, index) => (
                 <button
@@ -236,9 +268,41 @@ export function TrainingQuestionCard({
       case "context_usage":
         return (
           <div className="space-y-6">
-            <div className="text-xl font-medium text-gray-800 dark:text-gray-200 leading-relaxed">
-              {question.question}
+            <div className="flex items-center justify-between">
+              <div className="text-xl font-medium text-gray-800 dark:text-gray-200 leading-relaxed">
+                {question.question}
+              </div>
+              {onReloadTranslation && (
+                <button
+                  onClick={() => onReloadTranslation()}
+                  disabled={updating === word.id}
+                  className="flex items-center gap-2 px-3 py-2 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-xl hover:bg-green-200 dark:hover:bg-green-900/50 transition-all duration-200 font-medium text-sm"
+                  title="Reload translation"
+                >
+                  <ArrowPathIcon
+                    className={`h-4 w-4 ${
+                      updating === word.id ? "animate-spin" : ""
+                    }`}
+                  />
+                  {updating === word.id ? "Reloading..." : "Reload Translation"}
+                </button>
+              )}
             </div>
+
+            {/* Translation Display */}
+            {word.translation && (
+              <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-2xl border-2 border-blue-200 dark:border-blue-700">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-sm font-semibold text-blue-700 dark:text-blue-300">
+                    Current Translation:
+                  </span>
+                </div>
+                <p className="text-blue-800 dark:text-blue-200 font-medium">
+                  {word.translation}
+                </p>
+              </div>
+            )}
+
             <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-2xl border border-gray-200 dark:border-gray-700">
               <p className="text-lg text-gray-700 dark:text-gray-300 leading-relaxed">
                 {question.context}
@@ -260,9 +324,41 @@ export function TrainingQuestionCard({
       case "audio_dictation":
         return (
           <div className="space-y-6">
-            <div className="text-xl font-medium text-gray-800 dark:text-gray-200 leading-relaxed">
-              {question.question}
+            <div className="flex items-center justify-between">
+              <div className="text-xl font-medium text-gray-800 dark:text-gray-200 leading-relaxed">
+                {question.question}
+              </div>
+              {onReloadTranslation && (
+                <button
+                  onClick={() => onReloadTranslation()}
+                  disabled={updating === word.id}
+                  className="flex items-center gap-2 px-3 py-2 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-xl hover:bg-green-200 dark:hover:bg-green-900/50 transition-all duration-200 font-medium text-sm"
+                  title="Reload translation"
+                >
+                  <ArrowPathIcon
+                    className={`h-4 w-4 ${
+                      updating === word.id ? "animate-spin" : ""
+                    }`}
+                  />
+                  {updating === word.id ? "Reloading..." : "Reload Translation"}
+                </button>
+              )}
             </div>
+
+            {/* Translation Display */}
+            {word.translation && (
+              <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-2xl border-2 border-blue-200 dark:border-blue-700">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-sm font-semibold text-blue-700 dark:text-blue-300">
+                    Current Translation:
+                  </span>
+                </div>
+                <p className="text-blue-800 dark:text-blue-200 font-medium">
+                  {word.translation}
+                </p>
+              </div>
+            )}
+
             {question.audioUrl && (
               <div className="flex justify-center">
                 <AudioPlayer audioUrl={question.audioUrl} />

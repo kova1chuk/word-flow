@@ -7,8 +7,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 
 import { useSelector } from "react-redux";
 
-
-
 import {
   ChevronDownIcon,
   ChevronRightIcon,
@@ -24,7 +22,6 @@ import { selectUser } from "@/entities/user/model/selectors";
 
 import { useAnalysisFilteredStats } from "@/shared/hooks/useAnalysisFilteredStats";
 import { useUserStatsRTK } from "@/shared/hooks/useUserStatsRTK";
-
 
 export default function ContextUsageTrainingPage() {
   const user = useSelector(selectUser);
@@ -101,6 +98,7 @@ export default function ContextUsageTrainingPage() {
     previousWord,
     handleStatusChange,
     handleDeleteWord,
+    reloadTranslation,
   } = useTrainingSession({
     selectedStatuses,
     selectedAnalysisIds,
@@ -437,6 +435,7 @@ export default function ContextUsageTrainingPage() {
               canGoPrevious={currentWordIndex > 0}
               onStatusChange={handleStatusChange}
               onDelete={handleDeleteWord}
+              onReloadTranslation={reloadTranslation}
               updating={null}
             />
 

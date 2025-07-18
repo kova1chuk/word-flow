@@ -109,12 +109,14 @@ export const fetchWordsPage = createAsyncThunk(
       pageSize,
       statusFilter = [],
       search = "",
+      analysisIds = [],
     }: {
       userId: string;
       page: number;
       pageSize: number;
       statusFilter?: number[];
       search?: string;
+      analysisIds?: string[];
     },
     { getState }
   ) => {
@@ -174,6 +176,15 @@ export const fetchWordsPage = createAsyncThunk(
       const searchTerm = search.toLowerCase();
       allWords = allWords.filter((word) =>
         word.word.toLowerCase().includes(searchTerm)
+      );
+    }
+
+    // Apply analysis filter if needed
+    if (analysisIds.length > 0) {
+      allWords = allWords.filter(
+        (word) =>
+          word.analysisIds &&
+          word.analysisIds.some((id) => analysisIds.includes(id))
       );
     }
 

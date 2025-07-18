@@ -34,9 +34,6 @@ import type {
   TrainingResult,
 } from "@/types";
 
-
-
-
 interface UseTrainingSessionProps {
   selectedStatuses: number[];
   selectedAnalysisIds: string[];
@@ -150,16 +147,43 @@ export function useTrainingSession({
         );
       }
 
-      // Sort by priority: lower status first, then by last trained date
+      // Sort by training priority:
+      // 1. Recently trained words first (most recent lastTrainedAt)
+      // 2. Not trained words (no lastTrainedAt) - sorted by status (lower first)
+      // 3. Words trained the longest ago (oldest lastTrainedAt)
       allWords.sort((a, b) => {
-        const statusA = a.status || 1;
-        const statusB = b.status || 1;
+        const lastTrainedA = a.lastTrainedAt;
+        const lastTrainedB = b.lastTrainedAt;
 
-        if (statusA !== statusB) {
-          return statusA - statusB; // Lower status first
+        // If both words have never been trained (no lastTrainedAt)
+        if (!lastTrainedA && !lastTrainedB) {
+          // Sort by status (lower status first for untrained words)
+          const statusA = a.status || 1;
+          const statusB = b.status || 1;
+          return statusA - statusB;
         }
 
-        // TODO: Add lastTrainedAt sorting when UserWord is implemented
+        // If only one word has been trained, prioritize the untrained one
+        if (!lastTrainedA && lastTrainedB) {
+          return -1; // Untrained word comes first
+        }
+        if (lastTrainedA && !lastTrainedB) {
+          return 1; // Untrained word comes first
+        }
+
+        // Both words have been trained, sort by most recent first
+        if (lastTrainedA && lastTrainedB) {
+          const timeA =
+            lastTrainedA instanceof Date
+              ? lastTrainedA.getTime()
+              : lastTrainedA.toDate().getTime();
+          const timeB =
+            lastTrainedB instanceof Date
+              ? lastTrainedB.getTime()
+              : lastTrainedB.toDate().getTime();
+          return timeB - timeA; // Most recent first
+        }
+
         return 0;
       });
 

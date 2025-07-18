@@ -1,3 +1,5 @@
+import type { Timestamp } from "firebase/firestore";
+
 import { BaseEntity } from "@/shared/types";
 
 export interface Phonetic {
@@ -34,6 +36,7 @@ export interface Word extends BaseEntity {
   isInDictionary?: boolean; // For backward compatibility
   usages?: string[];
   analysisIds?: string[];
+  lastTrainedAt?: Date | Timestamp; // Firestore Timestamp or Date
 }
 
 export interface WordState {

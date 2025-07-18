@@ -29,6 +29,7 @@ import {
   silentRefetchPage,
 } from "@/features/words/model/wordsSlice";
 
+import { useAuthSync } from "@/shared/hooks/useAuthSync";
 import type { RootState, AppDispatch } from "@/shared/model/store";
 import { LoadingSpinner } from "@/shared/ui/LoadingSpinner";
 import Pagination from "@/shared/ui/Pagination";

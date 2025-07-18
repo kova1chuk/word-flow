@@ -115,6 +115,74 @@ export const colors = {
     button: "shadow-md",
     buttonHover: "hover:shadow-lg",
   },
+
+  // Status filter colors
+  statusFilters: {
+    all: {
+      border: "border-gray-400 dark:border-gray-500",
+      text: "text-gray-100 dark:text-white",
+      bg: "bg-white/10 dark:bg-gray-800/40",
+      activeBg: "bg-white/20 dark:bg-gray-700/60",
+      hover: "hover:bg-white/20 dark:hover:bg-gray-700/40",
+      accent: "border-l-4 border-gray-400 dark:border-gray-500",
+    },
+    notLearned: {
+      border: "border-[#ff6b6b]",
+      text: "text-[#ff6b6b] font-semibold",
+      bg: "bg-[#ff6b6b]/10",
+      activeBg: "bg-[#ff6b6b]/20",
+      hover: "hover:bg-[#ff6b6b]/20",
+      accent: "border-l-4 border-[#ff6b6b]",
+    },
+    beginner: {
+      border: "border-[#ffb347]",
+      text: "text-[#ffb347] font-semibold",
+      bg: "bg-[#ffb347]/10",
+      activeBg: "bg-[#ffb347]/20",
+      hover: "hover:bg-[#ffb347]/20",
+      accent: "border-l-4 border-[#ffb347]",
+    },
+    basic: {
+      border: "border-[#ffd600]",
+      text: "text-[#ffd600] font-semibold",
+      bg: "bg-[#ffd600]/10",
+      activeBg: "bg-[#ffd600]/20",
+      hover: "hover:bg-[#ffd600]/20",
+      accent: "border-l-4 border-[#ffd600]",
+    },
+    intermediate: {
+      border: "border-[#64b5f6]",
+      text: "text-[#64b5f6] font-semibold",
+      bg: "bg-[#64b5f6]/10",
+      activeBg: "bg-[#64b5f6]/20",
+      hover: "hover:bg-[#64b5f6]/20",
+      accent: "border-l-4 border-[#64b5f6]",
+    },
+    advanced: {
+      border: "border-[#43e97b]",
+      text: "text-[#43e97b] font-semibold",
+      bg: "bg-[#43e97b]/10",
+      activeBg: "bg-[#43e97b]/20",
+      hover: "hover:bg-[#43e97b]/20",
+      accent: "border-l-4 border-[#43e97b]",
+    },
+    wellKnown: {
+      border: "border-[#b388ff]",
+      text: "text-[#b388ff] font-semibold",
+      bg: "bg-[#b388ff]/10",
+      activeBg: "bg-[#b388ff]/20",
+      hover: "hover:bg-[#b388ff]/20",
+      accent: "border-l-4 border-[#b388ff]",
+    },
+    mastered: {
+      border: "border-[#18ffff]",
+      text: "text-[#18ffff] font-semibold",
+      bg: "bg-[#18ffff]/10",
+      activeBg: "bg-[#18ffff]/20",
+      hover: "hover:bg-[#18ffff]/20",
+      accent: "border-l-4 border-[#18ffff]",
+    },
+  },
 } as const;
 
 // Helper function to get page background

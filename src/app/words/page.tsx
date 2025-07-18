@@ -12,6 +12,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 
 import { useSelector, useDispatch } from "react-redux";
 
+import { useAnalysesRTK } from "@/features/analyses/lib/useAnalysesRTK";
 import { WordsListRTKSkeleton } from "@/features/words/components/WordsListRTKSkeleton";
 import { WordsListRTKWithSuspense } from "@/features/words/components/WordsListRTKWithSuspense";
 import { useWordFilters } from "@/features/words/lib/useWordFilters";
@@ -28,7 +29,6 @@ import {
   silentRefetchPage,
 } from "@/features/words/model/wordsSlice";
 
-import { useAuthSync } from "@/shared/hooks/useAuthSync";
 import type { RootState, AppDispatch } from "@/shared/model/store";
 import { LoadingSpinner } from "@/shared/ui/LoadingSpinner";
 import Pagination from "@/shared/ui/Pagination";
@@ -62,6 +62,14 @@ export default function WordsPage() {
 
   const { statusFilter, search, setStatusFilter, setSearch, STATUS_OPTIONS } =
     useWordFilters();
+
+  // Analyses filter state
+  const { analyses } = useAnalysesRTK();
+  const [selectedAnalyses, setSelectedAnalyses] = useState<string[]>([]);
+  const analysesOptions = analyses.map((a) => ({
+    value: a.id,
+    label: a.title,
+  }));
 
   // Use debounced search to avoid too many API calls
   const debouncedSearch = useDebouncedSearch(search, 500);
@@ -151,6 +159,7 @@ export default function WordsPage() {
         pageSize,
         statusFilter,
         search: debouncedSearch,
+        analysisIds: selectedAnalyses.length > 0 ? selectedAnalyses : undefined,
       })
     ).finally(() => {
       // Add a small delay to ensure the loading state is visible
@@ -164,6 +173,7 @@ export default function WordsPage() {
     pageSize,
     statusFilter,
     debouncedSearch,
+    selectedAnalyses,
     dispatch,
   ]);
 
@@ -261,6 +271,9 @@ export default function WordsPage() {
         search={search}
         onSearchChange={setSearch}
         statusOptions={STATUS_OPTIONS}
+        analysesOptions={analysesOptions}
+        selectedAnalyses={selectedAnalyses}
+        onAnalysesFilterChange={setSelectedAnalyses}
       />
 
       {error && (

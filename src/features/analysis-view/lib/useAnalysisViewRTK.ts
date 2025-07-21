@@ -37,7 +37,6 @@ import {
   selectStartIndex,
   selectSentencesLoading,
   selectHasMore,
-  selectLastDoc,
   selectTrainingStats,
   selectTrainingLoading,
 } from "@/entities/analysis/model/selectors";
@@ -71,7 +70,6 @@ export const useAnalysisViewRTK = (analysisId: string) => {
   const startIndex = useSelector(selectStartIndex);
   const sentencesLoading = useSelector(selectSentencesLoading);
   const hasMore = useSelector(selectHasMore);
-  const lastDoc = useSelector(selectLastDoc);
   const trainingStats = useSelector(selectTrainingStats);
   const trainingLoading = useSelector(selectTrainingLoading);
 
@@ -90,12 +88,11 @@ export const useAnalysisViewRTK = (analysisId: string) => {
           analysisId,
           page,
           pageSize: sentencesPerPage,
-          lastDoc: page > 1 ? lastDoc || undefined : undefined,
           userId: user.uid,
         })
       );
     },
-    [user, analysisId, sentencesPerPage, lastDoc, dispatch]
+    [user, analysisId, sentencesPerPage, dispatch]
   );
 
   // Calculate training stats from analysis

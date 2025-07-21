@@ -23,6 +23,7 @@ export async function fetchWordsPageSupabase({
   pageSize,
   statusFilter = [],
   search = "",
+  analysisIds,
   langCode = "en",
 }: {
   userId: string;
@@ -30,6 +31,7 @@ export async function fetchWordsPageSupabase({
   pageSize: number;
   statusFilter?: number[];
   search?: string;
+  analysisIds?: string[];
   langCode?: string;
 }) {
   const { data, error } = await supabase.rpc("get_dictionary_words", {
@@ -37,6 +39,7 @@ export async function fetchWordsPageSupabase({
     user_id: userId,
     search_text: search,
     status_filter: statusFilter.length > 0 ? statusFilter.map(String) : null,
+    analysis_ids: analysisIds && analysisIds.length > 0 ? analysisIds : null,
     limit_count: pageSize,
     offset_count: (page - 1) * pageSize,
     sort_order: "desc",

@@ -85,12 +85,14 @@ export const fetchWordsPage = createAsyncThunk(
       pageSize,
       statusFilter = [],
       search = "",
+      analysisIds,
     }: {
       userId: string;
       page: number;
       pageSize: number;
       statusFilter?: number[];
       search?: string;
+      analysisIds?: string[];
     },
     {}
   ) => {
@@ -101,6 +103,7 @@ export const fetchWordsPage = createAsyncThunk(
       pageSize,
       statusFilter,
       search,
+      analysisIds,
       langCode: "en", // Default to English
     });
   }
@@ -123,12 +126,14 @@ export const silentRefetchPage = createAsyncThunk(
     pageSize,
     statusFilter = [],
     search = "",
+    analysisIds,
   }: {
     userId: string;
     page: number;
     pageSize: number;
     statusFilter?: number[];
     search?: string;
+    analysisIds?: string[];
   }) => {
     return await fetchWordsPageSupabase({
       userId,
@@ -136,6 +141,7 @@ export const silentRefetchPage = createAsyncThunk(
       pageSize,
       statusFilter,
       search,
+      analysisIds,
       langCode: "en", // Default to English
     });
   }

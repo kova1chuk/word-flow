@@ -72,6 +72,17 @@ export default function WordsPage() {
     label: a.title,
   }));
 
+  // Initialize selectedAnalyses from URL parameter
+  useEffect(() => {
+    const analysesParam = searchParams.get("analyses");
+    if (analysesParam) {
+      const analysisIds = analysesParam
+        .split(",")
+        .filter((id) => id.trim() !== "");
+      setSelectedAnalyses(analysisIds);
+    }
+  }, [searchParams]);
+
   // Use debounced search to avoid too many API calls
   const debouncedSearch = useDebouncedSearch(search, 500);
 
@@ -91,9 +102,12 @@ export default function WordsPage() {
       // Update URL using the simple approach
       const params = new URLSearchParams();
       if (page > 1) params.set("page", page.toString());
+      if (selectedAnalyses.length > 0) {
+        params.set("analyses", selectedAnalyses.join(","));
+      }
       router.push(`?${params.toString()}`);
     },
-    [currentPage, router]
+    [currentPage, router, selectedAnalyses]
   );
 
   // Update URL when filters change (separate function to avoid recursion)
@@ -101,14 +115,18 @@ export default function WordsPage() {
     (page: number) => {
       const params = new URLSearchParams();
       if (page > 1) params.set("page", page.toString());
+      if (selectedAnalyses.length > 0) {
+        params.set("analyses", selectedAnalyses.join(","));
+      }
       router.push(`?${params.toString()}`);
     },
-    [router]
+    [router, selectedAnalyses]
   );
 
   // Track previous filter values to detect actual changes
   const prevStatusFilter = useRef(statusFilter);
   const prevDebouncedSearch = useRef(debouncedSearch);
+  const prevSelectedAnalyses = useRef(selectedAnalyses);
 
   // Reset page to 1 and clear words when filters actually change
   useEffect(() => {
@@ -147,6 +165,23 @@ export default function WordsPage() {
       return () => clearTimeout(timeoutId);
     }
   }, [debouncedSearch, dispatch, updateURLForFilters, currentPage]);
+
+  // Handle analyses filter changes
+  useEffect(() => {
+    const analysesChanged =
+      JSON.stringify(prevSelectedAnalyses.current) !==
+      JSON.stringify(selectedAnalyses);
+
+    if (analysesChanged) {
+      // Only reset page if we're not on page 1 and analyses have actually changed
+      if (currentPage !== 1) {
+        updateURLForFilters(1);
+      }
+      // Clear words when analyses filter changes to ensure fresh data
+      dispatch(clearWords());
+      prevSelectedAnalyses.current = selectedAnalyses;
+    }
+  }, [selectedAnalyses, dispatch, updateURLForFilters, currentPage]);
 
   // Fetch words from Firestore with filters (use debounced search)
   useEffect(() => {
@@ -220,6 +255,8 @@ export default function WordsPage() {
                 pageSize,
                 statusFilter,
                 search: debouncedSearch,
+                analysisIds:
+                  selectedAnalyses.length > 0 ? selectedAnalyses : undefined,
               })
             );
           }

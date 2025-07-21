@@ -25,7 +25,7 @@ export const WordsListRTK: React.FC<WordsListRTKProps> = ({
     (state: RootState) => state.words
   );
 
-  // Use the new selector for paginated words
+  // Use the selector for paginated words
   const { words: paginatedWords } = useSelector((state: RootState) =>
     selectPaginatedWords(state, { page: currentPage, pageSize })
   );

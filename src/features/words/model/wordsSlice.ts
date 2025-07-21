@@ -224,12 +224,14 @@ export const silentRefetchPage = createAsyncThunk(
     pageSize,
     statusFilter = [],
     search = "",
+    analysisIds = [],
   }: {
     userId: string;
     page: number;
     pageSize: number;
     statusFilter?: number[];
     search?: string;
+    analysisIds?: string[];
   }) => {
     // Use the same logic as fetchWordsPage but without triggering loading states
     // Build the base query
@@ -265,6 +267,15 @@ export const silentRefetchPage = createAsyncThunk(
       const searchTerm = search.toLowerCase();
       allWords = allWords.filter((word) =>
         word.word.toLowerCase().includes(searchTerm)
+      );
+    }
+
+    // Apply analysis filter if needed
+    if (analysisIds.length > 0) {
+      allWords = allWords.filter(
+        (word) =>
+          word.analysisIds &&
+          word.analysisIds.some((id) => analysisIds.includes(id))
       );
     }
 

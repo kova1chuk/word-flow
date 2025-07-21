@@ -102,17 +102,34 @@ export const selectWordById = createSelector(
     getAllWords(wordsByPage).find((word) => word.id === wordId)
 );
 
+// Create a memoized selector factory to prevent unnecessary re-computations
+export const createSelectPaginatedWords = (page: number, pageSize: number) =>
+  createSelector(
+    [selectWords, (state: RootState) => state.words.pagination],
+    (wordsByPage, pagination) => {
+      // Get words for the current page
+      const pageWords = wordsByPage[page] || [];
+
+      return {
+        words: pageWords,
+        total: pagination.totalWords || 0,
+        totalPages:
+          pagination.totalWords !== undefined && pagination.totalWords > 0
+            ? Math.ceil(pagination.totalWords / pageSize)
+            : undefined, // undefined when we don't know total count (search mode)
+        currentPage: page,
+        hasNextPage: pagination.hasMore,
+        hasPrevPage: page > 1,
+      };
+    }
+  );
+
+// Keep the original selector for backward compatibility
 export const selectPaginatedWords = createSelector(
   [
     selectWords,
     (state: RootState) => state.words.pagination,
-    (
-      _state: RootState,
-      options: {
-        page: number;
-        pageSize: number;
-      }
-    ) => options,
+    (_state: RootState, options: { page: number; pageSize: number }) => options,
   ],
   (wordsByPage, pagination, { page, pageSize }) => {
     // Get words for the current page

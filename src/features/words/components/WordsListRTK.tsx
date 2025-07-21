@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 
 import { useSelector } from "react-redux";
 
@@ -26,8 +26,12 @@ export const WordsListRTK: React.FC<WordsListRTKProps> = ({
   );
 
   // Use the selector for paginated words
+  const paginationOptions = useMemo(
+    () => ({ page: currentPage, pageSize }),
+    [currentPage, pageSize]
+  );
   const { words: paginatedWords } = useSelector((state: RootState) =>
-    selectPaginatedWords(state, { page: currentPage, pageSize })
+    selectPaginatedWords(state, paginationOptions)
   );
 
   // Throw a promise when loading to trigger Suspense

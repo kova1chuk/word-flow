@@ -29,19 +29,15 @@ export const fetchSentences = createAsyncThunk(
     analysisId,
     page,
     pageSize,
-    lastDoc,
+    userId,
   }: {
     analysisId: string;
     page: number;
     pageSize: number;
     lastDoc?: FirestoreDocSnapshot;
+    userId?: string;
   }) => {
-    const result = await fetchSentencesPage(
-      analysisId,
-      page,
-      pageSize,
-      lastDoc
-    );
+    const result = await fetchSentencesPage(analysisId, page, pageSize, userId);
     return result;
   }
 );
@@ -199,12 +195,13 @@ const analysisSlice = createSlice({
         state.sentencesLoading = false;
         const { sentences, hasMore, lastDoc } = action.payload;
 
-        // If it's the first page, replace sentences, otherwise append
-        if (state.sentences.length === 0) {
-          state.sentences = sentences;
-        } else {
-          state.sentences = [...state.sentences, ...sentences];
-        }
+        // For Supabase pagination, replace sentences instead of accumulating
+        // This ensures the sentence count matches what's displayed
+        state.sentences = sentences;
+
+        // Clear translations when loading new page to prevent cross-page translation sharing
+        state.translatedSentences = {};
+        state.translatingSentenceId = null;
 
         state.hasMore = hasMore;
         state.lastDoc = lastDoc;

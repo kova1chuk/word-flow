@@ -12,6 +12,7 @@ import {
 
 import { config } from "@/lib/config";
 import { db } from "@/lib/firebase";
+import { supabase } from "@/lib/supabaseClient";
 
 export interface AnalysisResult {
   title: string;
@@ -142,6 +143,47 @@ const transformApiResult = (
 };
 
 export const analyzeApi = {
+  // Save analysis result using Supabase RPC
+  async saveAnalysisSupabase(
+    userId: string,
+    analysisResult: AnalysisResult,
+    langCode: string = "en"
+  ): Promise<string> {
+    // Transform word frequency data to match the function signature
+    const wordEntries = Object.entries(analysisResult.wordFrequency).map(
+      ([text, usage_count]) => ({
+        text,
+        usage_count,
+      })
+    );
+
+    console.log("📤 Sending to Supabase:", {
+      lang_code: langCode,
+      user_id: userId,
+      title: analysisResult.title,
+      word_entries: wordEntries,
+      external_sentences: analysisResult.sentences,
+      document_link: null,
+    });
+
+    const { data, error } = await supabase.rpc("add_analysis_data", {
+      lang_code: langCode,
+      user_id: userId,
+      title: analysisResult.title,
+      word_entries: wordEntries,
+      sentences: analysisResult.sentences,
+      document_link: null,
+    });
+
+    if (error) {
+      console.error("❌ Failed to save analysis:", error);
+      throw error;
+    }
+
+    console.log("✅ Analysis saved successfully");
+    return data; // Returns the analysis UUID
+  },
+
   // Analyze subtitle files (SRT, VTT)
   async analyzeSubtitle(file: File): Promise<AnalysisResult> {
     const formData = new FormData();

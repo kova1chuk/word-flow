@@ -13,6 +13,8 @@ import { updateWordStatsOnStatusChange } from "@/features/word-management/lib/up
 import {
   fetchWordsPageSupabase,
   deleteWordSupabase,
+  addWordToUserDictionarySupabase,
+  updateWordDefinitionSupabase,
 } from "@/features/words/api/wordsSupabase";
 
 import type { Word } from "@/entities/word/types";
@@ -83,14 +85,12 @@ export const fetchWordsPage = createAsyncThunk(
       pageSize,
       statusFilter = [],
       search = "",
-      analysisIds = [],
     }: {
       userId: string;
       page: number;
       pageSize: number;
       statusFilter?: number[];
       search?: string;
-      analysisIds?: string[];
     },
     {}
   ) => {
@@ -101,7 +101,7 @@ export const fetchWordsPage = createAsyncThunk(
       pageSize,
       statusFilter,
       search,
-      analysisIds,
+      langCode: "en", // Default to English
     });
   }
 );
@@ -123,14 +123,12 @@ export const silentRefetchPage = createAsyncThunk(
     pageSize,
     statusFilter = [],
     search = "",
-    analysisIds = [],
   }: {
     userId: string;
     page: number;
     pageSize: number;
     statusFilter?: number[];
     search?: string;
-    analysisIds?: string[];
   }) => {
     return await fetchWordsPageSupabase({
       userId,
@@ -138,15 +136,36 @@ export const silentRefetchPage = createAsyncThunk(
       pageSize,
       statusFilter,
       search,
-      analysisIds,
+      langCode: "en", // Default to English
+    });
+  }
+);
+
+// Add word thunk
+export const addWord = createAsyncThunk(
+  "words/addWord",
+  async ({
+    userId,
+    langCode,
+    wordText,
+  }: {
+    userId: string;
+    langCode: string;
+    wordText: string;
+  }) => {
+    return await addWordToUserDictionarySupabase({
+      userId,
+      langCode,
+      wordText,
     });
   }
 );
 
 export const reloadDefinition = createAsyncThunk(
   "words/reloadDefinition",
-  async ({ word }: { word: Word }) => {
-    let definition = "";
+  async ({ word, langCode = "en" }: { word: Word; langCode?: string }) => {
+    // First, fetch the definition from external API
+    let newDefinition = "";
     let details: WordDetails | undefined = undefined;
 
     const res = await fetch(
@@ -157,7 +176,7 @@ export const reloadDefinition = createAsyncThunk(
       const data: DictionaryApiResponse[] = await res.json();
       if (Array.isArray(data) && data.length > 0) {
         const firstResult = data[0];
-        definition =
+        newDefinition =
           firstResult.meanings?.[0]?.definitions?.[0]?.definition ??
           "No definition found.";
         details = {
@@ -181,18 +200,30 @@ export const reloadDefinition = createAsyncThunk(
           })),
         };
       } else {
-        definition = "No definition found.";
+        newDefinition = "No definition found.";
       }
     } else {
-      definition = "No definition found.";
+      newDefinition = "No definition found.";
     }
 
+    // Extract phonetic data if available
+    const phoneticAudioLink = details?.phonetics?.[0]?.audio;
+    const phoneticText = details?.phonetics?.[0]?.text;
+
+    // Update the definition using Supabase RPC
+    await updateWordDefinitionSupabase({
+      langCode,
+      wordId: word.id,
+      newDefinition,
+      newPhoneticAudioLink: phoneticAudioLink,
+      newPhoneticText: phoneticText,
+    });
+
     const dataToUpdate: { definition: string; details?: WordDetails } = {
-      definition,
+      definition: newDefinition,
     };
     if (details) dataToUpdate.details = details;
 
-    await updateDoc(doc(db, "words", word.id), dataToUpdate);
     return { wordId: word.id, updates: dataToUpdate };
   }
 );
@@ -363,6 +394,22 @@ const wordsSlice = createSlice({
       .addCase(silentRefetchPage.rejected, (state, action) => {
         // Don't set error for silent refetch to avoid showing error messages
         console.warn("Silent refetch failed:", action.error.message);
+      });
+
+    // Add word
+    builder
+      .addCase(addWord.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(addWord.fulfilled, (state) => {
+        state.loading = false;
+        // Word was added successfully - we could optionally clear cache here
+        // to force a refresh when user returns to words list
+      })
+      .addCase(addWord.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message || "Failed to add word";
       });
 
     // Reload definition

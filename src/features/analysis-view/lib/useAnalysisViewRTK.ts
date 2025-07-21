@@ -91,6 +91,7 @@ export const useAnalysisViewRTK = (analysisId: string) => {
           page,
           pageSize: sentencesPerPage,
           lastDoc: page > 1 ? lastDoc || undefined : undefined,
+          userId: user.uid,
         })
       );
     },

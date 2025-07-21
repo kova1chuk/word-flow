@@ -6,8 +6,10 @@ import React, {
   useTransition,
   useCallback,
   useRef,
+  useMemo,
 } from "react";
 
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { useSelector, useDispatch } from "react-redux";
@@ -214,8 +216,12 @@ export default function WordsPage() {
   ]);
 
   // Get pagination info from Redux
+  const paginationOptions = useMemo(
+    () => ({ page: currentPage, pageSize }),
+    [currentPage, pageSize]
+  );
   const { totalPages, total, words } = useSelector((state: RootState) =>
-    selectPaginatedWords(state, { page: currentPage, pageSize })
+    selectPaginatedWords(state, paginationOptions)
   );
   const pagination = useSelector((state: RootState) => state.words.pagination);
 
@@ -297,6 +303,32 @@ export default function WordsPage() {
 
   return (
     <div className="container mx-auto">
+      {/* Header with Add Button */}
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+          My Words
+        </h1>
+        <Link
+          href="/words/add"
+          className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors duration-200 shadow-sm hover:shadow-md"
+        >
+          <svg
+            className="w-5 h-5"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M12 4.5v15m7.5-7.5h-15"
+            />
+          </svg>
+          Add Word
+        </Link>
+      </div>
+
       <WordFilterControls
         selectedStatuses={statusFilter}
         onStatusFilterChange={(statuses) => {

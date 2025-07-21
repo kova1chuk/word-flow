@@ -174,11 +174,18 @@ function AnalysisPageContent() {
   // Handle translate sentence
   const handleTranslate = useCallback(
     async (sentenceId: string, text: string) => {
+      console.log("🔍 Translation requested:", {
+        sentenceId,
+        text: text.substring(0, 100) + "...",
+      });
+      console.log("🔍 Current translated sentences:", translatedSentences);
+
       if (translatedSentences[sentenceId]) return;
       setTranslatingSentenceId(sentenceId);
 
       try {
         const translation = await translateSentence(text);
+        console.log("✅ Translation received:", { sentenceId, translation });
         addTranslation(sentenceId, translation);
       } catch (error) {
         console.error("Translation error:", error);
@@ -287,7 +294,6 @@ function AnalysisPageContent() {
         <div className={`${isFullScreen ? "flex-1" : ""}`}>
           <Suspense fallback={<AnalysisContentSkeleton />}>
             <AnalysisContent
-              sentences={sentences}
               currentSentences={currentSentences}
               currentPage={currentPage}
               totalPages={totalPages}

@@ -5,7 +5,6 @@ import { Pagination } from "./Pagination";
 import { SentenceList } from "./SentenceList";
 
 interface AnalysisContentProps {
-  sentences: Sentence[];
   currentSentences: Sentence[];
   currentPage: number;
   totalPages: number;
@@ -23,7 +22,6 @@ interface AnalysisContentProps {
 }
 
 export const AnalysisContent: React.FC<AnalysisContentProps> = ({
-  sentences,
   currentSentences,
   currentPage,
   totalPages,
@@ -48,7 +46,7 @@ export const AnalysisContent: React.FC<AnalysisContentProps> = ({
       {/* Controls Section */}
       <div className="border-b border-gray-200 dark:border-gray-700">
         <AnalysisControls
-          sentencesLength={sentences.length}
+          sentencesLength={currentSentences.length}
           currentPage={currentPage}
           totalPages={totalPages}
           viewMode={viewMode}

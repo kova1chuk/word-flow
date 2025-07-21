@@ -21,6 +21,12 @@ export const SentenceList: React.FC<SentenceListProps> = ({
   onTranslate,
   loading = false,
 }) => {
+  console.log("🔍 SentenceList render:", {
+    sentenceCount: sentences.length,
+    sentenceIds: sentences.map((s) => s.id),
+    translatedSentences,
+    translatingSentenceId,
+  });
   // Highlight words in text and make them clickable
   const renderClickableText = (text: string) => {
     const words = text.split(/(\s+)/);
@@ -49,11 +55,8 @@ export const SentenceList: React.FC<SentenceListProps> = ({
         {Array.from({ length: 5 }).map((_, index) => (
           <div
             key={index}
-            className="flex items-start gap-4 p-4 border-b border-gray-100 dark:border-gray-700 last:border-b-0"
+            className="flex items-start p-4 border-b border-gray-100 dark:border-gray-700 last:border-b-0"
           >
-            {/* Sentence Number Skeleton */}
-            <div className="flex-shrink-0 w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse" />
-
             {/* Content Skeleton */}
             <div className="flex-1 space-y-3">
               {/* Sentence Text Skeleton */}
@@ -105,7 +108,7 @@ export const SentenceList: React.FC<SentenceListProps> = ({
       }`}
     >
       <div className="space-y-0">
-        {sentences.map((sentence, index) => {
+        {sentences.map((sentence) => {
           const translation = translatedSentences[sentence.id];
           const isTranslating = translatingSentenceId === sentence.id;
 
@@ -114,12 +117,7 @@ export const SentenceList: React.FC<SentenceListProps> = ({
               key={sentence.id}
               className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 last:border-b-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors duration-200"
             >
-              <div className="flex items-start gap-4">
-                {/* Sentence Number */}
-                <div className="flex-shrink-0 w-8 h-8 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center text-sm font-semibold">
-                  {index + 1}
-                </div>
-
+              <div className="flex items-start">
                 {/* Content */}
                 <div className="flex-1 min-w-0">
                   {viewMode === "columns" && (

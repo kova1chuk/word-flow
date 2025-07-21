@@ -22,6 +22,7 @@ export const AnalyzePage: React.FC = () => {
   } = useAnalyze();
 
   const [isSaved, setIsSaved] = useState(false);
+  const [title, setTitle] = useState("");
 
   return (
     <div className="bg-gray-50 dark:bg-gray-900">
@@ -38,6 +39,8 @@ export const AnalyzePage: React.FC = () => {
                 onTextChange={setText}
                 onAnalyze={analyzeText}
                 loading={loadingAnalysis}
+                title={title}
+                onTitleChange={setTitle}
               />
             )}
           </>

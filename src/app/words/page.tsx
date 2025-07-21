@@ -6,8 +6,10 @@ import React, {
   useTransition,
   useCallback,
   useRef,
+  useMemo,
 } from "react";
 
+import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 
 import { useSelector, useDispatch } from "react-redux";
@@ -72,6 +74,17 @@ export default function WordsPage() {
     label: a.title,
   }));
 
+  // Initialize selectedAnalyses from URL parameter
+  useEffect(() => {
+    const analysesParam = searchParams.get("analyses");
+    if (analysesParam) {
+      const analysisIds = analysesParam
+        .split(",")
+        .filter((id) => id.trim() !== "");
+      setSelectedAnalyses(analysisIds);
+    }
+  }, [searchParams]);
+
   // Use debounced search to avoid too many API calls
   const debouncedSearch = useDebouncedSearch(search, 500);
 
@@ -91,9 +104,12 @@ export default function WordsPage() {
       // Update URL using the simple approach
       const params = new URLSearchParams();
       if (page > 1) params.set("page", page.toString());
+      if (selectedAnalyses.length > 0) {
+        params.set("analyses", selectedAnalyses.join(","));
+      }
       router.push(`?${params.toString()}`);
     },
-    [currentPage, router]
+    [currentPage, router, selectedAnalyses]
   );
 
   // Update URL when filters change (separate function to avoid recursion)
@@ -101,14 +117,18 @@ export default function WordsPage() {
     (page: number) => {
       const params = new URLSearchParams();
       if (page > 1) params.set("page", page.toString());
+      if (selectedAnalyses.length > 0) {
+        params.set("analyses", selectedAnalyses.join(","));
+      }
       router.push(`?${params.toString()}`);
     },
-    [router]
+    [router, selectedAnalyses]
   );
 
   // Track previous filter values to detect actual changes
   const prevStatusFilter = useRef(statusFilter);
   const prevDebouncedSearch = useRef(debouncedSearch);
+  const prevSelectedAnalyses = useRef(selectedAnalyses);
 
   // Reset page to 1 and clear words when filters actually change
   useEffect(() => {
@@ -148,6 +168,23 @@ export default function WordsPage() {
     }
   }, [debouncedSearch, dispatch, updateURLForFilters, currentPage]);
 
+  // Handle analyses filter changes
+  useEffect(() => {
+    const analysesChanged =
+      JSON.stringify(prevSelectedAnalyses.current) !==
+      JSON.stringify(selectedAnalyses);
+
+    if (analysesChanged) {
+      // Only reset page if we're not on page 1 and analyses have actually changed
+      if (currentPage !== 1) {
+        updateURLForFilters(1);
+      }
+      // Clear words when analyses filter changes to ensure fresh data
+      dispatch(clearWords());
+      prevSelectedAnalyses.current = selectedAnalyses;
+    }
+  }, [selectedAnalyses, dispatch, updateURLForFilters, currentPage]);
+
   // Fetch words from Firestore with filters (use debounced search)
   useEffect(() => {
     if (!user?.uid) return;
@@ -179,8 +216,12 @@ export default function WordsPage() {
   ]);
 
   // Get pagination info from Redux
+  const paginationOptions = useMemo(
+    () => ({ page: currentPage, pageSize }),
+    [currentPage, pageSize]
+  );
   const { totalPages, total, words } = useSelector((state: RootState) =>
-    selectPaginatedWords(state, { page: currentPage, pageSize })
+    selectPaginatedWords(state, paginationOptions)
   );
   const pagination = useSelector((state: RootState) => state.words.pagination);
 
@@ -220,6 +261,8 @@ export default function WordsPage() {
                 pageSize,
                 statusFilter,
                 search: debouncedSearch,
+                analysisIds:
+                  selectedAnalyses.length > 0 ? selectedAnalyses : undefined,
               })
             );
           }
@@ -260,6 +303,32 @@ export default function WordsPage() {
 
   return (
     <div className="container mx-auto">
+      {/* Header with Add Button */}
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+          My Words
+        </h1>
+        <Link
+          href="/words/add"
+          className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors duration-200 shadow-sm hover:shadow-md"
+        >
+          <svg
+            className="w-5 h-5"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M12 4.5v15m7.5-7.5h-15"
+            />
+          </svg>
+          Add Word
+        </Link>
+      </div>
+
       <WordFilterControls
         selectedStatuses={statusFilter}
         onStatusFilterChange={(statuses) => {

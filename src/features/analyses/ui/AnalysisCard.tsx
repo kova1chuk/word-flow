@@ -2,7 +2,6 @@ import { useState } from "react";
 
 import Link from "next/link";
 
-
 import { useSelector } from "react-redux";
 
 import { LearningOverview } from "@/components/LearningOverview";
@@ -50,6 +49,21 @@ export const AnalysisCard: React.FC<AnalysisCardProps> = ({
 
   // Map wordStats to statusCounts for LearningOverview
   const getStatusCounts = () => {
+    // First, try to use the new Supabase words_stat field
+    if (analysis.words_stat) {
+      const counts: { [key: number]: number } = {};
+      // Convert string keys to numbers for consistency
+      Object.entries(analysis.words_stat).forEach(([key, value]) => {
+        counts[parseInt(key)] = value;
+      });
+      const total = Object.values(counts).reduce(
+        (sum: number, count: number) => sum + (count || 0),
+        0
+      );
+      return { counts, total };
+    }
+
+    // Fallback to legacy wordStats
     const wordStats =
       (analysis.summary as { wordStats?: { [key: number]: number } })
         ?.wordStats || analysis.wordStats;
@@ -110,8 +124,15 @@ export const AnalysisCard: React.FC<AnalysisCardProps> = ({
     const arr = Array.from({ length: 7 }, (_, i) => counts[i + 1] || 0);
     const total = arr.reduce((a, b) => a + b, 0);
     if (total === 0) return 0;
-    const weighted = arr.reduce((sum, count, i) => sum + i * count, 0);
-    return ((weighted - total) / (6 * total)) * 100;
+
+    // Calculate weighted score where status 7 = 100%, status 1 = 0%
+    // Each status represents progress: 1=0%, 2=16.7%, 3=33.3%, 4=50%, 5=66.7%, 6=83.3%, 7=100%
+    const weighted = arr.reduce((sum, count, i) => {
+      const statusProgress = (i / 6) * 100; // Status 1 (i=0) = 0%, Status 7 (i=6) = 100%
+      return sum + count * statusProgress;
+    }, 0);
+
+    return Math.round(weighted / total);
   }
 
   // Calculate completion percentage from statusCounts
@@ -176,7 +197,9 @@ export const AnalysisCard: React.FC<AnalysisCardProps> = ({
                     d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
                   />
                 </svg>
-                {formatDate(analysis.createdAt.dateString)}
+                {analysis.createdAt
+                  ? formatDate(analysis.createdAt.dateString)
+                  : "Unknown date"}
               </p>
 
               {/* Completion Badge */}

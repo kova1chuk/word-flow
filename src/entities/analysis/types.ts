@@ -17,6 +17,7 @@ export interface Analysis {
     unknownWords: number;
     wordStats?: { [key: number]: number };
   };
+  sentencesCount?: number; // Total number of sentences
 }
 
 export interface Sentence {

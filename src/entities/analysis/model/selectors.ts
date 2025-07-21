@@ -113,17 +113,19 @@ export const selectShowSettings = createSelector(
 
 // Computed selectors
 export const selectTotalPages = createSelector(
-  [selectSentences, selectSentencesPerPage],
-  (sentences, sentencesPerPage) =>
-    Math.ceil(sentences.length / sentencesPerPage)
+  [selectAnalysis, selectSentencesPerPage],
+  (analysis, sentencesPerPage) => {
+    const totalSentences = analysis?.sentencesCount || 0;
+    return Math.ceil(totalSentences / sentencesPerPage);
+  }
 );
 
 export const selectCurrentSentences = createSelector(
-  [selectSentences, selectCurrentPage, selectSentencesPerPage],
-  (sentences, currentPage, sentencesPerPage) => {
-    const startIndex = (currentPage - 1) * sentencesPerPage;
-    const endIndex = startIndex + sentencesPerPage;
-    return sentences.slice(startIndex, endIndex);
+  [selectSentences],
+  (sentences) => {
+    // Since we're using page-based loading (not accumulation),
+    // sentences already contains only the current page data
+    return sentences;
   }
 );
 

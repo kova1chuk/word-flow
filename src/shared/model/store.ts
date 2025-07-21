@@ -7,6 +7,7 @@ import analysesSlice from "@/features/analyses/model/analysesSlice";
 import trainingStatsSlice from "@/features/analysis-view/model/trainingStatsSlice";
 import analysisWordsSlice from "@/features/analysis-words/model/analysisWordsSlice";
 import analyzeSlice from "@/features/analyze/model/analyzeSlice";
+import profileReducer from "@/features/profile/model/profileSlice";
 import trainingSlice from "@/features/training/model/trainingSlice";
 import { wordsReducer } from "@/features/words/model";
 
@@ -34,6 +35,7 @@ export const store = configureStore({
     form: formSlice,
     notification: notificationSlice,
     training: trainingSlice,
+    profile: profileReducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

@@ -1,14 +1,27 @@
 import { useEffect, useState } from "react";
 
-import { onAuthStateChanged } from "firebase/auth";
-
 import { useDispatch, useSelector } from "react-redux";
 
 import { setUser, setLoading } from "@/entities/user/model/authSlice";
 
 import { RootState } from "@/shared/model/store";
 
-import { auth } from "@/lib/firebase";
+import { supabase } from "@/lib/supabaseClient";
+
+import type { User } from "@supabase/supabase-js";
+
+function mapSupabaseUser(user: User | null) {
+  if (!user) return null;
+  return {
+    uid: user.id,
+    email: user.email || "",
+    displayName: user.user_metadata?.full_name || undefined,
+    photoURL: user.user_metadata?.avatar_url || undefined,
+    emailVerified: user.email_confirmed_at !== null,
+    id: user.id,
+    createdAt: user.created_at,
+  };
+}
 
 export function useAuthSync() {
   const dispatch = useDispatch();
@@ -23,38 +36,22 @@ export function useAuthSync() {
 
   useEffect(() => {
     if (!isClient) return;
-
-    // Set loading to true when starting auth check
     dispatch(setLoading(true));
 
-    const unsubscribe = onAuthStateChanged(
-      auth,
-      (firebaseUser) => {
-        // Auth state has been determined, update user and mark as initialized
-        dispatch(
-          setUser(
-            firebaseUser
-              ? {
-                  id: firebaseUser.uid,
-                  uid: firebaseUser.uid,
-                  email: firebaseUser.email || "",
-                  displayName: firebaseUser.displayName || undefined,
-                  photoURL: firebaseUser.photoURL || undefined,
-                  emailVerified: firebaseUser.emailVerified,
-                  createdAt: new Date().toISOString(),
-                }
-              : null
-          )
-        );
-      },
-      (error) => {
-        // Handle auth errors
-        console.error("Auth state change error:", error);
-        dispatch(setUser(null)); // Set user to null on error
+    // Initial user fetch
+    supabase.auth.getUser().then(({ data }) => {
+      dispatch(setUser(mapSupabaseUser(data?.user)));
+    });
+
+    // Listen for auth state changes
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      (_event, session) => {
+        dispatch(setUser(mapSupabaseUser(session?.user ?? null)));
       }
     );
-
-    return unsubscribe;
+    return () => {
+      listener?.subscription.unsubscribe();
+    };
   }, [dispatch, isClient]);
 
   // Return safe defaults during SSR

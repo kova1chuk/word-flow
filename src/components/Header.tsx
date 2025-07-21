@@ -5,13 +5,11 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
-import { signOut } from "firebase/auth";
-
 import { useSelector } from "react-redux";
 
 import { selectUser } from "@/entities/user/model/selectors";
 
-import { auth } from "@/lib/firebase";
+import { supabase } from "@/lib/supabaseClient";
 
 import LoadingSpinner from "./LoadingSpinner";
 
@@ -69,7 +67,7 @@ export default function Header() {
 
   const handleSignOut = async () => {
     try {
-      await signOut(auth);
+      await supabase.auth.signOut();
       setIsUserMenuOpen(false);
       setIsMenuOpen(false);
     } catch (error) {
@@ -184,6 +182,13 @@ export default function Header() {
                     </button>
                     {isUserMenuOpen && (
                       <div className="absolute right-0 mt-2 w-48 bg-white/90 dark:bg-gray-800/90 backdrop-blur-md rounded-xl shadow-lg py-1 ring-1 ring-black/5 dark:ring-white/10 border border-gray-200/50 dark:border-gray-700/50">
+                        <Link
+                          href="/profile"
+                          className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100/50 dark:hover:bg-gray-700/50 rounded-lg mx-1 transition-colors"
+                          onClick={closeMenus}
+                        >
+                          Profile
+                        </Link>
                         <button
                           onClick={handleSignOut}
                           className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100/50 dark:hover:bg-gray-700/50 rounded-lg mx-1 transition-colors"
@@ -273,6 +278,13 @@ export default function Header() {
                             {user.email}
                           </p>
                         </div>
+                        <Link
+                          href="/profile"
+                          onClick={closeMenus}
+                          className="w-full text-left block px-3 py-2 rounded-xl text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100/50 dark:hover:bg-gray-700/50 transition-all duration-200"
+                        >
+                          Profile
+                        </Link>
                         <button
                           onClick={handleSignOut}
                           className="w-full text-left text-red-600 hover:bg-red-50/50 dark:hover:bg-red-900/20 block px-3 py-2 rounded-xl text-base font-medium transition-all duration-200"

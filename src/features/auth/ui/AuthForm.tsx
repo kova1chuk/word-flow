@@ -16,7 +16,7 @@ interface AuthFormProps {
   showConfirmPassword?: boolean;
   // New props for server actions
   serverAction?: (formData: FormData) => Promise<void>;
-  googleServerAction?: () => Promise<void>;
+  googleServerAction?: (origin?: string) => Promise<void>;
   urlError?: string;
   urlMessage?: string;
 }
@@ -166,9 +166,17 @@ export const AuthForm: React.FC<AuthFormProps> = ({
 
         <div className="mt-6">
           {googleServerAction ? (
-            <form action={googleServerAction}>
-              <GoogleButton type="submit">{googleText}</GoogleButton>
-            </form>
+            <GoogleButton
+              onClick={async () => {
+                const origin =
+                  typeof window !== "undefined"
+                    ? window.location.origin
+                    : undefined;
+                await googleServerAction(origin);
+              }}
+            >
+              {googleText}
+            </GoogleButton>
           ) : (
             <GoogleButton onClick={onGoogleAuth} disabled={loading}>
               {googleText}

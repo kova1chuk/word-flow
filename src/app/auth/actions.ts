@@ -48,17 +48,16 @@ export async function signOut() {
   redirect("/auth/signin");
 }
 
-export async function signInWithGoogle() {
+export async function signInWithGoogle(origin?: string) {
   const supabase = await createClient();
 
-  // Get the base URL with better fallback for production
+  // Get the base URL - prefer passed origin, then env vars, then Vercel URL
   const baseUrl =
+    origin ||
     process.env.NEXT_PUBLIC_SITE_URL ||
     (process.env.VERCEL_URL
       ? `https://${process.env.VERCEL_URL}`
-      : typeof window !== "undefined"
-        ? window.location.origin
-        : "http://localhost:3000");
+      : "http://localhost:3000");
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",

@@ -1,2 +1,2 @@
 export { default as WordsList } from "./WordsList";
-export { WordsListRTK } from "./WordsListRTK";
+export { default as WordsListRTK } from "./WordsListRTK";

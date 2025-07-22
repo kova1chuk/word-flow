@@ -13,8 +13,6 @@ import { useAnalyses } from "@/features/analyses/lib/useAnalyses";
 
 import { selectUser } from "@/entities/user/model/selectors";
 
-
-
 import { useAnalysisFilteredStats } from "@/shared/hooks/useAnalysisFilteredStats";
 import { useUserStatsRTK } from "@/shared/hooks/useUserStatsRTK";
 
@@ -111,7 +109,7 @@ export default function TrainingPage() {
     setSelectedAnalysisIds((prev) =>
       prev.includes(id)
         ? prev.filter((analysisId) => analysisId !== id)
-        : [...prev, id]
+        : [...prev, id],
     );
   };
 
@@ -126,7 +124,7 @@ export default function TrainingPage() {
   const getTotalWords = () => {
     if (!userWordStats) return 0;
     let total = 0;
-    Object.values(userWordStats).forEach((count) => {
+    (Object.values(userWordStats) as number[]).forEach((count) => {
       total += count;
     });
     return total;
@@ -135,7 +133,7 @@ export default function TrainingPage() {
   const getFilteredTotalWords = () => {
     if (!filteredWordStats) return 0;
     let total = 0;
-    Object.values(filteredWordStats).forEach((count) => {
+    (Object.values(filteredWordStats) as number[]).forEach((count) => {
       total += count;
     });
     return total;
@@ -143,9 +141,9 @@ export default function TrainingPage() {
 
   if (!user) {
     return (
-      <div className="bg-gray-50 dark:bg-gray-900 flex items-center justify-center min-h-screen">
+      <div className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-900">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
+          <h1 className="mb-4 text-2xl font-bold text-gray-900 dark:text-white">
             Please sign in to access training
           </h1>
         </div>
@@ -154,11 +152,11 @@ export default function TrainingPage() {
   }
 
   return (
-    <div className="bg-gray-50 dark:bg-gray-900 min-h-screen">
-      <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-900 dark:text-white mb-4">
+        <div className="mb-8 text-center">
+          <h1 className="mb-4 text-4xl font-bold text-gray-900 dark:text-white">
             Training Center
           </h1>
           <p className="text-xl text-gray-600 dark:text-gray-400">
@@ -167,12 +165,12 @@ export default function TrainingPage() {
         </div>
 
         {/* Stats Overview */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-8">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
+        <div className="mb-8 rounded-lg bg-white p-6 shadow-md dark:bg-gray-800">
+          <h2 className="mb-4 text-xl font-semibold text-gray-900 dark:text-white">
             Your Learning Stats
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div className="text-center p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+            <div className="rounded-lg bg-blue-50 p-4 text-center dark:bg-blue-900/20">
               <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
                 {getTotalWords()}
               </div>
@@ -180,7 +178,7 @@ export default function TrainingPage() {
                 Total Words
               </div>
             </div>
-            <div className="text-center p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+            <div className="rounded-lg bg-green-50 p-4 text-center dark:bg-green-900/20">
               <div className="text-2xl font-bold text-green-600 dark:text-green-400">
                 {selectedAnalysisIds.length > 0
                   ? getFilteredTotalWords()
@@ -190,7 +188,7 @@ export default function TrainingPage() {
                 Available for Training
               </div>
             </div>
-            <div className="text-center p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+            <div className="rounded-lg bg-purple-50 p-4 text-center dark:bg-purple-900/20">
               <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
                 {analyses.length}
               </div>
@@ -202,14 +200,14 @@ export default function TrainingPage() {
         </div>
 
         {/* Analyses Selection */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-8">
-          <div className="flex items-center justify-between mb-4">
+        <div className="mb-8 rounded-lg bg-white p-6 shadow-md dark:bg-gray-800">
+          <div className="mb-4 flex items-center justify-between">
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
               Select Analyses (Optional)
             </h2>
             <button
               onClick={() => setAnalysesExpanded(!analysesExpanded)}
-              className="flex items-center text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+              className="flex items-center text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
             >
               {analysesExpanded ? (
                 <ChevronDownIcon className="h-5 w-5" />
@@ -224,7 +222,7 @@ export default function TrainingPage() {
               <div className="flex items-center gap-3">
                 <button
                   onClick={toggleAll}
-                  className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
+                  className="text-sm text-blue-600 hover:underline dark:text-blue-400"
                 >
                   {selectedAnalysisIds.length === analyses.length
                     ? "Deselect All"
@@ -235,22 +233,22 @@ export default function TrainingPage() {
                 </span>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
                 {analyses.map((analysis) => (
                   <button
                     key={analysis.id}
                     onClick={() => toggleAnalysis(analysis.id)}
-                    className={`p-3 text-left rounded-lg border-2 transition-colors ${
+                    className={`rounded-lg border-2 p-3 text-left transition-colors ${
                       selectedAnalysisIds.includes(analysis.id)
                         ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
-                        : "border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500"
+                        : "border-gray-300 hover:border-gray-400 dark:border-gray-600 dark:hover:border-gray-500"
                     }`}
                   >
                     <div className="font-medium text-gray-900 dark:text-white">
                       {analysis.title}
                     </div>
                     <div className="text-sm text-gray-500 dark:text-gray-400">
-                      {analysis.summary?.totalWords ?? 0} words
+                      {analysis.totalWords ?? 0} words
                     </div>
                   </button>
                 ))}
@@ -260,12 +258,12 @@ export default function TrainingPage() {
         </div>
 
         {/* Training Types Grid */}
-        <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6">
-          <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-6">
+        <div className="rounded-lg bg-white p-6 shadow-md dark:bg-gray-800">
+          <h2 className="mb-6 text-xl font-semibold text-gray-900 dark:text-white">
             Choose Training Type
           </h2>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
             {TRAINING_TYPE_OPTIONS.map((option) => {
               const url = new URL(option.path, window.location.origin);
               if (selectedAnalysisIds.length > 0) {
@@ -276,19 +274,19 @@ export default function TrainingPage() {
                 <Link
                   key={option.value}
                   href={url.toString()}
-                  className="group block p-6 rounded-lg border-2 border-gray-300 dark:border-gray-600 hover:border-blue-500 dark:hover:border-blue-400 transition-all duration-200 hover:shadow-lg"
+                  className="group block rounded-lg border-2 border-gray-300 p-6 transition-all duration-200 hover:border-blue-500 hover:shadow-lg dark:border-gray-600 dark:hover:border-blue-400"
                 >
                   <div className="text-center">
-                    <div className="text-4xl mb-4 group-hover:scale-110 transition-transform duration-200">
+                    <div className="mb-4 text-4xl transition-transform duration-200 group-hover:scale-110">
                       {option.icon}
                     </div>
-                    <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-2">
+                    <h3 className="mb-2 text-lg font-semibold text-gray-900 dark:text-white">
                       {option.label}
                     </h3>
                     <p className="text-sm text-gray-600 dark:text-gray-400">
                       {option.description}
                     </p>
-                    <div className="mt-4 text-blue-600 dark:text-blue-400 text-sm font-medium">
+                    <div className="mt-4 text-sm font-medium text-blue-600 dark:text-blue-400">
                       Start Training →
                     </div>
                   </div>

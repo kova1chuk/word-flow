@@ -1,32 +1,23 @@
 import { useEffect, useState } from "react";
 
+import { AuthApiError } from "@supabase/supabase-js";
+
 import { useDispatch, useSelector } from "react-redux";
 
-import { setUser, setLoading } from "@/entities/user/model/authSlice";
+import { createClient, clearInvalidSession } from "@/utils/supabase/client";
+
+import {
+  setSupabaseUser,
+  setLoading,
+  setError,
+} from "@/entities/user/model/authSlice";
 
 import { RootState } from "@/shared/model/store";
-
-import { supabase } from "@/lib/supabaseClient";
-
-import type { User } from "@supabase/supabase-js";
-
-function mapSupabaseUser(user: User | null) {
-  if (!user) return null;
-  return {
-    uid: user.id,
-    email: user.email || "",
-    displayName: user.user_metadata?.full_name || undefined,
-    photoURL: user.user_metadata?.avatar_url || undefined,
-    emailVerified: user.email_confirmed_at !== null,
-    id: user.id,
-    createdAt: user.created_at,
-  };
-}
 
 export function useAuthSync() {
   const dispatch = useDispatch();
   const { user, loading, initialized } = useSelector(
-    (state: RootState) => state.auth
+    (state: RootState) => state.auth,
   );
   const [isClient, setIsClient] = useState(false);
 
@@ -36,19 +27,64 @@ export function useAuthSync() {
 
   useEffect(() => {
     if (!isClient) return;
+
+    const supabase = createClient();
     dispatch(setLoading(true));
 
-    // Initial user fetch
-    supabase.auth.getUser().then(({ data }) => {
-      dispatch(setUser(mapSupabaseUser(data?.user)));
-    });
+    // Initial user fetch with error handling
+    supabase.auth
+      .getUser()
+      .then(({ data, error }) => {
+        if (error && error instanceof AuthApiError) {
+          if (
+            error.code === "refresh_token_not_found" ||
+            (error.status === 400 &&
+              error.message.includes("Invalid Refresh Token"))
+          ) {
+            // Clear invalid session data
+            clearInvalidSession();
 
-    // Listen for auth state changes
+            // Clear the session and sign out
+            supabase.auth.signOut().then(() => {
+              dispatch(setSupabaseUser(null));
+            });
+            return;
+          }
+        }
+
+        dispatch(setSupabaseUser(data?.user ?? null));
+      })
+      .catch((error) => {
+        console.error("Auth initialization error:", error);
+
+        // Handle AuthApiError in catch block too
+        if (
+          error instanceof AuthApiError &&
+          error.code === "refresh_token_not_found"
+        ) {
+          clearInvalidSession();
+          dispatch(setSupabaseUser(null));
+        } else {
+          dispatch(setError("Authentication initialization failed"));
+          dispatch(setSupabaseUser(null));
+        }
+      });
+
+    // Listen for auth state changes with error handling
     const { data: listener } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        dispatch(setUser(mapSupabaseUser(session?.user ?? null)));
-      }
+      (event, session) => {
+        if (event === "TOKEN_REFRESHED" && !session) {
+          // Token refresh failed, clear the session
+          clearInvalidSession();
+          dispatch(setSupabaseUser(null));
+        } else if (event === "SIGNED_OUT" || !session) {
+          dispatch(setSupabaseUser(null));
+        } else {
+          dispatch(setSupabaseUser(session.user));
+        }
+      },
     );
+
     return () => {
       listener?.subscription.unsubscribe();
     };

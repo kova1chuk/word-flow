@@ -38,7 +38,7 @@ export const useAnalyze = () => {
   const { showSuccess, showError, clearMessages } = useNotifications();
   const [text, setText] = useState("");
   const [analysisResult, setAnalysisResult] = useState<AnalysisResult | null>(
-    null
+    null,
   );
   const [loadingAnalysis, setLoadingAnalysis] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -64,7 +64,7 @@ export const useAnalyze = () => {
         const apiResponse = await response.json();
 
         // Show final results immediately (skip user words processing)
-        const finalResult = transformApiResult(apiResponse, file.name, []);
+        const finalResult = transformApiResult(apiResponse, file.name);
         setAnalysisResult({
           ...finalResult,
           isProcessingUserWords: false,
@@ -74,12 +74,12 @@ export const useAnalyze = () => {
       } catch (err) {
         console.error("Subtitle upload error:", err);
         showError(
-          err instanceof Error ? err.message : "Subtitle upload failed"
+          err instanceof Error ? err.message : "Subtitle upload failed",
         );
         setLoadingAnalysis(false);
       }
     },
-    [user, clearMessages, showSuccess, showError]
+    [user, clearMessages, showSuccess, showError],
   );
 
   const handleGenericUpload = useCallback(
@@ -102,7 +102,7 @@ export const useAnalyze = () => {
         const apiResponse = await response.json();
 
         // Show final results immediately (skip user words processing)
-        const finalResult = transformApiResult(apiResponse, file.name, []);
+        const finalResult = transformApiResult(apiResponse, file.name);
         setAnalysisResult({
           ...finalResult,
           isProcessingUserWords: false,
@@ -115,7 +115,7 @@ export const useAnalyze = () => {
         setLoadingAnalysis(false);
       }
     },
-    [user, clearMessages, showSuccess, showError]
+    [user, clearMessages, showSuccess, showError],
   );
 
   const handleFileUpload = useCallback(
@@ -127,7 +127,7 @@ export const useAnalyze = () => {
         handleGenericUpload(file);
       }
     },
-    [handleSubtitleUpload, handleGenericUpload]
+    [handleSubtitleUpload, handleGenericUpload],
   );
 
   const analyzeText = useCallback(async () => {
@@ -150,7 +150,7 @@ export const useAnalyze = () => {
       const apiResponse = await response.json();
 
       // Show final results immediately (skip user words processing)
-      const finalResult = transformApiResult(apiResponse, "Pasted Text", []);
+      const finalResult = transformApiResult(apiResponse, "Pasted Text");
       setAnalysisResult({
         ...finalResult,
         isProcessingUserWords: false,
@@ -179,7 +179,7 @@ export const useAnalyze = () => {
           // Try Supabase RPC
           const analysisId = await analyzeApi.saveAnalysisSupabase(
             user.uid,
-            analysisToSave
+            analysisToSave,
           );
           setSavedAnalysisId(analysisId);
           console.log("✅ Saved using Supabase RPC");
@@ -188,10 +188,10 @@ export const useAnalyze = () => {
           const error = supabaseError as { code?: string };
           if (error?.code === "42883" || error?.code === "PGRST202") {
             console.log(
-              "❌ Supabase RPC function 'add_analysis_data' not found"
+              "❌ Supabase RPC function 'add_analysis_data' not found",
             );
             throw new Error(
-              "Save function not available. Please create the 'add_analysis_data' function in Supabase."
+              "Save function not available. Please create the 'add_analysis_data' function in Supabase.",
             );
           } else {
             throw supabaseError;
@@ -205,7 +205,7 @@ export const useAnalyze = () => {
         setSaving(false);
       }
     },
-    [user, analysisResult, showSuccess, showError]
+    [user, analysisResult, showSuccess, showError],
   );
 
   return {

@@ -11,11 +11,7 @@ interface WordsListRTKWithSuspenseProps {
 }
 
 // Lazy load the WordsListRTK component
-const LazyWordsListRTK = React.lazy(() =>
-  import("./WordsListRTK").then((module) => ({
-    default: module.WordsListRTK,
-  }))
-);
+const LazyWordsListRTK = React.lazy(() => import("./WordsListRTK"));
 
 export const WordsListRTKWithSuspense: React.FC<
   WordsListRTKWithSuspenseProps

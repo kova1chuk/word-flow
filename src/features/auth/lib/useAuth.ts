@@ -1,3 +1,5 @@
+"use client";
+
 import { useState, useCallback } from "react";
 
 import { useRouter } from "next/navigation";
@@ -34,7 +36,7 @@ export const useAuth = () => {
         setLoading(false);
       }
     },
-    [email, password, router]
+    [email, password, router],
   );
 
   const handleEmailSignUp = useCallback(
@@ -52,7 +54,7 @@ export const useAuth = () => {
       // Validate password confirmation
       const confirmError = authApi.validatePasswordConfirmation(
         password,
-        confirmPassword
+        confirmPassword,
       );
       if (confirmError) {
         setError(confirmError);
@@ -70,7 +72,7 @@ export const useAuth = () => {
         setLoading(false);
       }
     },
-    [email, password, confirmPassword, router]
+    [email, password, confirmPassword, router],
   );
 
   const handleGoogleAuth = useCallback(async () => {

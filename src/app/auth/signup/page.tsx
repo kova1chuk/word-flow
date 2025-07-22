@@ -1,7 +1,11 @@
-"use client";
+import { Suspense } from "react";
 
 import { SignUpPage } from "@/features/auth";
 
 export default function SignUpPageWrapper() {
-  return <SignUpPage />;
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <SignUpPage />
+    </Suspense>
+  );
 }

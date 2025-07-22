@@ -12,7 +12,7 @@ import { fetchWordInfo, translateSentence } from "./analysisApi";
 
 export const useWordManagement = (
   selectedWord: WordInfo | null,
-  setSelectedWord: (word: WordInfo | null) => void
+  setSelectedWord: (word: WordInfo | null) => void,
 ) => {
   const dispatch = useAppDispatch();
 
@@ -22,11 +22,13 @@ export const useWordManagement = (
     dispatch(setReloadingDefinition(true));
 
     try {
-      const { definition, details } = await fetchWordInfo(selectedWord.word);
+      const { definition, pronunciation, examples } = await fetchWordInfo(
+        selectedWord.word,
+      );
       setSelectedWord({
         ...selectedWord,
         definition,
-        details,
+        details: { pronunciation, examples },
       });
     } catch (error) {
       console.error("Error reloading definition:", error);

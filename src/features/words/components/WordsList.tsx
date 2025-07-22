@@ -5,13 +5,13 @@ import type { Word, WordDetails } from "@/types";
 interface WordsListProps {
   words: Word[];
   onReloadDefinition: (
-    word: Word
+    word: Word,
   ) => Promise<{ definition: string; details?: WordDetails }>;
   onReloadTranslation: (word: Word) => Promise<{ translation: string }>;
   onDelete: (word: Word) => Promise<boolean>;
   onStatusChange: (
     id: string,
-    status: 1 | 2 | 3 | 4 | 5 | 6 | 7
+    status: 1 | 2 | 3 | 4 | 5 | 6 | 7,
   ) => Promise<{ status: number }>;
   updating: string | null;
   currentPage: number;
@@ -40,7 +40,7 @@ export default function WordsList({
 }: WordsListProps) {
   if (filteredWords.length === 0) {
     return (
-      <div className="text-center py-12">
+      <div className="py-12 text-center">
         <svg
           className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500"
           fill="none"
@@ -68,15 +68,23 @@ export default function WordsList({
 
   return (
     <>
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 sm:gap-6 lg:grid-cols-3 xl:grid-cols-4">
         {words.map((word) => (
           <WordCard
             key={word.id}
             word={word}
-            onReloadDefinition={onReloadDefinition}
-            onReloadTranslation={onReloadTranslation}
-            onDelete={onDelete}
-            onStatusChange={onStatusChange}
+            onReloadDefinition={async (word) => {
+              await onReloadDefinition(word);
+            }}
+            onReloadTranslation={async (word) => {
+              await onReloadTranslation(word);
+            }}
+            onDelete={async (word) => {
+              await onDelete(word);
+            }}
+            onStatusChange={async (id, status) => {
+              await onStatusChange(id, status);
+            }}
             updating={updating}
           />
         ))}
@@ -96,7 +104,7 @@ export default function WordsList({
             <button
               onClick={goToPreviousPage}
               disabled={currentPage === 1}
-              className="px-3 py-2 text-sm font-medium text-gray-500 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-600 dark:bg-gray-800 dark:hover:bg-gray-700"
             >
               Previous
             </button>
@@ -115,10 +123,10 @@ export default function WordsList({
                 <button
                   key={pageNum}
                   onClick={() => goToPage(pageNum)}
-                  className={`px-3 py-2 text-sm font-medium rounded-md ${
+                  className={`rounded-md px-3 py-2 text-sm font-medium ${
                     currentPage === pageNum
                       ? "bg-blue-600 text-white"
-                      : "text-gray-500 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-700"
+                      : "border border-gray-300 bg-white text-gray-500 hover:bg-gray-50 dark:border-gray-600 dark:bg-gray-800 dark:hover:bg-gray-700"
                   }`}
                 >
                   {pageNum}
@@ -128,7 +136,7 @@ export default function WordsList({
             <button
               onClick={goToNextPage}
               disabled={currentPage === totalPages}
-              className="px-3 py-2 text-sm font-medium text-gray-500 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50 dark:border-gray-600 dark:bg-gray-800 dark:hover:bg-gray-700"
             >
               Next
             </button>

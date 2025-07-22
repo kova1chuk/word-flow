@@ -75,7 +75,7 @@ export const useAnalysisView = (analysisId: string) => {
       dispatch(setLoading(true));
       const { analysis: analysisData } = await fetchAnalysisDetails(
         analysisId,
-        user.uid
+        user.uid,
       );
       dispatch(setAnalysis(analysisData));
     } catch (err) {
@@ -94,18 +94,15 @@ export const useAnalysisView = (analysisId: string) => {
 
       try {
         setSentencesLoading(true);
-        const {
-          sentences: sentencesData,
-          hasMore: more,
-          lastDoc: newLastDoc,
-        } = await fetchSentencesPage(
-          analysisId,
-          page,
-          sentencesPerPage,
-          lastDoc ?? undefined
-        );
+        const { sentences: sentencesData, hasMore: more } =
+          await fetchSentencesPage(
+            analysisId,
+            page,
+            sentencesPerPage,
+            user.uid,
+          );
 
-        setLastDoc(newLastDoc);
+        setLastDoc(null); // TODO: Implement lastDoc when pagination with Firestore is implemented
         setHasMore(more);
 
         // Update sentences in store
@@ -123,7 +120,7 @@ export const useAnalysisView = (analysisId: string) => {
         setSentencesLoading(false);
       }
     },
-    [user, analysisId, sentencesPerPage, lastDoc, sentences, dispatch]
+    [user, analysisId, sentencesPerPage, lastDoc, sentences, dispatch],
   );
 
   // Initialize data

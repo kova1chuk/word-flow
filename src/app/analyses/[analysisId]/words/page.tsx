@@ -25,7 +25,7 @@ export default function AnalysisWordsPage() {
   // Pagination state
   const [pageSize, setPageSize] = useState(12);
   const [selectedStatuses, setSelectedStatuses] = useState<(string | number)[]>(
-    []
+    [],
   );
   const [search, setSearch] = useState("");
 
@@ -36,7 +36,7 @@ export default function AnalysisWordsPage() {
       pageSize,
       statusFilter: selectedStatuses.length === 0 ? "all" : selectedStatuses,
       search,
-    }
+    },
   );
 
   // Pagination handlers - Simplified for now
@@ -62,7 +62,7 @@ export default function AnalysisWordsPage() {
 
   const handleStatusChange = async (
     id: string,
-    status: 1 | 2 | 3 | 4 | 5 | 6 | 7
+    status: 1 | 2 | 3 | 4 | 5 | 6 | 7,
   ) => {
     // TODO: Implement Supabase version
     console.log("Status change:", { id, status });
@@ -81,9 +81,9 @@ export default function AnalysisWordsPage() {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center bg-gray-50">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">
+          <h1 className="mb-4 text-2xl font-bold text-gray-900">
             Please sign in to view words
           </h1>
         </div>
@@ -93,7 +93,7 @@ export default function AnalysisWordsPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center bg-gray-50">
         <LoadingSpinner />
       </div>
     );
@@ -101,15 +101,15 @@ export default function AnalysisWordsPage() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center bg-gray-50">
         <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 mb-4">
+          <h1 className="mb-4 text-2xl font-bold text-gray-900">
             Error loading words
           </h1>
-          <p className="text-gray-600 mb-4">{error}</p>
+          <p className="mb-4 text-gray-600">{error}</p>
           <button
             onClick={refreshWords}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="rounded-lg bg-blue-600 px-4 py-2 text-white transition-colors hover:bg-blue-700"
           >
             Try Again
           </button>
@@ -133,7 +133,7 @@ export default function AnalysisWordsPage() {
   return (
     <div className="bg-gray-50 dark:bg-gray-900">
       <AnalysisWordsHeader analysis={analysis} />
-      <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         <WordFilterControls
           selectedStatuses={selectedStatuses}
           onStatusFilterChange={handleStatusFilterChange}
@@ -145,9 +145,9 @@ export default function AnalysisWordsPage() {
           pageSizeOptions={PAGE_SIZE_OPTIONS}
           totalCount={
             analysis?.summary?.wordStats
-              ? Object.values(analysis.summary.wordStats).reduce(
+              ? (Object.values(analysis.summary.wordStats) as number[]).reduce(
                   (a, b) => a + b,
-                  0
+                  0,
                 )
               : 0
           }
@@ -169,10 +169,9 @@ export default function AnalysisWordsPage() {
                 <span>
                   {" "}
                   of{" "}
-                  {Object.values(analysis.summary.wordStats).reduce(
-                    (a, b) => a + b,
-                    0
-                  )}{" "}
+                  {(
+                    Object.values(analysis.summary.wordStats) as number[]
+                  ).reduce((a, b) => a + b, 0)}{" "}
                   total
                 </span>
               )}

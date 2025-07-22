@@ -7,9 +7,9 @@ import { usePathname } from "next/navigation";
 
 import { useSelector } from "react-redux";
 
-import { selectUser } from "@/entities/user/model/selectors";
+import { signOut } from "@/app/auth/actions";
 
-import { supabase } from "@/lib/supabaseClient";
+import { selectUser } from "@/entities/user/model/selectors";
 
 import LoadingSpinner from "./LoadingSpinner";
 
@@ -67,7 +67,7 @@ export default function Header() {
 
   const handleSignOut = async () => {
     try {
-      await supabase.auth.signOut();
+      await signOut();
       setIsUserMenuOpen(false);
       setIsMenuOpen(false);
     } catch (error) {
@@ -97,9 +97,9 @@ export default function Header() {
 
   if (!user) {
     return (
-      <header className="fixed top-4 left-4 right-4 z-50 bg-white/80 dark:bg-gray-800/80 backdrop-blur-md shadow-lg border border-gray-200/50 dark:border-gray-700/50 rounded-2xl">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-14">
+      <header className="fixed top-4 right-4 left-4 z-50 rounded-2xl border border-gray-200/50 bg-white/80 shadow-lg backdrop-blur-md dark:border-gray-700/50 dark:bg-gray-800/80">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="flex h-14 items-center justify-between">
             <div className="flex-shrink-0">
               <span className="text-2xl font-bold text-gray-900 dark:text-white">
                 Word Flow
@@ -114,19 +114,19 @@ export default function Header() {
 
   return (
     <header
-      className={`fixed top-4 left-4 right-4 z-50 transition-all duration-300 ease-out ${
+      className={`fixed top-4 right-4 left-4 z-50 transition-all duration-300 ease-out ${
         isVisible ? "translate-y-0 opacity-100" : "-translate-y-full opacity-0"
       }`}
     >
-      <nav className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-md shadow-lg border border-gray-200/50 dark:border-gray-700/50 rounded-2xl">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-14">
+      <nav className="rounded-2xl border border-gray-200/50 bg-white/80 shadow-lg backdrop-blur-md dark:border-gray-700/50 dark:bg-gray-800/80">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="flex h-14 items-center justify-between">
             <div className="flex items-center">
               <div className="flex-shrink-0">
                 <Link
                   href="/"
                   onClick={closeMenus}
-                  className="text-2xl font-bold text-gray-800 dark:text-white hover:text-blue-500 dark:hover:text-blue-400 transition-colors"
+                  className="text-2xl font-bold text-gray-800 transition-colors hover:text-blue-500 dark:text-white dark:hover:text-blue-400"
                 >
                   Word Flow
                 </Link>
@@ -134,7 +134,7 @@ export default function Header() {
             </div>
 
             {/* Desktop Menu */}
-            <div className="hidden md:flex items-center space-x-1">
+            <div className="hidden items-center space-x-1 md:flex">
               {user && (
                 <>
                   {navLinks.map((link) => {
@@ -144,10 +144,10 @@ export default function Header() {
                         key={link.href}
                         href={link.href}
                         onClick={closeMenus}
-                        className={`px-3 py-2 rounded-xl text-sm font-medium transition-all duration-200 ${
+                        className={`rounded-xl px-3 py-2 text-sm font-medium transition-all duration-200 ${
                           isActive
-                            ? "text-blue-600 dark:text-blue-400 bg-gray-100/50 dark:bg-gray-700/50"
-                            : "text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-white hover:bg-gray-100/50 dark:hover:bg-gray-700/50"
+                            ? "bg-gray-100/50 text-blue-600 dark:bg-gray-700/50 dark:text-blue-400"
+                            : "text-gray-600 hover:bg-gray-100/50 hover:text-blue-600 dark:text-gray-300 dark:hover:bg-gray-700/50 dark:hover:text-white"
                         }`}
                       >
                         {link.label}
@@ -158,14 +158,14 @@ export default function Header() {
                   <div className="relative" ref={userMenuRef}>
                     <button
                       onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                      className="flex items-center space-x-2 focus:outline-none p-2 rounded-xl hover:bg-gray-100/50 dark:hover:bg-gray-700/50 transition-all duration-200"
+                      className="flex items-center space-x-2 rounded-xl p-2 transition-all duration-200 hover:bg-gray-100/50 focus:outline-none dark:hover:bg-gray-700/50"
                     >
                       <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
                         {user.email}
                       </span>
                       <svg
-                        className={`w-4 h-4 text-gray-600 dark:text-gray-400 transition-transform duration-200 ${
-                          isUserMenuOpen ? "transform rotate-180" : ""
+                        className={`h-4 w-4 text-gray-600 transition-transform duration-200 dark:text-gray-400 ${
+                          isUserMenuOpen ? "rotate-180 transform" : ""
                         }`}
                         fill="none"
                         stroke="currentColor"
@@ -181,17 +181,17 @@ export default function Header() {
                       </svg>
                     </button>
                     {isUserMenuOpen && (
-                      <div className="absolute right-0 mt-2 w-48 bg-white/90 dark:bg-gray-800/90 backdrop-blur-md rounded-xl shadow-lg py-1 ring-1 ring-black/5 dark:ring-white/10 border border-gray-200/50 dark:border-gray-700/50">
+                      <div className="absolute right-0 mt-2 w-48 rounded-xl border border-gray-200/50 bg-white/90 py-1 shadow-lg ring-1 ring-black/5 backdrop-blur-md dark:border-gray-700/50 dark:bg-gray-800/90 dark:ring-white/10">
                         <Link
                           href="/profile"
-                          className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100/50 dark:hover:bg-gray-700/50 rounded-lg mx-1 transition-colors"
+                          className="mx-1 block w-full rounded-lg px-4 py-2 text-left text-sm text-gray-700 transition-colors hover:bg-gray-100/50 dark:text-gray-300 dark:hover:bg-gray-700/50"
                           onClick={closeMenus}
                         >
                           Profile
                         </Link>
                         <button
                           onClick={handleSignOut}
-                          className="block w-full text-left px-4 py-2 text-sm text-gray-700 dark:text-gray-300 hover:bg-gray-100/50 dark:hover:bg-gray-700/50 rounded-lg mx-1 transition-colors"
+                          className="mx-1 block w-full rounded-lg px-4 py-2 text-left text-sm text-gray-700 transition-colors hover:bg-gray-100/50 dark:text-gray-300 dark:hover:bg-gray-700/50"
                         >
                           Sign Out
                         </button>
@@ -203,10 +203,10 @@ export default function Header() {
             </div>
 
             {/* Mobile Menu Button and Dropdown */}
-            <div className="md:hidden flex items-center" ref={mobileMenuRef}>
+            <div className="flex items-center md:hidden" ref={mobileMenuRef}>
               <button
                 onClick={() => setIsMenuOpen(!isMenuOpen)}
-                className="inline-flex items-center justify-center p-2 rounded-xl text-gray-400 dark:text-gray-200 hover:text-white hover:bg-gray-700/50 focus:outline-none focus:ring-2 focus:ring-inset focus:ring-blue-500 transition-all duration-200"
+                className="inline-flex items-center justify-center rounded-xl p-2 text-gray-400 transition-all duration-200 hover:bg-gray-700/50 hover:text-white focus:ring-2 focus:ring-blue-500 focus:outline-none focus:ring-inset dark:text-gray-200"
               >
                 <span className="sr-only">Open main menu</span>
                 {isMenuOpen ? (
@@ -245,11 +245,11 @@ export default function Header() {
               </button>
               {/* Mobile Menu Dropdown */}
               <div
-                className={`absolute top-16 left-0 w-full bg-white/90 dark:bg-gray-800/90 backdrop-blur-md shadow-lg rounded-xl border border-gray-200/50 dark:border-gray-700/50 ${
+                className={`absolute top-16 left-0 w-full rounded-xl border border-gray-200/50 bg-white/90 shadow-lg backdrop-blur-md dark:border-gray-700/50 dark:bg-gray-800/90 ${
                   isMenuOpen ? "block" : "hidden"
                 }`}
               >
-                <div className="px-2 pt-2 pb-3 space-y-1 sm:px-3">
+                <div className="space-y-1 px-2 pt-2 pb-3 sm:px-3">
                   {user && (
                     <>
                       {navLinks.map((link) => {
@@ -259,17 +259,17 @@ export default function Header() {
                             key={link.href}
                             href={link.href}
                             onClick={closeMenus}
-                            className={`block px-3 py-2 rounded-xl text-base font-medium transition-all duration-200 ${
+                            className={`block rounded-xl px-3 py-2 text-base font-medium transition-all duration-200 ${
                               isActive
-                                ? "text-blue-600 dark:text-blue-400 bg-gray-100/50 dark:bg-gray-700/50"
-                                : "text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-white hover:bg-gray-100/50 dark:hover:bg-gray-700/50"
+                                ? "bg-gray-100/50 text-blue-600 dark:bg-gray-700/50 dark:text-blue-400"
+                                : "text-gray-600 hover:bg-gray-100/50 hover:text-blue-600 dark:text-gray-300 dark:hover:bg-gray-700/50 dark:hover:text-white"
                             }`}
                           >
                             {link.label}
                           </Link>
                         );
                       })}
-                      <div className="border-t border-gray-200/50 dark:border-gray-700/50 my-2 pt-4">
+                      <div className="my-2 border-t border-gray-200/50 pt-4 dark:border-gray-700/50">
                         <div className="px-3 py-2">
                           <p className="text-sm font-medium text-gray-500 dark:text-gray-400">
                             Signed in as
@@ -281,13 +281,13 @@ export default function Header() {
                         <Link
                           href="/profile"
                           onClick={closeMenus}
-                          className="w-full text-left block px-3 py-2 rounded-xl text-base font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100/50 dark:hover:bg-gray-700/50 transition-all duration-200"
+                          className="block w-full rounded-xl px-3 py-2 text-left text-base font-medium text-gray-700 transition-all duration-200 hover:bg-gray-100/50 dark:text-gray-300 dark:hover:bg-gray-700/50"
                         >
                           Profile
                         </Link>
                         <button
                           onClick={handleSignOut}
-                          className="w-full text-left text-red-600 hover:bg-red-50/50 dark:hover:bg-red-900/20 block px-3 py-2 rounded-xl text-base font-medium transition-all duration-200"
+                          className="block w-full rounded-xl px-3 py-2 text-left text-base font-medium text-red-600 transition-all duration-200 hover:bg-red-50/50 dark:hover:bg-red-900/20"
                         >
                           Sign Out
                         </button>

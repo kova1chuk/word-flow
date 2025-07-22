@@ -1,4 +1,4 @@
-const CACHE_NAME = "word-flow-v1";
+const CACHE_NAME = "word-flow-d6db3f5";
 const urlsToCache = [
   "/",
   "/analyses",
@@ -8,43 +8,139 @@ const urlsToCache = [
   "/favicon/favicon-32x32.png",
   "/favicon/apple-touch-icon.png",
   "/favicon/android-chrome-192x192.png",
-  "/favicon/android-chrome-512x512.png",
   "/site.webmanifest",
 ];
 
+// Check if we're running on localhost
+const isLocalhost =
+  self.location.hostname === "localhost" ||
+  self.location.hostname === "127.0.0.1" ||
+  self.location.hostname === "::1";
+
+console.log(
+  `🔧 SW: Running on ${isLocalhost ? "localhost (caching disabled)" : "production (caching enabled)"}`,
+);
+
 // Install event - cache resources
 self.addEventListener("install", (event) => {
+  // Skip caching on localhost
+  if (isLocalhost) {
+    console.log("🚫 SW: Skipping cache installation on localhost");
+    return;
+  }
+
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
       console.log("Opened cache");
-      // Use addAll with error handling for individual failures
       return Promise.allSettled(
         urlsToCache.map((url) =>
           cache.add(url).catch((error) => {
             console.warn(`Failed to cache ${url}:`, error);
             return null;
-          })
-        )
+          }),
+        ),
       );
-    })
+    }),
   );
 });
 
 // Fetch event - serve from cache when offline
 self.addEventListener("fetch", (event) => {
+  // Skip non-GET requests and chrome-extension requests
+  if (
+    event.request.method !== "GET" ||
+    event.request.url.startsWith("chrome-extension://")
+  ) {
+    return;
+  }
+
+  // On localhost, always fetch from network (no caching)
+  if (isLocalhost) {
+    event.respondWith(
+      fetch(event.request).catch((error) => {
+        console.error("Fetch failed on localhost:", error);
+        return new Response("Service Unavailable", { status: 503 });
+      }),
+    );
+    return;
+  }
+
+  // Production caching logic
   event.respondWith(
     caches
       .match(event.request)
       .then((response) => {
-        // Return cached version or fetch from network
-        return response || fetch(event.request);
-      })
-      .catch(() => {
-        // Return offline page if both cache and network fail
-        if (event.request.destination === "document") {
-          return caches.match("/offline.html");
+        if (response) {
+          return response;
         }
+
+        // Clone the request because it's a stream
+        const fetchRequest = event.request.clone();
+
+        return fetch(fetchRequest)
+          .then((response) => {
+            // Check if we received a valid response
+            if (
+              !response ||
+              response.status !== 200 ||
+              response.type !== "basic"
+            ) {
+              return response;
+            }
+
+            // Clone the response to check for auth errors before caching
+            const responseToCheck = response.clone();
+
+            // For HTML responses, check if they contain auth errors
+            if (response.headers.get("content-type")?.includes("text/html")) {
+              return responseToCheck.text().then((text) => {
+                // Don't cache responses that contain auth errors
+                if (
+                  text.includes("AuthApiError") ||
+                  text.includes("Invalid Refresh Token")
+                ) {
+                  console.log("🚫 SW: Not caching response with auth error");
+                  return response;
+                }
+
+                // Safe to cache - no auth errors detected
+                const responseToCache = response.clone();
+                caches.open(CACHE_NAME).then((cache) => {
+                  cache.put(event.request, responseToCache);
+                });
+
+                return response;
+              });
+            }
+
+            // For non-HTML responses, cache normally
+            const responseToCache = response.clone();
+            caches.open(CACHE_NAME).then((cache) => {
+              cache.put(event.request, responseToCache);
+            });
+
+            return response;
+          })
+          .catch((error) => {
+            console.error("Fetch failed:", error);
+
+            // Return offline page for navigation requests
+            if (event.request.destination === "document") {
+              return caches.match("/offline.html").then((offlineResponse) => {
+                return (
+                  offlineResponse || new Response("Offline", { status: 503 })
+                );
+              });
+            }
+
+            // Return a generic offline response for other requests
+            return new Response("Service Unavailable", { status: 503 });
+          });
       })
+      .catch((error) => {
+        console.error("Cache match failed:", error);
+        return new Response("Cache Error", { status: 500 });
+      }),
   );
 });
 
@@ -58,9 +154,9 @@ self.addEventListener("activate", (event) => {
             console.log("Deleting old cache:", cacheName);
             return caches.delete(cacheName);
           }
-        })
+        }),
       );
-    })
+    }),
   );
 });
 
@@ -73,9 +169,7 @@ self.addEventListener("sync", (event) => {
 
 async function doBackgroundSync() {
   try {
-    // Sync any pending data when connection is restored
     console.log("Background sync triggered");
-    // Add your sync logic here
   } catch (error) {
     console.error("Background sync failed:", error);
   }

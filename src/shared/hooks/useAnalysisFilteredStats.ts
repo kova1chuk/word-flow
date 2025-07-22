@@ -27,7 +27,7 @@ export function useAnalysisFilteredStats(analysisIds: string[]) {
         {
           p_user_id: user.uid,
           p_analysis_ids: analysisIds,
-        }
+        },
       );
 
       if (error) {
@@ -48,5 +48,11 @@ export function useAnalysisFilteredStats(analysisIds: string[]) {
     fetchStats();
   }, [fetchStats]);
 
-  return { stats, loading, error, refetch: fetchStats };
+  return {
+    stats,
+    filteredWordStats: stats,
+    loading,
+    error,
+    refetch: fetchStats,
+  };
 }

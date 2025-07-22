@@ -1,96 +1,71 @@
 import { useState, useEffect, useCallback } from "react";
 
-import { useSelector } from "react-redux";
-
-import { selectUser } from "@/entities/user/model/selectors";
-
-import { supabase } from "@/lib/supabaseClient";
+import type { Analysis } from "@/entities/analysis/types";
 
 export interface AnalysisWord {
   id: string;
   word: string;
-  status: number;
-  isLearned: boolean;
-  isInDictionary: boolean;
-  usages: string[];
   definition?: string;
   translation?: string;
-  createdAt: string | null;
+  status: 1 | 2 | 3 | 4 | 5 | 6 | 7;
+  analysisId: string;
 }
 
-export interface AnalysisStats {
-  total: number;
-  learned: number;
-  notLearned: number;
+interface UseAnalysisWordsOptions {
+  pageSize: number;
+  statusFilter: (string | number)[] | "all";
+  search: string;
 }
 
-export interface Analysis {
-  id: string;
-  title: string;
-  createdAt: string;
-  totalWords: number;
-  uniqueWords: number;
-  summary?: {
-    wordStats?: Record<number, number>;
-  };
-}
-
-export function useAnalysisWords(
+export const useAnalysisWords = (
   analysisId: string,
-  options?: {
-    pageSize?: number;
-    statusFilter?: string | (string | number)[];
-    search?: string;
-  }
-) {
-  const user = useSelector(selectUser);
+  options: UseAnalysisWordsOptions,
+) => {
   const [words, setWords] = useState<AnalysisWord[]>([]);
   const [analysis, setAnalysis] = useState<Analysis | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [stats, setStats] = useState<AnalysisStats>({
-    total: 0,
-    learned: 0,
-    notLearned: 0,
-  });
-
-  const pageSize = options?.pageSize || 12;
-  const statusFilter = options?.statusFilter ?? "all";
-  const search = options?.search || "";
 
   const fetchWords = useCallback(async () => {
-    if (!user || !analysisId) return;
-    setLoading(true);
-    setError(null);
+    if (!analysisId) return;
 
+    setLoading(true);
     try {
       // TODO: Implement Supabase analysis words fetching
-      console.log("Would fetch analysis words:", {
+      console.log(
+        "Fetching words for analysis:",
         analysisId,
-        pageSize,
-        statusFilter,
-        search,
-      });
+        "with options:",
+        options,
+      );
 
-      // Placeholder: Set empty data for now
+      // Placeholder implementation
+      setWords([]);
+      const now = new Date();
       setAnalysis({
         id: analysisId,
-        title: "Analysis (Supabase implementation needed)",
-        createdAt: new Date().toISOString(),
-        totalWords: 0,
-        uniqueWords: 0,
-        summary: { wordStats: {} },
+        title: "Sample Analysis",
+        userId: "placeholder-user-id",
+        createdAt: {
+          seconds: Math.floor(now.getTime() / 1000),
+          nanoseconds: 0,
+          dateString: now.toISOString(),
+        },
+        summary: {
+          totalWords: 0,
+          uniqueWords: 0,
+          knownWords: 0,
+          unknownWords: 0,
+          wordStats: {},
+        },
       });
-
-      setWords([]);
-      setStats({ total: 0, learned: 0, notLearned: 0 });
     } catch (err) {
       console.error("Error fetching analysis words:", err);
-      setError(err instanceof Error ? err.message : "Failed to load words");
+      setError("Failed to load analysis words");
     } finally {
       setLoading(false);
     }
-  }, [user, analysisId, pageSize, statusFilter, search]);
+  }, [analysisId, options]);
 
   const refreshWords = useCallback(() => {
     fetchWords();
@@ -105,7 +80,6 @@ export function useAnalysisWords(
     analysis,
     loading,
     error,
-    stats,
     refreshWords,
   };
-}
+};

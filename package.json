@@ -9,12 +9,17 @@
     "start": "next start",
     "lint": "next lint",
     "lint:fix": "next lint --fix",
-    "prepare": "husky"
+    "prepare": "husky",
+    "sw:version": "node scripts/update-sw-version.js",
+    "sw:version:commit": "npm run sw:version && git add public/sw.js",
+    "hooks:install": "chmod +x .githooks/pre-commit && git config core.hooksPath .githooks",
+    "postinstall": "npm run hooks:install || true"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
     "@radix-ui/react-slider": "^1.3.5",
     "@reduxjs/toolkit": "^2.8.2",
+    "@supabase/ssr": "^0.6.1",
     "@supabase/supabase-js": "^2.52.0",
     "@types/react-virtualized": "^9.22.2",
     "chart.js": "^4.5.0",

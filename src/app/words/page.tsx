@@ -31,7 +31,8 @@ import {
   silentRefetchPage,
 } from "@/features/words/model/wordsSlice";
 
-import { useAuthSync } from "@/shared/hooks/useAuthSync";
+import { selectUser } from "@/entities/user/model/selectors";
+
 import type { RootState, AppDispatch } from "@/shared/model/store";
 import { LoadingSpinner } from "@/shared/ui/LoadingSpinner";
 import Pagination from "@/shared/ui/Pagination";
@@ -55,7 +56,7 @@ const useDebouncedSearch = (search: string, delay: number = 500) => {
 };
 
 export default function WordsPage() {
-  const { user } = useAuthSync();
+  const user = useSelector(selectUser);
   const dispatch = useDispatch<AppDispatch>();
   const { error, clearError } = useWordsRTK();
   const router = useRouter();
@@ -109,7 +110,7 @@ export default function WordsPage() {
       }
       router.push(`?${params.toString()}`);
     },
-    [currentPage, router, selectedAnalyses]
+    [currentPage, router, selectedAnalyses],
   );
 
   // Update URL when filters change (separate function to avoid recursion)
@@ -122,7 +123,7 @@ export default function WordsPage() {
       }
       router.push(`?${params.toString()}`);
     },
-    [router, selectedAnalyses]
+    [router, selectedAnalyses],
   );
 
   // Track previous filter values to detect actual changes
@@ -198,7 +199,7 @@ export default function WordsPage() {
         statusFilter,
         search: debouncedSearch,
         analysisIds: selectedAnalyses.length > 0 ? selectedAnalyses : undefined,
-      })
+      }),
     ).finally(() => {
       // Add a small delay to ensure the loading state is visible
       setTimeout(() => {
@@ -218,10 +219,10 @@ export default function WordsPage() {
   // Get pagination info from Redux
   const paginationOptions = useMemo(
     () => ({ page: currentPage, pageSize }),
-    [currentPage, pageSize]
+    [currentPage, pageSize],
   );
   const { totalPages, total, words } = useSelector((state: RootState) =>
-    selectPaginatedWords(state, paginationOptions)
+    selectPaginatedWords(state, paginationOptions),
   );
   const pagination = useSelector((state: RootState) => state.words.pagination);
 
@@ -232,7 +233,7 @@ export default function WordsPage() {
   const handleWordAction = async (
     action: string,
     word: Word,
-    data?: unknown
+    data?: unknown,
   ) => {
     if (!user?.uid) return;
 
@@ -251,7 +252,7 @@ export default function WordsPage() {
         case "delete":
           if (confirm(`Are you sure you want to delete "${word.word}"?`)) {
             await dispatch(
-              deleteWord({ wordId: word.id, userId: user.uid })
+              deleteWord({ wordId: word.id, userId: user.uid }),
             ).unwrap();
             // Silently refetch the page in the background without showing loading states
             dispatch(
@@ -263,7 +264,7 @@ export default function WordsPage() {
                 search: debouncedSearch,
                 analysisIds:
                   selectedAnalyses.length > 0 ? selectedAnalyses : undefined,
-              })
+              }),
             );
           }
           break;
@@ -278,7 +279,7 @@ export default function WordsPage() {
                 status: newStatus,
                 userId: user.uid,
                 words,
-              })
+              }),
             ).unwrap();
           }
           break;
@@ -295,7 +296,7 @@ export default function WordsPage() {
 
   if (!user) {
     return (
-      <div className="flex justify-center items-center min-h-screen">
+      <div className="flex min-h-screen items-center justify-center">
         <LoadingSpinner />
       </div>
     );
@@ -304,16 +305,16 @@ export default function WordsPage() {
   return (
     <div className="container mx-auto">
       {/* Header with Add Button */}
-      <div className="flex justify-between items-center mb-6">
+      <div className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
           My Words
         </h1>
         <Link
           href="/words/add"
-          className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors duration-200 shadow-sm hover:shadow-md"
+          className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 font-medium text-white shadow-sm transition-colors duration-200 hover:bg-blue-700 hover:shadow-md"
         >
           <svg
-            className="w-5 h-5"
+            className="h-5 w-5"
             fill="none"
             stroke="currentColor"
             strokeWidth="2"
@@ -347,7 +348,7 @@ export default function WordsPage() {
       />
 
       {error && (
-        <div className="mb-4 p-4 bg-red-50 border border-red-200 rounded-md">
+        <div className="mb-4 rounded-md border border-red-200 bg-red-50 p-4">
           <p className="text-red-600">{error}</p>
           <button
             onClick={clearError}

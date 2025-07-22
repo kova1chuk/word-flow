@@ -20,13 +20,13 @@ export function WordList({
   return (
     <div>
       {words.length === 0 ? (
-        <div className="text-center py-12">
+        <div className="py-12 text-center">
           <p className="text-gray-500">
             No words found with the selected filter.
           </p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {words.map((word) => (
             <WordCard
               key={word.id}
@@ -34,17 +34,21 @@ export function WordList({
                 ...word,
                 definition: word.definition ?? "",
                 status: (word.status ?? 1) as 1 | 2 | 3 | 4 | 5 | 6 | 7,
-                createdAt: word.createdAt
-                  ? word.createdAt.toDate
-                    ? word.createdAt.toDate().toISOString()
-                    : String(word.createdAt)
-                  : new Date(0).toISOString(),
+                createdAt: new Date().toISOString(), // Default to now since AnalysisWord doesn't have createdAt
+                updatedAt: new Date().toISOString(), // Default to now since AnalysisWord doesn't have updatedAt
                 userId: "", // AnalysisWord doesn't have userId, provide empty string
               }}
-              onStatusChange={onStatusChange}
-              onReloadDefinition={() => onReloadDefinition(word)}
-              onReloadTranslation={() => onReloadTranslation(word)}
-              updating={updating}
+              onStatusChange={async (wordId, status) => {
+                onStatusChange(wordId, status);
+              }}
+              onReloadDefinition={async () => {
+                onReloadDefinition(word);
+              }}
+              onReloadTranslation={async () => {
+                onReloadTranslation(word);
+              }}
+              onDelete={async () => {}} // TODO: Implement delete functionality
+              updating={updating ?? null}
             />
           ))}
         </div>

@@ -16,7 +16,7 @@ interface WordsListRTKProps {
   onWordAction: (action: string, word: Word, data?: unknown) => void;
 }
 
-export const WordsListRTK: React.FC<WordsListRTKProps> = ({
+const WordsListRTK: React.FC<WordsListRTKProps> = ({
   currentPage,
   pageSize,
   onWordAction,
@@ -64,19 +64,19 @@ export const WordsListRTK: React.FC<WordsListRTKProps> = ({
     );
   }
 
-  const handleReloadDefinition = (word: Word) => {
+  const handleReloadDefinition = async (word: Word) => {
     onWordAction("reload-definition", word);
   };
 
-  const handleReloadTranslation = (word: Word) => {
+  const handleReloadTranslation = async (word: Word) => {
     onWordAction("reload-translation", word);
   };
 
-  const handleDelete = (word: Word) => {
+  const handleDelete = async (word: Word) => {
     onWordAction("delete", word);
   };
 
-  const handleStatusChange = (
+  const handleStatusChange = async (
     id: string,
     status: 1 | 2 | 3 | 4 | 5 | 6 | 7,
   ) => {
@@ -104,3 +104,5 @@ export const WordsListRTK: React.FC<WordsListRTKProps> = ({
     </div>
   );
 };
+
+export default WordsListRTK;

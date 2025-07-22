@@ -54,12 +54,14 @@ export async function signInWithGoogle(origin?: string) {
   console.log("🔄 signInWithGoogle origin:", origin);
 
   // Get the base URL - prefer passed origin, then env vars, then Vercel URL
-  const baseUrl = origin;
-  // ||
-  // process.env.NEXT_PUBLIC_SITE_URL ||
-  // (process.env.VERCEL_URL
-  //   ? `https://${process.env.VERCEL_URL}`
-  //   : "http://localhost:3000");
+  const baseUrl =
+    origin ||
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    (process.env.VERCEL_URL
+      ? `https://${process.env.VERCEL_URL}`
+      : "http://localhost:3000");
+
+  console.log("🔄 signInWithGoogle baseUrl:", baseUrl);
 
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",

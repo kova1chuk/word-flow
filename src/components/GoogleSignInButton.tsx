@@ -7,9 +7,7 @@ export default function GoogleSignInButton() {
     const origin =
       typeof window !== "undefined" ? window.location.origin : undefined;
     console.log("🔄 GoogleSignInButton origin:", origin);
-    setTimeout(async () => {
-      await signInWithGoogle(origin);
-    }, 10000);
+    await signInWithGoogle(origin);
   };
 
   return (

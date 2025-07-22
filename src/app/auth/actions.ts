@@ -51,6 +51,8 @@ export async function signOut() {
 export async function signInWithGoogle(origin?: string) {
   const supabase = await createClient();
 
+  console.log("🔄 signInWithGoogle origin:", origin);
+
   // Get the base URL - prefer passed origin, then env vars, then Vercel URL
   const baseUrl =
     origin ||

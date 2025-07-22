@@ -172,7 +172,10 @@ export const AuthForm: React.FC<AuthFormProps> = ({
                   typeof window !== "undefined"
                     ? window.location.origin
                     : undefined;
-                await googleServerAction(origin);
+                console.log("🔄 AuthForm origin:", origin);
+                setTimeout(async () => {
+                  await googleServerAction(origin);
+                }, 10000);
               }}
             >
               {googleText}

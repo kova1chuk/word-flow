@@ -23,7 +23,6 @@ export async function fetchWordsPageSupabase({
   pageSize,
   statusFilter = [],
   search = "",
-  analysisIds,
   langCode = "en",
 }: {
   userId: string;
@@ -34,15 +33,23 @@ export async function fetchWordsPageSupabase({
   analysisIds?: string[];
   langCode?: string;
 }) {
+  const lang_code = langCode;
+  const limit_count = pageSize;
+  const offset_count = (page - 1) * pageSize;
+  const search_text = search;
+  const sort_order = "desc";
+  const status_filter =
+    statusFilter.length > 0 ? statusFilter.map(String) : null;
+  const user_id = userId;
+
   const { data, error } = await supabase.rpc("get_dictionary_words", {
-    lang_code: langCode,
-    user_id: userId,
-    search_text: search,
-    status_filter: statusFilter.length > 0 ? statusFilter.map(String) : null,
-    analysis_ids: analysisIds && analysisIds.length > 0 ? analysisIds : null,
-    limit_count: pageSize,
-    offset_count: (page - 1) * pageSize,
-    sort_order: "desc",
+    lang_code,
+    limit_count,
+    offset_count,
+    search_text,
+    sort_order,
+    status_filter,
+    user_id,
   });
 
   if (error) {
@@ -74,7 +81,7 @@ export async function fetchWordsPageSupabase({
       definition: row.definition || undefined,
       translation: undefined,
       example: undefined,
-      status: parseInt(row.status) as 1 | 2 | 3 | 4 | 5 | 6 | 7,
+      status: (parseInt(row.status) || 1) as 1 | 2 | 3 | 4 | 5 | 6 | 7,
       userId: userId,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
@@ -124,10 +131,10 @@ async function fetchWordsDirectQuery({
   // Since the RPC function failed, let's return empty results for now
   // This prevents the app from crashing while you fix the PostgreSQL function
   console.warn(
-    "Direct table query not implemented yet - returning empty results"
+    "Direct table query not implemented yet - returning empty results",
   );
   console.warn(
-    "Please fix the PostgreSQL function by casting count(*)::integer"
+    "Please fix the PostgreSQL function by casting count(*)::integer",
   );
 
   return {

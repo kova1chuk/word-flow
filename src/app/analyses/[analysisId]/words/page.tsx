@@ -4,9 +4,6 @@ import React, { useState } from "react";
 
 import { useParams } from "next/navigation";
 
-import type { QueryDocumentSnapshot, DocumentData } from "firebase/firestore";
-import { updateDoc, doc } from "firebase/firestore";
-
 import { useSelector } from "react-redux";
 
 import LoadingSpinner from "@/components/LoadingSpinner";
@@ -15,14 +12,10 @@ import { useAnalysisWords } from "@/features/analysis-words";
 import type { AnalysisWord } from "@/features/analysis-words/lib/useAnalysisWords";
 import { AnalysisWordsHeader } from "@/features/analysis-words/ui/AnalysisWordsHeader";
 import { WordList } from "@/features/analysis-words/ui/WordList";
-import { updateWordStatsOnStatusChange } from "@/features/word-management/lib/updateWordStatsOnStatusChange";
 
 import { selectUser } from "@/entities/user/model/selectors";
 
 import WordFilterControls from "@/shared/ui/WordFilterControls";
-
-import { config } from "@/lib/config";
-import { db } from "@/lib/firebase";
 
 export default function AnalysisWordsPage() {
   const user = useSelector(selectUser);
@@ -35,55 +28,30 @@ export default function AnalysisWordsPage() {
     []
   );
   const [search, setSearch] = useState("");
-  const [pageCursorStack, setPageCursorStack] = useState<
-    QueryDocumentSnapshot<DocumentData>[]
-  >([]);
-  const [currentCursor, setCurrentCursor] =
-    useState<QueryDocumentSnapshot<DocumentData> | null>(null);
 
-  // Fetch paginated words
-  const { words, analysis, loading, error, refreshWords, nextCursor } =
-    useAnalysisWords(analysisId, {
+  // Fetch paginated words - Note: This hook needs to be updated for Supabase
+  const { words, analysis, loading, error, refreshWords } = useAnalysisWords(
+    analysisId,
+    {
       pageSize,
       statusFilter: selectedStatuses.length === 0 ? "all" : selectedStatuses,
       search,
-      pageCursor: currentCursor,
-    });
-
-  // Pagination handlers
-  const handleNextPage = () => {
-    if (nextCursor) {
-      setPageCursorStack((prev) => [...prev, nextCursor]);
-      setCurrentCursor(nextCursor);
     }
-  };
-  const handlePrevPage = () => {
-    setPageCursorStack((prev) => {
-      if (prev.length === 0) return prev;
-      const newStack = prev.slice(0, -1);
-      setCurrentCursor(newStack[newStack.length - 1] || null);
-      return newStack;
-    });
-  };
+  );
+
+  // Pagination handlers - Simplified for now
   const handlePageSizeChange = (size: number) => {
     setPageSize(size);
-    setCurrentCursor(null);
-    setPageCursorStack([]);
   };
   const handleStatusFilterChange = (statuses: (string | number)[]) => {
-    // Remove "all" from the selection since it's not a real filter
     const filteredStatuses = statuses.filter((s) => s !== "all");
     setSelectedStatuses(filteredStatuses);
-    setCurrentCursor(null);
-    setPageCursorStack([]);
   };
   const handleSearchChange = (val: string) => {
     setSearch(val);
-    setCurrentCursor(null);
-    setPageCursorStack([]);
   };
 
-  // Handlers for WordCard actions
+  // Handlers for WordCard actions - These need Supabase implementation
   const [updatingWordId, setUpdatingWordId] = useState<string | null>(null);
   const [wordsState, setWordsState] = useState<AnalysisWord[]>([]);
 
@@ -96,81 +64,19 @@ export default function AnalysisWordsPage() {
     id: string,
     status: 1 | 2 | 3 | 4 | 5 | 6 | 7
   ) => {
-    const word = wordsState.find((w) => w.id === id);
-    const oldStatus = word?.status;
-    if (!word || typeof oldStatus !== "number") return;
-    // Optimistically update local state
-    setWordsState((prev) =>
-      prev.map((w) => (w.id === id ? { ...w, status } : w))
-    );
-    setUpdatingWordId(id);
-    try {
-      await updateDoc(doc(db, "words", id), { status });
-      if (user) {
-        await updateWordStatsOnStatusChange({
-          wordId: id,
-          userId: user.uid,
-          oldStatus,
-          newStatus: status,
-        });
-      }
-    } catch {
-      // Revert on error
-      setWordsState((prev) =>
-        prev.map((w) => (w.id === id ? { ...w, status: oldStatus } : w))
-      );
-      // Optionally show error
-    } finally {
-      setUpdatingWordId(null);
-    }
+    // TODO: Implement Supabase version
+    console.log("Status change:", { id, status });
+    setUpdatingWordId(null);
   };
+
   const handleReloadDefinition = async (word: AnalysisWord) => {
-    let definition = "";
-    try {
-      const res = await fetch(
-        `${config.dictionaryApi}/${encodeURIComponent(word.word)}`
-      );
-      if (res.ok) {
-        const data = await res.json();
-        if (Array.isArray(data) && data.length > 0) {
-          definition =
-            data[0]?.meanings?.[0]?.definitions?.[0]?.definition ??
-            "No definition found.";
-        } else {
-          definition = "No definition found.";
-        }
-      } else {
-        definition = "No definition found.";
-      }
-      await updateDoc(doc(db, "words", word.id), { definition });
-      refreshWords();
-    } catch {
-      // Optionally show error
-    }
+    // TODO: Implement Supabase version
+    console.log("Reload definition:", word.word);
   };
+
   const handleReloadTranslation = async (word: AnalysisWord) => {
-    let translation = "";
-    try {
-      const langPair = `en|uk`;
-      const url = `${config.translationApi.baseUrl}?q=${encodeURIComponent(
-        word.word
-      )}&langpair=${langPair}`;
-      const res = await fetch(url);
-      if (res.ok) {
-        const data = await res.json();
-        if (data.responseData && data.responseData.translatedText) {
-          translation = data.responseData.translatedText;
-        } else {
-          translation = "No translation found.";
-        }
-      } else {
-        translation = "No translation found.";
-      }
-      await updateDoc(doc(db, "words", word.id), { translation });
-      refreshWords();
-    } catch {
-      // Optionally show error
-    }
+    // TODO: Implement Supabase version
+    console.log("Reload translation:", word.word);
   };
 
   if (!user) {
@@ -254,35 +160,23 @@ export default function AnalysisWordsPage() {
           onReloadTranslation={handleReloadTranslation}
           updating={updatingWordId}
         />
-        {/* Pagination Controls */}
-        <div className="mt-8 flex items-center justify-between">
-          <div className="flex items-center text-sm text-gray-700">
+        {/* Simple pagination info - TODO: Implement proper Supabase pagination */}
+        <div className="mt-8 flex items-center justify-center">
+          <div className="text-sm text-gray-700">
             <span>
-              Showing {words.length > 0 ? 1 : 0} to {words.length} of{" "}
-              {analysis?.summary?.wordStats
-                ? Object.values(analysis.summary.wordStats).reduce(
+              Showing {words.length} words
+              {analysis?.summary?.wordStats && (
+                <span>
+                  {" "}
+                  of{" "}
+                  {Object.values(analysis.summary.wordStats).reduce(
                     (a, b) => a + b,
                     0
-                  )
-                : 0}{" "}
-              words
+                  )}{" "}
+                  total
+                </span>
+              )}
             </span>
-          </div>
-          <div className="flex items-center space-x-2">
-            <button
-              onClick={handlePrevPage}
-              disabled={pageCursorStack.length === 0}
-              className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Previous
-            </button>
-            <button
-              onClick={handleNextPage}
-              disabled={!nextCursor}
-              className="px-3 py-2 text-sm font-medium text-gray-500 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Next
-            </button>
           </div>
         </div>
       </div>

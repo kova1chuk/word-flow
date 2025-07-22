@@ -1,7 +1,3 @@
-import type { Timestamp } from "firebase/firestore";
-
-import { BaseEntity } from "@/shared/types";
-
 export interface Phonetic {
   text: string;
   audio: string;
@@ -24,19 +20,22 @@ export interface WordDetails {
   meanings: Meaning[];
 }
 
-export interface Word extends BaseEntity {
-  userId: string;
+export interface Word {
+  id: string;
   word: string;
   definition?: string;
   translation?: string;
   example?: string;
+  status: 1 | 2 | 3 | 4 | 5 | 6 | 7;
+  userId: string;
+  createdAt: string;
+  updatedAt: string;
   details?: WordDetails;
-  status?: 1 | 2 | 3 | 4 | 5 | 6 | 7; // 1 = not learned, 7 = very well learned
-  isLearned?: boolean; // For backward compatibility
-  isInDictionary?: boolean; // For backward compatibility
+  isLearned?: boolean;
+  isInDictionary?: boolean;
   usages?: string[];
   analysisIds?: string[];
-  lastTrainedAt?: Date | Timestamp; // Firestore Timestamp or Date
+  lastTrainedAt?: string;
 }
 
 export interface WordState {

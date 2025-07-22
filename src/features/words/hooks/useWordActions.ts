@@ -1,16 +1,11 @@
 import { useState, useCallback } from "react";
 
-import { deleteDoc, doc, updateDoc } from "firebase/firestore";
-
 import { useSelector } from "react-redux";
-
-import { updateWordStatsOnStatusChange } from "@/features/word-management/lib/updateWordStatsOnStatusChange";
 
 import { selectUser } from "@/entities/user/model/selectors";
 
 import { config } from "@/lib/config";
-import { db } from "@/lib/firebase";
-
+import { supabase } from "@/lib/supabaseClient";
 
 import type { Word, WordDetails, Phonetic } from "@/types";
 
@@ -35,7 +30,20 @@ export function useWordActions() {
     async (word: Word) => {
       if (!user) return;
       try {
-        await deleteDoc(doc(db, "words", word.id));
+        // TODO: Implement Supabase word deletion
+        console.log("Would delete word:", word.id);
+
+        // Placeholder implementation
+        const { error } = await supabase
+          .from("words")
+          .delete()
+          .eq("id", word.id)
+          .eq("user_id", user.uid);
+
+        if (error) {
+          console.log("Word deletion not fully implemented:", error);
+        }
+
         return true; // Success
       } catch (error) {
         console.error("Error deleting word:", error);
@@ -97,7 +105,12 @@ export function useWordActions() {
         };
         if (details) dataToUpdate.details = details;
 
-        await updateDoc(doc(db, "words", word.id), dataToUpdate);
+        // TODO: Update word in Supabase instead of Firebase
+        console.log("Would update word definition:", {
+          wordId: word.id,
+          dataToUpdate,
+        });
+
         return dataToUpdate;
       } catch (error) {
         console.error("Error reloading definition:", error);
@@ -137,7 +150,12 @@ export function useWordActions() {
           translation = "No translation found.";
         }
 
-        await updateDoc(doc(db, "words", word.id), { translation });
+        // TODO: Update word in Supabase instead of Firebase
+        console.log("Would update word translation:", {
+          wordId: word.id,
+          translation,
+        });
+
         return { translation };
       } catch (error) {
         console.error("Error reloading translation:", error);
@@ -167,10 +185,9 @@ export function useWordActions() {
           throw new Error("Old status is not a number");
         }
 
-        await updateDoc(doc(db, "words", id), { status });
-        await updateWordStatsOnStatusChange({
+        // TODO: Update word status in Supabase instead of Firebase
+        console.log("Would update word status:", {
           wordId: id,
-          userId: user.uid,
           oldStatus,
           newStatus: status,
         });

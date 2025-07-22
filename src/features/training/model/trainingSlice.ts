@@ -1,131 +1,139 @@
-import type { Timestamp } from "firebase/firestore";
-
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
-interface TrainingState {
-  mode: "word" | "sentence";
-  isStarted: boolean;
-  currentIndex: number;
-  words: Word[];
-  selectedStatuses: number[]; // 1-7 status values
-  settings: {
-    autoAdvance: boolean;
-    showTranslation: boolean;
-    showDefinition: boolean;
-  };
+import type { Word } from "@/types";
+
+interface TrainingQuestion {
+  id: string;
+  word: Word;
+  type: "definition" | "translation" | "usage" | "synonym";
+  question: string;
+  correctAnswer: string;
+  options?: string[];
+  userAnswer?: string;
+  isCorrect?: boolean;
+  timestamp?: string;
 }
 
-interface Word {
+interface TrainingSession {
   id: string;
-  word: string;
-  definition?: string;
-  translation?: string;
-  example?: string;
-  status?: 1 | 2 | 3 | 4 | 5 | 6 | 7; // 1 = not learned, 7 = very well learned
-  createdAt: Timestamp;
-  details?: {
-    phonetics: Array<{ text: string; audio: string }>;
-    meanings: Array<{
-      partOfSpeech: string;
-      definitions: Array<{
-        definition: string;
-        example?: string;
-        synonyms?: string[];
-        antonyms?: string[];
-      }>;
-    }>;
-  };
-  isLearned?: boolean;
-  isInDictionary?: boolean;
-  usages?: string[];
-  analysisIds?: string[];
+  startTime: string;
+  endTime?: string;
+  questions: TrainingQuestion[];
+  score: number;
+  totalQuestions: number;
+  correctAnswers: number;
+  wordsLearned: string[];
+}
+
+interface TrainingState {
+  currentSession: TrainingSession | null;
+  currentQuestionIndex: number;
+  isSessionActive: boolean;
+  sessionHistory: TrainingSession[];
+  loading: boolean;
+  error: string | null;
 }
 
 const initialState: TrainingState = {
-  mode: "word",
-  isStarted: false,
-  currentIndex: 0,
-  words: [],
-  selectedStatuses: [1, 2, 3, 4, 5], // Default to all statuses except mastered
-  settings: {
-    autoAdvance: false,
-    showTranslation: true,
-    showDefinition: true,
-  },
+  currentSession: null,
+  currentQuestionIndex: 0,
+  isSessionActive: false,
+  sessionHistory: [],
+  loading: false,
+  error: null,
 };
 
 const trainingSlice = createSlice({
   name: "training",
   initialState,
   reducers: {
-    setMode: (state, action: PayloadAction<"word" | "sentence">) => {
-      state.mode = action.payload;
+    startSession: (state, action: PayloadAction<TrainingQuestion[]>) => {
+      const sessionId = Date.now().toString();
+      state.currentSession = {
+        id: sessionId,
+        startTime: new Date().toISOString(),
+        questions: action.payload,
+        score: 0,
+        totalQuestions: action.payload.length,
+        correctAnswers: 0,
+        wordsLearned: [],
+      };
+      state.currentQuestionIndex = 0;
+      state.isSessionActive = true;
     },
-    startTraining: (state, action: PayloadAction<Word[]>) => {
-      state.words = action.payload;
-      state.isStarted = true;
-      state.currentIndex = 0;
-    },
-    stopTraining: (state) => {
-      state.isStarted = false;
-      state.words = [];
-      state.currentIndex = 0;
-    },
-    nextWord: (state) => {
-      if (state.currentIndex < state.words.length - 1) {
-        state.currentIndex += 1;
+    endSession: (state) => {
+      if (state.currentSession) {
+        state.currentSession.endTime = new Date().toISOString();
+        state.sessionHistory.push(state.currentSession);
+        state.currentSession = null;
       }
+      state.isSessionActive = false;
+      state.currentQuestionIndex = 0;
     },
-    previousWord: (state) => {
-      if (state.currentIndex > 0) {
-        state.currentIndex -= 1;
-      }
-    },
-    setCurrentIndex: (state, action: PayloadAction<number>) => {
-      state.currentIndex = action.payload;
-    },
-    updateWordStatus: (
+    answerQuestion: (
       state,
-      action: PayloadAction<{ id: string; status: 1 | 2 | 3 | 4 | 5 | 6 | 7 }>
+      action: PayloadAction<{ answer: string; isCorrect: boolean }>
     ) => {
-      const { id, status } = action.payload;
-      const wordIndex = state.words.findIndex((w) => w.id === id);
-      if (wordIndex !== -1) {
-        state.words[wordIndex].status = status;
+      if (
+        state.currentSession &&
+        state.currentSession.questions[state.currentQuestionIndex]
+      ) {
+        const currentQuestion =
+          state.currentSession.questions[state.currentQuestionIndex];
+        currentQuestion.userAnswer = action.payload.answer;
+        currentQuestion.isCorrect = action.payload.isCorrect;
+        currentQuestion.timestamp = new Date().toISOString();
+
+        if (action.payload.isCorrect) {
+          state.currentSession.correctAnswers += 1;
+          state.currentSession.wordsLearned.push(currentQuestion.word.word);
+        }
+
+        state.currentSession.score = Math.round(
+          (state.currentSession.correctAnswers /
+            state.currentSession.totalQuestions) *
+            100
+        );
       }
     },
-    toggleStatusSelection: (state, action: PayloadAction<number>) => {
-      const status = action.payload;
-      const index = state.selectedStatuses.indexOf(status);
-      if (index > -1) {
-        state.selectedStatuses.splice(index, 1);
-      } else {
-        state.selectedStatuses.push(status);
+    nextQuestion: (state) => {
+      if (
+        state.currentSession &&
+        state.currentQuestionIndex < state.currentSession.questions.length - 1
+      ) {
+        state.currentQuestionIndex += 1;
       }
     },
-    setSelectedStatuses: (state, action: PayloadAction<number[]>) => {
-      state.selectedStatuses = action.payload;
+    previousQuestion: (state) => {
+      if (state.currentQuestionIndex > 0) {
+        state.currentQuestionIndex -= 1;
+      }
     },
-    updateSettings: (
-      state,
-      action: PayloadAction<Partial<TrainingState["settings"]>>
-    ) => {
-      state.settings = { ...state.settings, ...action.payload };
+    setCurrentQuestionIndex: (state, action: PayloadAction<number>) => {
+      state.currentQuestionIndex = action.payload;
+    },
+    setLoading: (state, action: PayloadAction<boolean>) => {
+      state.loading = action.payload;
+    },
+    setError: (state, action: PayloadAction<string | null>) => {
+      state.error = action.payload;
+    },
+    clearHistory: (state) => {
+      state.sessionHistory = [];
     },
   },
 });
 
 export const {
-  setMode,
-  startTraining,
-  stopTraining,
-  nextWord,
-  previousWord,
-  setCurrentIndex,
-  updateWordStatus,
-  toggleStatusSelection,
-  setSelectedStatuses,
-  updateSettings,
+  startSession,
+  endSession,
+  answerQuestion,
+  nextQuestion,
+  previousQuestion,
+  setCurrentQuestionIndex,
+  setLoading,
+  setError,
+  clearHistory,
 } = trainingSlice.actions;
 
 export default trainingSlice.reducer;

@@ -1,56 +1,53 @@
-import { useEffect, useState, useCallback } from "react";
-
-import { doc, getDoc } from "firebase/firestore";
+import { useState, useEffect, useCallback } from "react";
 
 import { useSelector } from "react-redux";
 
 import { selectUser } from "@/entities/user/model/selectors";
 
-import { db } from "@/lib/firebase";
+import { supabase } from "@/lib/supabaseClient";
 
 export function useUserStats() {
   const user = useSelector(selectUser);
-  const [wordStats, setWordStats] = useState<Record<number, number> | null>(
+  const [userStats, setUserStats] = useState<Record<number, number> | null>(
     null
   );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchStats = useCallback(async () => {
-    if (!user) {
-      setWordStats(null);
-      setLoading(false);
-      setError(null);
-      return;
-    }
+  const fetchUserStats = useCallback(async () => {
+    if (!user?.uid) return;
 
     setLoading(true);
     setError(null);
 
     try {
-      const snap = await getDoc(doc(db, "userStats", user.uid));
-      if (snap.exists()) {
-        setWordStats(snap.data().wordStats || null);
-      } else {
-        setWordStats(null);
+      const { data, error } = await supabase.rpc("get_user_stats", {
+        p_user_id: user.uid,
+      });
+
+      if (error) {
+        throw error;
       }
-    } catch (err: unknown) {
-      const errorMessage =
-        err instanceof Error ? err.message : "Failed to fetch userStats";
-      setError(errorMessage);
-      setWordStats(null);
+
+      setUserStats(data?.wordStats || null);
+    } catch (err) {
+      console.error("Error fetching user stats:", err);
+      setError(
+        err instanceof Error ? err.message : "Failed to fetch user stats"
+      );
     } finally {
       setLoading(false);
     }
-  }, [user]);
-
-  const refetch = useCallback(async () => {
-    await fetchStats();
-  }, [fetchStats]);
+  }, [user?.uid]);
 
   useEffect(() => {
-    fetchStats();
-  }, [fetchStats]);
+    fetchUserStats();
+  }, [fetchUserStats]);
 
-  return { wordStats, loading, error, refetch };
+  return {
+    userStats,
+    loading,
+    error,
+    refetch: fetchUserStats,
+  };
 }

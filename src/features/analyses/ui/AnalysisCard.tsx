@@ -8,7 +8,7 @@ import { LearningOverview } from "@/components/LearningOverview";
 
 import { selectUser } from "@/entities/user/model/selectors";
 
-import { Analysis, analysesApi } from "../lib/analysesApi";
+import { Analysis } from "../lib/analysesApi";
 
 interface AnalysisCardProps {
   analysis: Analysis;
@@ -38,7 +38,8 @@ export const AnalysisCard: React.FC<AnalysisCardProps> = ({
 
     setIsReloading(true);
     try {
-      await analysesApi.updateAnalysisStats(analysis.id, user.uid);
+      // TODO: Implement Supabase analysis stats update
+      console.log("Would update analysis stats for:", analysis.id);
       onRefresh?.();
     } catch (error) {
       console.error("Error reloading stats:", error);
@@ -47,81 +48,16 @@ export const AnalysisCard: React.FC<AnalysisCardProps> = ({
     }
   };
 
-  // Map wordStats to statusCounts for LearningOverview
-  const getStatusCounts = () => {
-    // First, try to use the new Supabase words_stat field
-    if (analysis.words_stat) {
-      const counts: { [key: number]: number } = {};
-      // Convert string keys to numbers for consistency
-      Object.entries(analysis.words_stat).forEach(([key, value]) => {
-        counts[parseInt(key)] = value;
-      });
-      const total = Object.values(counts).reduce(
-        (sum: number, count: number) => sum + (count || 0),
-        0
-      );
-      return { counts, total };
-    }
-
-    // Fallback to legacy wordStats
-    const wordStats =
-      (analysis.summary as { wordStats?: { [key: number]: number } })
-        ?.wordStats || analysis.wordStats;
-    if (!wordStats) {
-      return { counts: {}, total: 0 };
-    }
-
-    // Check if wordStats is in the new format (status counts)
-    const hasStatusCounts =
-      typeof wordStats === "object" &&
-      wordStats !== null &&
-      !("toLearn" in wordStats) &&
-      !("toRepeat" in wordStats) &&
-      !("learned" in wordStats);
-
-    if (hasStatusCounts) {
-      const counts = { ...wordStats } as { [key: number]: number };
-      const total = Object.values(counts).reduce(
-        (sum: number, count: number) => sum + (count || 0),
-        0
-      );
-      return { counts, total };
-    }
-
-    // Fallback to the old mapping logic if it's in the old format
-    const counts: { [key: number]: number } = {};
-    for (let s = 1; s <= 7; s++) counts[s] = 0;
-
-    // Distribute toLearn across statuses 1-3
-    const toLearnPerStatus = Math.floor((wordStats.toLearn || 0) / 3);
-    counts[1] = toLearnPerStatus;
-    counts[2] = toLearnPerStatus;
-    counts[3] = (wordStats.toLearn || 0) - toLearnPerStatus * 2;
-
-    // Distribute toRepeat across statuses 4-5
-    const toRepeatPerStatus = Math.floor((wordStats.toRepeat || 0) / 2);
-    counts[4] = toRepeatPerStatus;
-    counts[5] = (wordStats.toRepeat || 0) - toRepeatPerStatus;
-
-    // Distribute learned across statuses 6-7
-    const learnedPerStatus = Math.floor((wordStats.learned || 0) / 2);
-    counts[6] = learnedPerStatus;
-    counts[7] = (wordStats.learned || 0) - learnedPerStatus;
-
-    const total =
-      (wordStats.toLearn || 0) +
-      (wordStats.toRepeat || 0) +
-      (wordStats.learned || 0);
-    return { counts, total };
-  };
-
-  const { counts: statusCounts, total: totalStatusWords } = getStatusCounts();
-
   // Calculate completeness from statusCounts using weighted average
-  function calculateCompletenessFromCounts(counts: {
-    [key: number]: number;
-  }): number {
-    const arr = Array.from({ length: 7 }, (_, i) => counts[i + 1] || 0);
+  function calculateCompletenessFromCounts(
+    counts: Record<1 | 2 | 3 | 4 | 5 | 6 | 7, number>
+  ): number {
+    if (!counts) return 0;
+    // Only allow keys 1-7, and avoid TS error by explicit typing
+    const arr = Array.from(
+      { length: 7 },
+      (_, i) => counts[(i + 1) as 1 | 2 | 3 | 4 | 5 | 6 | 7] || 0
+    );
     const total = arr.reduce((a, b) => a + b, 0);
     if (total === 0) return 0;
 
@@ -137,7 +73,7 @@ export const AnalysisCard: React.FC<AnalysisCardProps> = ({
 
   // Calculate completion percentage from statusCounts
   const completionPercentage = Math.round(
-    calculateCompletenessFromCounts(statusCounts)
+    calculateCompletenessFromCounts(analysis.wordsStat)
   );
 
   return (
@@ -198,12 +134,12 @@ export const AnalysisCard: React.FC<AnalysisCardProps> = ({
                   />
                 </svg>
                 {analysis.createdAt
-                  ? formatDate(analysis.createdAt.dateString)
+                  ? formatDate(analysis.createdAt)
                   : "Unknown date"}
               </p>
 
               {/* Completion Badge */}
-              {totalStatusWords > 0 && (
+              {analysis.uniqueWords > 0 && (
                 <div className="flex items-center bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-3 py-1 rounded-full text-xs font-medium">
                   <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse" />
                   {completionPercentage}% Complete
@@ -213,10 +149,7 @@ export const AnalysisCard: React.FC<AnalysisCardProps> = ({
           </div>
 
           {/* Enhanced Word Statistics */}
-          <LearningOverview
-            statusCounts={statusCounts}
-            totalStatusWords={totalStatusWords}
-          />
+          <LearningOverview statusCounts={analysis.wordsStat} />
 
           {/* Enhanced Summary Stats */}
           <div className="grid grid-cols-2 gap-4 mb-4">
@@ -225,7 +158,7 @@ export const AnalysisCard: React.FC<AnalysisCardProps> = ({
                 Total Words
               </span>
               <span className="font-bold text-gray-800 dark:text-white text-lg">
-                {analysis.summary?.totalWords?.toLocaleString?.() ?? "-"}
+                {analysis.totalWords?.toLocaleString?.() ?? "-"}
               </span>
             </div>
             <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700/50 dark:to-gray-800/50 rounded-xl p-4 border border-gray-200/50 dark:border-gray-600/50">
@@ -233,7 +166,7 @@ export const AnalysisCard: React.FC<AnalysisCardProps> = ({
                 Unique Words
               </span>
               <span className="font-bold text-gray-800 dark:text-white text-lg">
-                {analysis.summary?.uniqueWords?.toLocaleString?.() ?? "-"}
+                {analysis.uniqueWords?.toLocaleString?.() ?? "-"}
               </span>
             </div>
           </div>

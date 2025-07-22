@@ -1,13 +1,11 @@
 import { useState, useEffect, useCallback } from "react";
 
-import { getDocs, collection, query, where } from "firebase/firestore";
-
 import { useSelector } from "react-redux";
 
 import { Analysis } from "@/entities/analysis/types";
 import { selectUser } from "@/entities/user/model/selectors";
 
-import { db } from "@/lib/firebase";
+import { supabase } from "@/lib/supabaseClient";
 
 interface TrainingStats {
   learned: number;
@@ -66,49 +64,22 @@ export function useTrainingStats(
     setTrainingStats(stats);
   }, [analysis, calculateStatsFromWordStats]);
 
-  // Start training handler
+  // Start training handler - TODO: Implement with Supabase
   const handleStartTraining = useCallback(async () => {
     if (!user || !analysisId) return;
 
     setTrainingLoading(true);
     try {
-      // Fetch words from the analysis words subcollection for training
-      const analysisWordsQuery = query(
-        collection(db, "analyses", analysisId, "words")
-      );
-      const analysisWordsSnapshot = await getDocs(analysisWordsQuery);
+      // TODO: Implement Supabase version
+      console.log("Would start training for analysis:", analysisId);
 
-      // Get all word IDs from the analysis
-      const wordIds = analysisWordsSnapshot.docs.map(
-        (doc) => doc.data().wordId
-      );
+      // Placeholder: In Supabase version, this would:
+      // 1. Call RPC to get words for training from analysis
+      // 2. Save words to localStorage or Redux for training page
+      // 3. Navigate to training page
 
-      if (wordIds.length === 0) {
-        setTrainingLoading(false);
-        return;
-      }
-
-      // Fetch the actual word documents
-      const words: WordData[] = [];
-
-      // Process words in chunks to avoid query limits
-      const chunkSize = 10;
-      for (let i = 0; i < wordIds.length; i += chunkSize) {
-        const chunk = wordIds.slice(i, i + chunkSize);
-        const wordsQuery = query(
-          collection(db, "words"),
-          where("__name__", "in", chunk)
-        );
-        const wordsSnapshot = await getDocs(wordsQuery);
-
-        wordsSnapshot.forEach((doc) => {
-          words.push({ id: doc.id, ...doc.data() } as WordData);
-        });
-      }
-
-      // Save words to localStorage for the training page to pick up
-      localStorage.setItem("trainingWords", JSON.stringify(words));
-      window.location.href = "/training?fromAnalysis=" + analysisId;
+      // For now, just log the action
+      console.log("Training preparation would happen here");
     } catch (error) {
       console.error("Error preparing training:", error);
     } finally {

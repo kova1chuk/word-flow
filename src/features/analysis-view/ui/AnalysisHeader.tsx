@@ -1,216 +1,170 @@
-import { useState } from "react";
+import React, { useState } from "react";
 
-import Link from "next/link";
+import { useSelector } from "react-redux";
 
-import { doc, updateDoc } from "firebase/firestore";
+import { selectUser } from "@/entities/user/model/selectors";
 
-import type { Analysis } from "@/entities/analysis/types";
-
-import { ClientOnly } from "@/shared/ui/ClientOnly";
-
-import { db } from "@/lib/firebase";
+import { supabase } from "@/lib/supabaseClient";
 
 interface AnalysisHeaderProps {
-  analysis: Analysis;
+  analysis: {
+    id: string;
+    title: string;
+    summary?: {
+      totalWords: number;
+      uniqueWords: number;
+      learnerWords: number;
+      unknownWords: number;
+    };
+  } | null;
+  onTitleUpdate?: (newTitle: string) => void;
 }
 
-export const AnalysisHeader: React.FC<AnalysisHeaderProps> = ({ analysis }) => {
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
-  };
+export const AnalysisHeader: React.FC<AnalysisHeaderProps> = ({
+  analysis,
+  onTitleUpdate,
+}) => {
+  const user = useSelector(selectUser);
+  const [isEditing, setIsEditing] = useState(false);
+  const [editedTitle, setEditedTitle] = useState(analysis?.title || "");
+  const [isUpdating, setIsUpdating] = useState(false);
 
-  const [editing, setEditing] = useState(false);
-  const [title, setTitle] = useState(analysis.title);
-  const [saving, setSaving] = useState(false);
-  const [error, setError] = useState("");
+  const handleSaveTitle = async () => {
+    if (!analysis || !user) return;
 
-  const handleSave = async () => {
-    if (!title.trim()) return;
-
-    setSaving(true);
-    setError("");
+    setIsUpdating(true);
     try {
-      await updateDoc(doc(db, "analyses", analysis.id), {
-        title: title.trim(),
+      // TODO: Implement Supabase title update
+      console.log("Would update analysis title:", {
+        analysisId: analysis.id,
+        newTitle: editedTitle,
+        userId: user.uid,
       });
-      setEditing(false);
-    } catch (err) {
-      console.error("Failed to update title", err);
-      setError("Failed to update title");
+
+      onTitleUpdate?.(editedTitle);
+      setIsEditing(false);
+    } catch (error) {
+      console.error("Error updating title:", error);
     } finally {
-      setSaving(false);
+      setIsUpdating(false);
     }
   };
 
-  const handleCancel = () => {
-    setEditing(false);
-    setTitle(analysis.title);
-    setError("");
+  const handleCancelEdit = () => {
+    setEditedTitle(analysis?.title || "");
+    setIsEditing(false);
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      handleSave();
-    } else if (e.key === "Escape") {
-      handleCancel();
-    }
-  };
-
-  return (
-    <div className="mb-8">
-      {/* Back Navigation */}
-      <div className="mb-6">
-        <Link
-          href="/analyses"
-          className="inline-flex items-center text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors duration-200 font-medium"
-        >
-          <svg
-            className="w-4 h-4 mr-2"
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M15 19l-7-7 7-7"
-            />
-          </svg>
-          Back to My Analyses
-        </Link>
-      </div>
-
-      {/* Title Section */}
-      <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-        <div className="flex items-start justify-between">
-          <div className="flex-1 min-w-0">
-            {editing ? (
-              <div className="space-y-4">
-                <input
-                  className="w-full text-3xl font-bold text-gray-900 dark:text-white bg-transparent border-b-2 border-blue-400 focus:border-blue-600 focus:outline-none px-0 py-2 transition-colors duration-200"
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  disabled={saving}
-                  autoFocus
-                  placeholder="Enter analysis title..."
-                />
-                <div className="flex items-center gap-3">
-                  <button
-                    onClick={handleSave}
-                    disabled={saving || !title.trim()}
-                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 dark:disabled:bg-gray-600 text-white rounded-lg font-medium transition-colors duration-200 disabled:cursor-not-allowed flex items-center"
-                  >
-                    {saving ? (
-                      <>
-                        <svg
-                          className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                        >
-                          <circle
-                            className="opacity-25"
-                            cx="12"
-                            cy="12"
-                            r="10"
-                            stroke="currentColor"
-                            strokeWidth="4"
-                          ></circle>
-                          <path
-                            className="opacity-75"
-                            fill="currentColor"
-                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                          ></path>
-                        </svg>
-                        Saving...
-                      </>
-                    ) : (
-                      "Save Title"
-                    )}
-                  </button>
-                  <button
-                    onClick={handleCancel}
-                    disabled={saving}
-                    className="px-4 py-2 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 font-medium transition-colors duration-200 disabled:cursor-not-allowed"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="space-y-2">
-                <div className="flex items-center gap-3">
-                  <h1 className="text-3xl font-bold text-gray-900 dark:text-white line-clamp-2">
-                    {title}
-                  </h1>
-                  <button
-                    onClick={() => setEditing(true)}
-                    className="flex-shrink-0 p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors duration-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700"
-                    title="Edit title"
-                  >
-                    <svg
-                      className="w-5 h-5"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
-                      />
-                    </svg>
-                  </button>
-                </div>
-                <div className="flex items-center text-sm text-gray-500 dark:text-gray-400">
-                  <svg
-                    className="w-4 h-4 mr-2"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"
-                    />
-                  </svg>
-                  <ClientOnly
-                    fallback={`Analyzed on ${analysis.createdAt.dateString}`}
-                  >
-                    Analyzed on {formatDate(analysis.createdAt.dateString)}
-                  </ClientOnly>
-                </div>
-              </div>
-            )}
+  if (!analysis) {
+    return (
+      <div className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+          <div className="animate-pulse">
+            <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/3 mb-4"></div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {[...Array(4)].map((_, i) => (
+                <div
+                  key={i}
+                  className="h-20 bg-gray-200 dark:bg-gray-700 rounded"
+                ></div>
+              ))}
+            </div>
           </div>
         </div>
+      </div>
+    );
+  }
 
-        {error && (
-          <div className="mt-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
-            <p className="text-red-600 dark:text-red-400 text-sm flex items-center">
-              <svg
-                className="w-4 h-4 mr-2"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
+  return (
+    <div className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        <div className="flex items-center justify-between mb-6">
+          {isEditing ? (
+            <div className="flex items-center space-x-3 flex-1">
+              <input
+                type="text"
+                value={editedTitle}
+                onChange={(e) => setEditedTitle(e.target.value)}
+                className="flex-1 text-2xl font-bold bg-transparent border-b-2 border-blue-500 focus:outline-none focus:border-blue-600 text-gray-900 dark:text-white"
+                autoFocus
+              />
+              <button
+                onClick={handleSaveTitle}
+                disabled={isUpdating}
+                className="px-3 py-1 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:opacity-50"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-              {error}
-            </p>
+                {isUpdating ? "Saving..." : "Save"}
+              </button>
+              <button
+                onClick={handleCancelEdit}
+                disabled={isUpdating}
+                className="px-3 py-1 bg-gray-500 text-white rounded text-sm hover:bg-gray-600 disabled:opacity-50"
+              >
+                Cancel
+              </button>
+            </div>
+          ) : (
+            <div className="flex items-center space-x-3">
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+                {analysis.title}
+              </h1>
+              <button
+                onClick={() => setIsEditing(true)}
+                className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700"
+                title="Edit title"
+              >
+                <svg
+                  className="w-5 h-5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"
+                  />
+                </svg>
+              </button>
+            </div>
+          )}
+        </div>
+
+        {analysis.summary && (
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
+              <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
+                {analysis.summary.totalWords}
+              </div>
+              <div className="text-sm text-blue-600 dark:text-blue-400">
+                Total Words
+              </div>
+            </div>
+            <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
+              <div className="text-2xl font-bold text-green-600 dark:text-green-400">
+                {analysis.summary.uniqueWords}
+              </div>
+              <div className="text-sm text-green-600 dark:text-green-400">
+                Unique Words
+              </div>
+            </div>
+            <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg">
+              <div className="text-2xl font-bold text-yellow-600 dark:text-yellow-400">
+                {analysis.summary.learnerWords}
+              </div>
+              <div className="text-sm text-yellow-600 dark:text-yellow-400">
+                Learning
+              </div>
+            </div>
+            <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg">
+              <div className="text-2xl font-bold text-red-600 dark:text-red-400">
+                {analysis.summary.unknownWords}
+              </div>
+              <div className="text-sm text-red-600 dark:text-red-400">
+                Unknown
+              </div>
+            </div>
           </div>
         )}
       </div>

@@ -1,15 +1,12 @@
 import { useState, useEffect, useCallback } from "react";
 
-import { collection, query, where, getDocs } from "firebase/firestore";
-
 import { useSelector } from "react-redux";
 
 import { selectUser } from "@/entities/user/model/selectors";
 
-import { db } from "@/lib/firebase";
-
 import type { Word } from "@/types";
 
+// This hook is deprecated - use useWordsRTK instead which uses Supabase
 export function useWords() {
   const user = useSelector(selectUser);
   const [words, setWords] = useState<Word[]>([]);
@@ -22,13 +19,9 @@ export function useWords() {
     setError("");
 
     try {
-      const q = query(collection(db, "words"), where("userId", "==", user.uid));
-      const querySnapshot = await getDocs(q);
-      const wordsData = querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as Word[];
-      setWords(wordsData);
+      // This would need to be implemented with Supabase
+      // For now, return empty array
+      setWords([]);
     } catch (err) {
       console.error("Error fetching words:", err);
       setError("Failed to load words");

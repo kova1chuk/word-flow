@@ -1,54 +1,78 @@
-import { doc, getDoc } from "firebase/firestore";
+import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 
-import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
+import { supabase } from "@/lib/supabaseClient";
 
-import { db } from "@/lib/firebase";
-
-// Types
-export interface UserStats {
-  wordStats: Record<number, number> | null;
+interface UserStats {
+  totalWords: number;
+  learnedWords: number;
+  toLearnWords: number;
+  toRepeatWords: number;
+  userId: string;
+  wordStats?: Record<number, number>; // Add word status stats
 }
 
 interface UserStatsState {
-  wordStats: Record<number, number> | null;
+  stats: UserStats | null;
   loading: boolean;
   error: string | null;
 }
 
-// Initial state
 const initialState: UserStatsState = {
-  wordStats: null,
+  stats: null,
   loading: false,
   error: null,
 };
 
-// Async thunk for fetching user stats
+// Async thunk to fetch dictionary stats from Supabase
 export const fetchUserStats = createAsyncThunk(
   "userStats/fetchUserStats",
   async (userId: string) => {
-    const snap = await getDoc(doc(db, "userStats", userId));
-    if (snap.exists()) {
-      return snap.data().wordStats || null;
+    // Get the user's learning language from their profile
+    const { data: profile, error: profileError } = await supabase
+      .from("users")
+      .select("learning_language")
+      .eq("id", userId)
+      .single();
+
+    if (profileError) {
+      console.error("Error fetching user profile:", profileError);
+      throw new Error("Failed to fetch user profile");
     }
-    return null;
-  }
+
+    const learningLanguage = profile?.learning_language || "en";
+
+    // Use the new get_dict_stat function with user_id and lang_code
+    const { data, error } = await supabase.rpc("get_dict_stat", {
+      p_user_id: userId,
+      p_lang_code: learningLanguage,
+    });
+
+    if (error) {
+      throw error;
+    }
+
+    // The function returns a JSONB object with status counts
+    // Transform it to match our expected structure
+    const wordStats = data || {};
+
+    return {
+      totalWords: 0,
+      learnedWords: 0,
+      toLearnWords: 0,
+      toRepeatWords: 0,
+      userId: userId,
+      wordStats: wordStats,
+    } as UserStats;
+  },
 );
 
-// Slice
 const userStatsSlice = createSlice({
   name: "userStats",
   initialState,
   reducers: {
     clearUserStats: (state) => {
-      state.wordStats = null;
-      state.loading = false;
+      state.stats = null;
       state.error = null;
-    },
-    clearUserStatsError: (state) => {
-      state.error = null;
-    },
-    updateWordStats: (state, action: PayloadAction<Record<number, number>>) => {
-      state.wordStats = action.payload;
     },
   },
   extraReducers: (builder) => {
@@ -59,7 +83,7 @@ const userStatsSlice = createSlice({
       })
       .addCase(fetchUserStats.fulfilled, (state, action) => {
         state.loading = false;
-        state.wordStats = action.payload;
+        state.stats = action.payload;
       })
       .addCase(fetchUserStats.rejected, (state, action) => {
         state.loading = false;
@@ -68,9 +92,5 @@ const userStatsSlice = createSlice({
   },
 });
 
-// Actions
-export const { clearUserStats, clearUserStatsError, updateWordStats } =
-  userStatsSlice.actions;
-
-// Reducer
+export const { clearUserStats } = userStatsSlice.actions;
 export default userStatsSlice.reducer;

@@ -22,16 +22,16 @@ export const WordsListRTK: React.FC<WordsListRTKProps> = ({
   onWordAction,
 }) => {
   const { loading, error, updating } = useSelector(
-    (state: RootState) => state.words
+    (state: RootState) => state.words,
   );
 
   // Use the selector for paginated words
   const paginationOptions = useMemo(
     () => ({ page: currentPage, pageSize }),
-    [currentPage, pageSize]
+    [currentPage, pageSize],
   );
   const { words: paginatedWords } = useSelector((state: RootState) =>
-    selectPaginatedWords(state, paginationOptions)
+    selectPaginatedWords(state, paginationOptions),
   );
 
   // Throw a promise when loading to trigger Suspense
@@ -44,11 +44,11 @@ export const WordsListRTK: React.FC<WordsListRTKProps> = ({
 
   if (error) {
     return (
-      <div className="text-center py-8">
-        <p className="text-red-500 mb-4">Error: {error}</p>
+      <div className="py-8 text-center">
+        <p className="mb-4 text-red-500">Error: {error}</p>
         <button
           onClick={() => window.location.reload()}
-          className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
+          className="rounded bg-blue-500 px-4 py-2 text-white hover:bg-blue-600"
         >
           Retry
         </button>
@@ -58,7 +58,7 @@ export const WordsListRTK: React.FC<WordsListRTKProps> = ({
 
   if (paginatedWords.length === 0) {
     return (
-      <div className="text-center py-8">
+      <div className="py-8 text-center">
         <p className="text-gray-500">No words found for this page.</p>
       </div>
     );
@@ -78,7 +78,7 @@ export const WordsListRTK: React.FC<WordsListRTKProps> = ({
 
   const handleStatusChange = (
     id: string,
-    status: 1 | 2 | 3 | 4 | 5 | 6 | 7
+    status: 1 | 2 | 3 | 4 | 5 | 6 | 7,
   ) => {
     const word = paginatedWords.find((w) => w.id === id);
     if (word) {
@@ -86,8 +86,10 @@ export const WordsListRTK: React.FC<WordsListRTKProps> = ({
     }
   };
 
+  console.log("paginatedWords", paginatedWords);
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+    <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
       {paginatedWords.map((word) => (
         <WordCard
           key={word.id}

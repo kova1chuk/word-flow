@@ -1,12 +1,3 @@
-import {
-  collection,
-  query,
-  where,
-  getDocs,
-  doc,
-  updateDoc,
-} from "firebase/firestore";
-
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 
 import { updateWordStatsOnStatusChange } from "@/features/word-management/lib/updateWordStatsOnStatusChange";
@@ -20,7 +11,7 @@ import {
 import type { Word } from "@/entities/word/types";
 
 import { config } from "@/lib/config";
-import { db } from "@/lib/firebase";
+import { supabase } from "@/lib/supabaseClient";
 
 import type { WordDetails, Phonetic } from "@/types";
 
@@ -66,16 +57,6 @@ const initialState: WordsState = {
 };
 
 // Async thunks
-export const fetchWordsCount = createAsyncThunk(
-  "words/fetchWordsCount",
-  async ({ userId }: { userId: string }) => {
-    // Fetch the total count of words for the user
-    const q = query(collection(db, "words"), where("userId", "==", userId));
-    const querySnapshot = await getDocs(q);
-    return querySnapshot.size;
-  }
-);
-
 export const fetchWordsPage = createAsyncThunk(
   "words/fetchWordsPage",
   async (
@@ -94,9 +75,22 @@ export const fetchWordsPage = createAsyncThunk(
       search?: string;
       analysisIds?: string[];
     },
-    {}
+    {},
   ) => {
-    // No client-side cache for now; always fetch from Supabase
+    // Get user's learning language from profile
+    const { data: profile, error: profileError } = await supabase
+      .from("users")
+      .select("learning_language")
+      .eq("id", userId)
+      .single();
+
+    if (profileError) {
+      console.error("Error fetching user profile:", profileError);
+    }
+
+    const langCode = profile?.learning_language || "en";
+
+    // Fetch words using the user's learning language
     return await fetchWordsPageSupabase({
       userId,
       page,
@@ -104,9 +98,9 @@ export const fetchWordsPage = createAsyncThunk(
       statusFilter,
       search,
       analysisIds,
-      langCode: "en", // Default to English
+      langCode,
     });
-  }
+  },
 );
 
 export const deleteWord = createAsyncThunk(
@@ -114,7 +108,7 @@ export const deleteWord = createAsyncThunk(
   async ({ wordId }: { wordId: string; userId: string }) => {
     await deleteWordSupabase(wordId);
     return wordId;
-  }
+  },
 );
 
 // New action for silent background refetch
@@ -135,6 +129,19 @@ export const silentRefetchPage = createAsyncThunk(
     search?: string;
     analysisIds?: string[];
   }) => {
+    // Get user's learning language from profile
+    const { data: profile, error: profileError } = await supabase
+      .from("users")
+      .select("learning_language")
+      .eq("id", userId)
+      .single();
+
+    if (profileError) {
+      console.error("Error fetching user profile:", profileError);
+    }
+
+    const langCode = profile?.learning_language || "en";
+
     return await fetchWordsPageSupabase({
       userId,
       page,
@@ -142,9 +149,9 @@ export const silentRefetchPage = createAsyncThunk(
       statusFilter,
       search,
       analysisIds,
-      langCode: "en", // Default to English
+      langCode,
     });
-  }
+  },
 );
 
 // Add word thunk
@@ -164,7 +171,7 @@ export const addWord = createAsyncThunk(
       langCode,
       wordText,
     });
-  }
+  },
 );
 
 export const reloadDefinition = createAsyncThunk(
@@ -175,7 +182,7 @@ export const reloadDefinition = createAsyncThunk(
     let details: WordDetails | undefined = undefined;
 
     const res = await fetch(
-      `${config.dictionaryApi}/${encodeURIComponent(word.word)}`
+      `${config.dictionaryApi}/${encodeURIComponent(word.word)}`,
     );
 
     if (res.ok) {
@@ -231,7 +238,7 @@ export const reloadDefinition = createAsyncThunk(
     if (details) dataToUpdate.details = details;
 
     return { wordId: word.id, updates: dataToUpdate };
-  }
+  },
 );
 
 export const reloadTranslation = createAsyncThunk(
@@ -240,7 +247,7 @@ export const reloadTranslation = createAsyncThunk(
     let translation = "";
     const langPair = `en|uk`;
     const url = `${config.translationApi.baseUrl}?q=${encodeURIComponent(
-      word.word
+      word.word,
     )}&langpair=${langPair}`;
 
     const res = await fetch(url);
@@ -255,9 +262,10 @@ export const reloadTranslation = createAsyncThunk(
       translation = "No translation found.";
     }
 
-    await updateDoc(doc(db, "words", word.id), { translation });
+    // Translation should be updated via Supabase, not Firebase
+    // The UI will handle the update through the word management system
     return { wordId: word.id, updates: { translation } };
-  }
+  },
 );
 
 export const updateWordStatus = createAsyncThunk(
@@ -281,7 +289,8 @@ export const updateWordStatus = createAsyncThunk(
       throw new Error("Old status is not a number");
     }
 
-    await updateDoc(doc(db, "words", wordId), { status });
+    // Status should be updated via Supabase, not Firebase
+    // The UI will handle the update through the word management system
     await updateWordStatsOnStatusChange({
       wordId,
       userId,
@@ -290,7 +299,7 @@ export const updateWordStatus = createAsyncThunk(
     });
 
     return { wordId, updates: { status } };
-  }
+  },
 );
 
 const wordsSlice = createSlice({
@@ -358,7 +367,7 @@ const wordsSlice = createSlice({
           const page = parseInt(pageKey);
           if (state.words[page]) {
             state.words[page] = state.words[page].filter(
-              (word) => word.id !== wordId
+              (word) => word.id !== wordId,
             );
           }
         });
@@ -366,7 +375,7 @@ const wordsSlice = createSlice({
         // Update total words count
         state.pagination.totalWords = Math.max(
           0,
-          state.pagination.totalWords - 1
+          state.pagination.totalWords - 1,
         );
 
         // Don't modify currentPage here - let URL-based pagination handle page navigation
@@ -431,7 +440,7 @@ const wordsSlice = createSlice({
           const page = parseInt(pageKey);
           if (state.words[page]) {
             state.words[page] = state.words[page].map((word) =>
-              word.id === wordId ? { ...word, ...updates } : word
+              word.id === wordId ? { ...word, ...updates } : word,
             );
           }
         });
@@ -454,7 +463,7 @@ const wordsSlice = createSlice({
           const page = parseInt(pageKey);
           if (state.words[page]) {
             state.words[page] = state.words[page].map((word) =>
-              word.id === wordId ? { ...word, ...updates } : word
+              word.id === wordId ? { ...word, ...updates } : word,
             );
           }
         });
@@ -477,7 +486,7 @@ const wordsSlice = createSlice({
           const page = parseInt(pageKey);
           if (state.words[page]) {
             state.words[page] = state.words[page].map((word) =>
-              word.id === wordId ? { ...word, ...updates } : word
+              word.id === wordId ? { ...word, ...updates } : word,
             );
           }
         });

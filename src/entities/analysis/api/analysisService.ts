@@ -1,4 +1,6 @@
-import { supabase } from "@/lib/supabaseClient";
+import { createClient } from "@/utils/supabase/client";
+
+const supabase = createClient();
 
 interface SerializableTimestamp {
   seconds: number;
@@ -29,7 +31,7 @@ interface Sentence {
 
 export const fetchAnalysisDetails = async (
   analysisId: string,
-  userId: string
+  userId: string,
 ): Promise<{
   analysis: Analysis;
   sentences: Sentence[];
@@ -74,7 +76,7 @@ export const fetchSentencesPage = async (
   analysisId: string,
   page: number,
   pageSize: number,
-  userId?: string
+  userId?: string,
 ): Promise<{
   sentences: Sentence[];
   hasMore: boolean;
@@ -95,7 +97,7 @@ export const fetchSentencesPage = async (
       id: row.id,
       text: row.text,
       index: row.index,
-    })
+    }),
   );
 
   const hasMore = sentences.length === pageSize;

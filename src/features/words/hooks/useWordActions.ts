@@ -2,10 +2,11 @@ import { useState, useCallback } from "react";
 
 import { useSelector } from "react-redux";
 
+import { createClient } from "@/utils/supabase/client";
+
 import { selectUser } from "@/entities/user/model/selectors";
 
 import { config } from "@/lib/config";
-import { supabase } from "@/lib/supabaseClient";
 
 import type { Word, WordDetails, Phonetic } from "@/types";
 
@@ -34,6 +35,7 @@ export function useWordActions() {
         console.log("Would delete word:", word.id);
 
         // Placeholder implementation
+        const supabase = createClient();
         const { error } = await supabase
           .from("words")
           .delete()
@@ -50,7 +52,7 @@ export function useWordActions() {
         throw new Error("Failed to delete word");
       }
     },
-    [user]
+    [user],
   );
 
   const onReloadDefinition = useCallback(
@@ -63,7 +65,7 @@ export function useWordActions() {
         let details: WordDetails | undefined = undefined;
 
         const res = await fetch(
-          `${config.dictionaryApi}/${encodeURIComponent(word.word)}`
+          `${config.dictionaryApi}/${encodeURIComponent(word.word)}`,
         );
 
         if (res.ok) {
@@ -117,13 +119,13 @@ export function useWordActions() {
         throw new Error(
           `Failed to reload definition: ${
             error instanceof Error ? error.message : "Unknown error"
-          }`
+          }`,
         );
       } finally {
         setUpdating(null);
       }
     },
-    [user]
+    [user],
   );
 
   const onReloadTranslation = useCallback(
@@ -135,7 +137,7 @@ export function useWordActions() {
         let translation = "";
         const langPair = `en|uk`;
         const url = `${config.translationApi.baseUrl}?q=${encodeURIComponent(
-          word.word
+          word.word,
         )}&langpair=${langPair}`;
 
         const res = await fetch(url);
@@ -162,13 +164,13 @@ export function useWordActions() {
         throw new Error(
           `Failed to reload translation: ${
             error instanceof Error ? error.message : "Unknown error"
-          }`
+          }`,
         );
       } finally {
         setUpdating(null);
       }
     },
-    [user]
+    [user],
   );
 
   const onStatusChange = useCallback(
@@ -200,7 +202,7 @@ export function useWordActions() {
         setUpdating(null);
       }
     },
-    [user]
+    [user],
   );
 
   return {

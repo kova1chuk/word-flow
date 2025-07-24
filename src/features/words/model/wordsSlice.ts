@@ -1,5 +1,7 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 
+import { createClient } from "@/utils/supabase/client";
+
 import { updateWordStatsOnStatusChange } from "@/features/word-management/lib/updateWordStatsOnStatusChange";
 import {
   fetchWordsPageSupabase,
@@ -11,7 +13,6 @@ import {
 import type { Word } from "@/entities/word/types";
 
 import { config } from "@/lib/config";
-import { supabase } from "@/lib/supabaseClient";
 
 import type { WordDetails, Phonetic } from "@/types";
 
@@ -77,6 +78,7 @@ export const fetchWordsPage = createAsyncThunk(
     },
     {},
   ) => {
+    const supabase = createClient();
     // Get user's learning language from profile
     const { data: profile, error: profileError } = await supabase
       .from("users")
@@ -129,6 +131,7 @@ export const silentRefetchPage = createAsyncThunk(
     search?: string;
     analysisIds?: string[];
   }) => {
+    const supabase = createClient();
     // Get user's learning language from profile
     const { data: profile, error: profileError } = await supabase
       .from("users")

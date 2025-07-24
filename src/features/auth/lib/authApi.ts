@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/supabaseClient";
+import { createClient } from "@/utils/supabase/client";
 
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 
@@ -23,6 +23,7 @@ function mapSupabaseUser(user: SupabaseUser | null) {
 export const authApi = {
   // Sign in with email and password
   async signInWithEmail(email: string, password: string) {
+    const supabase = createClient();
     const { data, error } = await supabase.auth.signInWithPassword({
       email,
       password,
@@ -37,6 +38,7 @@ export const authApi = {
 
   // Sign up with email and password
   async signUpWithEmail(email: string, password: string) {
+    const supabase = createClient();
     const { data, error } = await supabase.auth.signUp({ email, password });
     if (error || !data.user)
       throw {
@@ -48,6 +50,7 @@ export const authApi = {
 
   // Sign in with Google
   async signInWithGoogle() {
+    const supabase = createClient();
     const { error } = await supabase.auth.signInWithOAuth({
       provider: "google",
     });
@@ -58,6 +61,7 @@ export const authApi = {
 
   // Sign out
   async signOut() {
+    const supabase = createClient();
     const { error } = await supabase.auth.signOut();
     if (error) throw { code: error.code, message: error.message };
   },
@@ -73,7 +77,7 @@ export const authApi = {
   // Validate password confirmation
   validatePasswordConfirmation(
     password: string,
-    confirmPassword: string
+    confirmPassword: string,
   ): string | null {
     if (password !== confirmPassword) {
       return "Passwords do not match";

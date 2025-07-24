@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/supabaseClient";
+import { createClient } from "@/utils/supabase/client";
 
 export interface AnalysisResult {
   title: string;
@@ -47,7 +47,7 @@ export type { UserWord };
 
 const transformApiResult = (
   apiResponse: ApiAnalysisResponse,
-  fileName: string
+  fileName: string,
 ): AnalysisResult => {
   const title = apiResponse.title || fileName || "Untitled Analysis";
 
@@ -62,7 +62,7 @@ const transformApiResult = (
     wordFrequency = apiResponse.wordFrequency;
     totalWords = Object.values(wordFrequency).reduce(
       (sum, count) => sum + count,
-      0
+      0,
     );
     uniqueWords = Object.keys(wordFrequency).length;
   }
@@ -105,14 +105,15 @@ export const analyzeApi = {
   async saveAnalysisSupabase(
     userId: string,
     analysisResult: AnalysisResult,
-    langCode: string = "en"
+    langCode: string = "en",
   ): Promise<string> {
+    const supabase = createClient();
     // Transform word frequency data to match the function signature
     const wordEntries = Object.entries(analysisResult.wordFrequency).map(
       ([text, usage_count]) => ({
         text,
         usage_count,
-      })
+      }),
     );
 
     console.log("📤 Sending to Supabase:", {

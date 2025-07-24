@@ -13,9 +13,6 @@ import { useAnalyses } from "@/features/analyses/lib/useAnalyses";
 
 import { selectUser } from "@/entities/user/model/selectors";
 
-import { useAnalysisFilteredStats } from "@/shared/hooks/useAnalysisFilteredStats";
-import { useUserStatsRTK } from "@/shared/hooks/useUserStatsRTK";
-
 export default function TrainingPage() {
   const user = useSelector(selectUser);
 
@@ -57,54 +54,6 @@ export default function TrainingPage() {
     router.replace(newUrl, { scroll: false });
   }, [selectedAnalysisIds, router, searchParams]);
 
-  const { wordStats: userWordStats } = useUserStatsRTK();
-  const { filteredWordStats } = useAnalysisFilteredStats(selectedAnalysisIds);
-
-  const TRAINING_TYPE_OPTIONS = [
-    {
-      value: "input_word",
-      label: "Input Word",
-      description: "Type the English word based on translation",
-      icon: "⌨️",
-      path: "/training/input_word",
-    },
-    {
-      value: "choose_translation",
-      label: "Choose Translation",
-      description: "Select correct translation from options",
-      icon: "✅",
-      path: "/training/choose_translation",
-    },
-    {
-      value: "context_usage",
-      label: "Context Usage",
-      description: "Complete sentences with correct words",
-      icon: "📝",
-      path: "/training/context_usage",
-    },
-    {
-      value: "synonym_match",
-      label: "Synonym Match",
-      description: "Find synonyms and antonyms",
-      icon: "🔗",
-      path: "/training/synonym_match",
-    },
-    {
-      value: "audio_dictation",
-      label: "Audio Dictation",
-      description: "Listen and type what you hear",
-      icon: "🎧",
-      path: "/training/audio_dictation",
-    },
-    {
-      value: "manual",
-      label: "Manual Review",
-      description: "Review words and update status",
-      icon: "📋",
-      path: "/training/manual",
-    },
-  ];
-
   const toggleAnalysis = (id: string) => {
     setSelectedAnalysisIds((prev) =>
       prev.includes(id)
@@ -121,31 +70,21 @@ export default function TrainingPage() {
     }
   };
 
-  const getTotalWords = () => {
-    if (!userWordStats) return 0;
-    let total = 0;
-    (Object.values(userWordStats) as number[]).forEach((count) => {
-      total += count;
-    });
-    return total;
-  };
-
-  const getFilteredTotalWords = () => {
-    if (!filteredWordStats) return 0;
-    let total = 0;
-    (Object.values(filteredWordStats) as number[]).forEach((count) => {
-      total += count;
-    });
-    return total;
-  };
-
   if (!user) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-900">
-        <div className="text-center">
-          <h1 className="mb-4 text-2xl font-bold text-gray-900 dark:text-white">
-            Please sign in to access training
-          </h1>
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+        <div className="mx-auto max-w-4xl p-4">
+          <div className="py-8 text-center">
+            <h1 className="mb-4 text-2xl font-bold text-gray-900 dark:text-white">
+              Please sign in to access training
+            </h1>
+            <Link
+              href="/auth/signin"
+              className="inline-flex items-center rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
+            >
+              Sign In
+            </Link>
+          </div>
         </div>
       </div>
     );
@@ -153,73 +92,116 @@ export default function TrainingPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      <div className="mx-auto max-w-4xl p-4">
         {/* Header */}
-        <div className="mb-8 text-center">
-          <h1 className="mb-4 text-4xl font-bold text-gray-900 dark:text-white">
-            Training Center
+        <div className="mb-6">
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
+            Training
           </h1>
-          <p className="text-xl text-gray-600 dark:text-gray-400">
+          <p className="mt-2 text-gray-600 dark:text-gray-400">
             Choose your training type and start learning
           </p>
         </div>
 
-        {/* Stats Overview */}
-        <div className="mb-8 rounded-lg bg-white p-6 shadow-md dark:bg-gray-800">
-          <h2 className="mb-4 text-xl font-semibold text-gray-900 dark:text-white">
-            Your Learning Stats
-          </h2>
-          <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-            <div className="rounded-lg bg-blue-50 p-4 text-center dark:bg-blue-900/20">
-              <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                {getTotalWords()}
-              </div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">
-                Total Words
-              </div>
-            </div>
-            <div className="rounded-lg bg-green-50 p-4 text-center dark:bg-green-900/20">
-              <div className="text-2xl font-bold text-green-600 dark:text-green-400">
-                {selectedAnalysisIds.length > 0
-                  ? getFilteredTotalWords()
-                  : getTotalWords()}
-              </div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">
-                Available for Training
-              </div>
-            </div>
-            <div className="rounded-lg bg-purple-50 p-4 text-center dark:bg-purple-900/20">
-              <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
-                {analyses.length}
-              </div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">
-                Analyses
-              </div>
-            </div>
-          </div>
+        {/* Training Types */}
+        <div className="mb-8 grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+          <Link
+            href="/training/audio_dictation"
+            className="rounded-lg bg-white p-6 shadow-md transition-shadow hover:shadow-lg dark:bg-gray-800"
+          >
+            <h3 className="mb-2 text-xl font-semibold text-gray-900 dark:text-white">
+              Audio Dictation
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400">
+              Listen to audio and type the word you hear
+            </p>
+          </Link>
+
+          <Link
+            href="/training/choose_translation"
+            className="rounded-lg bg-white p-6 shadow-md transition-shadow hover:shadow-lg dark:bg-gray-800"
+          >
+            <h3 className="mb-2 text-xl font-semibold text-gray-900 dark:text-white">
+              Choose Translation
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400">
+              Choose the correct translation for each word
+            </p>
+          </Link>
+
+          <Link
+            href="/training/context_usage"
+            className="rounded-lg bg-white p-6 shadow-md transition-shadow hover:shadow-lg dark:bg-gray-800"
+          >
+            <h3 className="mb-2 text-xl font-semibold text-gray-900 dark:text-white">
+              Context Usage
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400">
+              Use words in context to improve understanding
+            </p>
+          </Link>
+
+          <Link
+            href="/training/input_word"
+            className="rounded-lg bg-white p-6 shadow-md transition-shadow hover:shadow-lg dark:bg-gray-800"
+          >
+            <h3 className="mb-2 text-xl font-semibold text-gray-900 dark:text-white">
+              Input Word
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400">
+              Type words based on definitions or translations
+            </p>
+          </Link>
+
+          <Link
+            href="/training/synonym_match"
+            className="rounded-lg bg-white p-6 shadow-md transition-shadow hover:shadow-lg dark:bg-gray-800"
+          >
+            <h3 className="mb-2 text-xl font-semibold text-gray-900 dark:text-white">
+              Synonym Match
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400">
+              Match words with their synonyms
+            </p>
+          </Link>
+
+          <Link
+            href="/training/manual"
+            className="rounded-lg bg-white p-6 shadow-md transition-shadow hover:shadow-lg dark:bg-gray-800"
+          >
+            <h3 className="mb-2 text-xl font-semibold text-gray-900 dark:text-white">
+              Manual Training
+            </h3>
+            <p className="text-gray-600 dark:text-gray-400">
+              Manual word review and practice
+            </p>
+          </Link>
         </div>
 
         {/* Analyses Selection */}
-        <div className="mb-8 rounded-lg bg-white p-6 shadow-md dark:bg-gray-800">
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-              Select Analyses (Optional)
-            </h2>
-            <button
-              onClick={() => setAnalysesExpanded(!analysesExpanded)}
-              className="flex items-center text-gray-600 hover:text-gray-800 dark:text-gray-400 dark:hover:text-gray-200"
-            >
-              {analysesExpanded ? (
-                <ChevronDownIcon className="h-5 w-5" />
-              ) : (
-                <ChevronRightIcon className="h-5 w-5" />
-              )}
-            </button>
-          </div>
+        <div className="rounded-lg bg-white p-6 shadow-md dark:bg-gray-800">
+          <h2 className="mb-4 text-xl font-semibold text-gray-900 dark:text-white">
+            Select Analyses (Optional)
+          </h2>
+          <p className="mb-4 text-gray-600 dark:text-gray-400">
+            Choose specific analyses to focus your training on
+          </p>
+
+          <button
+            onClick={() => setAnalysesExpanded(!analysesExpanded)}
+            className="mb-3 flex items-center text-lg font-medium text-gray-900 dark:text-white"
+          >
+            {analysesExpanded ? (
+              <ChevronDownIcon className="mr-2 h-5 w-5" />
+            ) : (
+              <ChevronRightIcon className="mr-2 h-5 w-5" />
+            )}
+            Analyses ({selectedAnalysisIds.length} selected)
+          </button>
 
           {analysesExpanded && (
-            <div className="space-y-3">
-              <div className="flex items-center gap-3">
+            <div className="ml-7 space-y-2">
+              <div className="mb-2 flex items-center gap-2">
                 <button
                   onClick={toggleAll}
                   className="text-sm text-blue-600 hover:underline dark:text-blue-400"
@@ -228,72 +210,25 @@ export default function TrainingPage() {
                     ? "Deselect All"
                     : "Select All"}
                 </button>
-                <span className="text-sm text-gray-500 dark:text-gray-400">
-                  {selectedAnalysisIds.length} of {analyses.length} selected
-                </span>
               </div>
-
-              <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                {analyses.map((analysis) => (
-                  <button
-                    key={analysis.id}
-                    onClick={() => toggleAnalysis(analysis.id)}
-                    className={`rounded-lg border-2 p-3 text-left transition-colors ${
-                      selectedAnalysisIds.includes(analysis.id)
-                        ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
-                        : "border-gray-300 hover:border-gray-400 dark:border-gray-600 dark:hover:border-gray-500"
-                    }`}
-                  >
-                    <div className="font-medium text-gray-900 dark:text-white">
-                      {analysis.title}
-                    </div>
-                    <div className="text-sm text-gray-500 dark:text-gray-400">
-                      {analysis.totalWords ?? 0} words
-                    </div>
-                  </button>
-                ))}
-              </div>
+              {analyses.map((analysis) => (
+                <label
+                  key={analysis.id}
+                  className="flex cursor-pointer items-center space-x-2"
+                >
+                  <input
+                    type="checkbox"
+                    checked={selectedAnalysisIds.includes(analysis.id)}
+                    onChange={() => toggleAnalysis(analysis.id)}
+                    className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="text-gray-700 dark:text-gray-300">
+                    {analysis.title}
+                  </span>
+                </label>
+              ))}
             </div>
           )}
-        </div>
-
-        {/* Training Types Grid */}
-        <div className="rounded-lg bg-white p-6 shadow-md dark:bg-gray-800">
-          <h2 className="mb-6 text-xl font-semibold text-gray-900 dark:text-white">
-            Choose Training Type
-          </h2>
-
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-            {TRAINING_TYPE_OPTIONS.map((option) => {
-              const url = new URL(option.path, window.location.origin);
-              if (selectedAnalysisIds.length > 0) {
-                url.searchParams.set("analyses", selectedAnalysisIds.join(","));
-              }
-
-              return (
-                <Link
-                  key={option.value}
-                  href={url.toString()}
-                  className="group block rounded-lg border-2 border-gray-300 p-6 transition-all duration-200 hover:border-blue-500 hover:shadow-lg dark:border-gray-600 dark:hover:border-blue-400"
-                >
-                  <div className="text-center">
-                    <div className="mb-4 text-4xl transition-transform duration-200 group-hover:scale-110">
-                      {option.icon}
-                    </div>
-                    <h3 className="mb-2 text-lg font-semibold text-gray-900 dark:text-white">
-                      {option.label}
-                    </h3>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      {option.description}
-                    </p>
-                    <div className="mt-4 text-sm font-medium text-blue-600 dark:text-blue-400">
-                      Start Training →
-                    </div>
-                  </div>
-                </Link>
-              );
-            })}
-          </div>
         </div>
       </div>
     </div>

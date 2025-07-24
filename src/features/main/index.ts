@@ -5,3 +5,5 @@ export {
 
 export { default as NavigationLinks } from "./components/NavigationLinks";
 export { default as WelcomeScreen } from "./components/WelcomeScreen";
+
+export * from "./model";

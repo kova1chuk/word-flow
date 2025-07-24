@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/supabaseClient";
+import { createClient } from "@/utils/supabase/client";
 
 export interface Analysis {
   id: string;
@@ -29,13 +29,14 @@ export interface AnalysesApiResponse {
 export async function fetchAnalysesSupabase(
   userId: string,
   page: number = 1,
-  pageSize: number = 10
+  pageSize: number = 10,
 ): Promise<{
   analyses: Analysis[];
   hasMore: boolean;
   total: number;
 }> {
   try {
+    const supabase = createClient();
     const p_limit = pageSize;
     const p_offset = (page - 1) * pageSize;
     const p_user_id = userId;
@@ -65,7 +66,7 @@ export async function fetchAnalysesSupabase(
         totalWords: row.total_words || 0,
         uniqueWords: row.unique_words || 0,
         wordsStat: row.words_stat || {},
-      })
+      }),
     );
 
     const hasMore = analyses.length === pageSize;
@@ -90,9 +91,10 @@ export async function fetchAnalysesSupabase(
 export async function updateAnalysisTitleSupabase(
   analysisId: string,
   newTitle: string,
-  userId: string
+  userId: string,
 ): Promise<void> {
   try {
+    const supabase = createClient();
     const { error } = await supabase
       .from("analyses")
       .update({ title: newTitle })
@@ -111,9 +113,10 @@ export async function updateAnalysisTitleSupabase(
 // Delete analysis using Supabase
 export async function deleteAnalysisSupabase(
   analysisId: string,
-  userId: string
+  userId: string,
 ): Promise<void> {
   try {
+    const supabase = createClient();
     const { error } = await supabase
       .from("analyses")
       .delete()

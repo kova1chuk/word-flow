@@ -1,5 +1,3 @@
-// import AuthGuard from "@/components/AuthGuard";
-
 import {
   WordStatsChart,
   NavigationLinks,
@@ -20,19 +18,7 @@ function AuthenticatedDashboard() {
 }
 
 export default async function HomePage() {
-  let user = null;
-
-  try {
-    const result = await getServerUser();
-    user = result.user;
-    console.log(result);
-  } catch {
-    // Suppress any server-side auth errors, including refresh token errors
-    console.log(
-      "🔄 HomePage: Suppressed server-side auth error, showing welcome screen",
-    );
-    user = null;
-  }
+  const user = await getServerUser();
 
   return !user ? <WelcomeScreen /> : <AuthenticatedDashboard />;
 }

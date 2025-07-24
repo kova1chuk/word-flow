@@ -1,6 +1,6 @@
-import type { Word } from "@/entities/word/types";
+import { createClient } from "@/utils/supabase/client";
 
-import { supabase } from "@/lib/supabaseClient";
+import type { Word } from "@/entities/word/types";
 
 // Define types for the RPC response
 type WordStatus = "1" | "2" | "3" | "4" | "5" | "6" | "7";
@@ -33,6 +33,7 @@ export async function fetchWordsPageSupabase({
   analysisIds?: string[];
   langCode?: string;
 }) {
+  const supabase = createClient();
   const lang_code = langCode;
   const limit_count = pageSize;
   const offset_count = (page - 1) * pageSize;
@@ -146,6 +147,7 @@ async function fetchWordsDirectQuery({
 }
 
 export async function createWordSupabase(word: Omit<Word, "id">) {
+  const supabase = createClient();
   const { data, error } = await supabase
     .from("words")
     .insert([word])
@@ -156,6 +158,7 @@ export async function createWordSupabase(word: Omit<Word, "id">) {
 }
 
 export async function updateWordSupabase(id: string, updates: Partial<Word>) {
+  const supabase = createClient();
   const { data, error } = await supabase
     .from("words")
     .update(updates)
@@ -167,6 +170,7 @@ export async function updateWordSupabase(id: string, updates: Partial<Word>) {
 }
 
 export async function deleteWordSupabase(id: string) {
+  const supabase = createClient();
   const { error } = await supabase.from("words").delete().eq("id", id);
   if (error) throw error;
   return true;
@@ -185,6 +189,7 @@ export async function updateWordDefinitionSupabase({
   newPhoneticAudioLink?: string;
   newPhoneticText?: string;
 }) {
+  const supabase = createClient();
   console.log("Updating word definition with params:", {
     lang_code: langCode,
     word_id: wordId,
@@ -224,6 +229,7 @@ export async function addWordToUserDictionarySupabase({
   langCode: string;
   wordText: string;
 }) {
+  const supabase = createClient();
   const { data, error } = await supabase.rpc("add_word_to_user_dictionary", {
     user_id: userId,
     lang_code: langCode,

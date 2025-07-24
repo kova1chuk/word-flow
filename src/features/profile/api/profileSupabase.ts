@@ -1,4 +1,4 @@
-import { supabase } from "@/lib/supabaseClient";
+import { createClient } from "@/utils/supabase/client";
 
 export type PublicUser = {
   id: string;
@@ -8,6 +8,7 @@ export type PublicUser = {
 };
 
 export async function setUserLanguages(native: string, learning: string) {
+  const supabase = createClient();
   const { data, error } = await supabase.rpc("set_user_languages", {
     native,
     learning,
@@ -18,6 +19,7 @@ export async function setUserLanguages(native: string, learning: string) {
 }
 
 export async function getUserProfile(): Promise<PublicUser | null> {
+  const supabase = createClient();
   const { data, error } = await supabase.rpc("get_user");
   if (error) throw error;
   if (data && data.length > 0) {

@@ -7,35 +7,41 @@ import analysesSlice from "@/features/analyses/model/analysesSlice";
 import trainingStatsSlice from "@/features/analysis-view/model/trainingStatsSlice";
 import analysisWordsSlice from "@/features/analysis-words/model/analysisWordsSlice";
 import analyzeSlice from "@/features/analyze/model/analyzeSlice";
+import mainSlice from "@/features/main/model/mainSlice";
 import profileReducer from "@/features/profile/model/profileSlice";
 import trainingSlice from "@/features/training/model/trainingSlice";
 import { wordsReducer } from "@/features/words/model";
 
 import analysisSlice from "@/entities/analysis/model/analysisSlice";
+import { dictionaryApi } from "@/entities/dictionary/api";
 import authSlice from "@/entities/user/model/authSlice";
-import userStatsSlice from "@/entities/user/model/userStatsSlice";
 import wordSlice from "@/entities/word/model/wordSlice";
 
 import formSlice from "@/shared/model/formSlice";
 import notificationSlice from "@/shared/model/notificationSlice";
 import uiSlice from "@/shared/model/uiSlice";
 
+// Import RTK Query APIs
+
 export const store = configureStore({
   reducer: {
     auth: authSlice,
-    userStats: userStatsSlice,
     word: wordSlice,
     analysis: analysisSlice,
     analyses: analysesSlice,
     analysisWords: analysisWordsSlice,
     trainingStats: trainingStatsSlice,
     analyze: analyzeSlice,
+    main: mainSlice,
     words: wordsReducer,
     ui: uiSlice,
     form: formSlice,
     notification: notificationSlice,
     training: trainingSlice,
     profile: profileReducer,
+
+    // RTK Query APIs
+    [dictionaryApi.reducerPath]: dictionaryApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
@@ -56,13 +62,16 @@ export const store = configureStore({
           "words.words.lastTrainedAt",
         ],
       },
-    }),
+    }).concat(
+      // Add RTK Query middleware
+      dictionaryApi.middleware,
+    ),
 });
 
 // Infer the `RootState` and `AppDispatch` types from the store itself
 export type RootState = ReturnType<typeof store.getState>;
+// Inferred type: {posts: PostsState, comments: CommentsState, users: UsersState}
 export type AppDispatch = typeof store.dispatch;
 
-// Use throughout your app instead of plain `useDispatch` and `useSelector`
 export const useAppDispatch = () => useDispatch<AppDispatch>();
 export const useAppSelector: TypedUseSelectorHook<RootState> = useSelector;

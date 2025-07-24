@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 
-import { supabase } from "@/lib/supabaseClient";
+import { createClient } from "@/utils/supabase/client";
 
 export interface TrainingStats {
   learned: number;
@@ -22,6 +22,7 @@ export const fetchTrainingStats = createAsyncThunk<
   console.log("Would fetch training stats for:", { analysisId, userId });
 
   // Placeholder implementation
+  const supabase = createClient();
   const { data, error } = await supabase.rpc("get_training_stats", {
     p_analysis_id: analysisId,
     p_user_id: userId,
@@ -62,7 +63,7 @@ const trainingStatsSlice = createSlice({
         (state, action: PayloadAction<TrainingStats>) => {
           state.loading = false;
           state.stats = action.payload;
-        }
+        },
       )
       .addCase(fetchTrainingStats.rejected, (state, action) => {
         state.loading = false;

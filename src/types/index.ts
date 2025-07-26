@@ -1,4 +1,4 @@
-export type { Word } from "@/entities/word/types";
+export type WordStatus = 1 | 2 | 3 | 4 | 5 | 6 | 7;
 
 export interface Phonetic {
   text: string;
@@ -26,7 +26,7 @@ export interface UserWord {
   id: string;
   wordId: string;
   userId: string;
-  status: 1 | 2 | 3 | 4 | 5 | 6 | 7;
+  status: WordStatus;
   lastTrainedAt?: Date;
   trainHistory: TrainingResult[];
   createdAt: Date;
@@ -38,8 +38,8 @@ export interface TrainingResult {
   result: "correct" | "incorrect";
   type: TrainingType;
   timestamp: Date;
-  oldStatus: 1 | 2 | 3 | 4 | 5 | 6 | 7;
-  newStatus: 1 | 2 | 3 | 4 | 5 | 6 | 7;
+  oldStatus: WordStatus;
+  newStatus: WordStatus;
   sessionId?: string;
 }
 

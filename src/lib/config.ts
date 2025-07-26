@@ -13,7 +13,7 @@ export const config = {
   },
 
   // Dictionary API endpoint
-  dictionaryApi: "https://api.dictionaryapi.dev/api/v2/entries/en",
+  dictionaryApi: "https://api.dictionaryapi.dev/api/v2/entries",
 
   // --- Backend Service Endpoints ---
   // All backend services are derived from a single base URI.

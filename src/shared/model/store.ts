@@ -15,6 +15,7 @@ import { wordsReducer } from "@/features/words/model";
 import analysisSlice from "@/entities/analysis/model/analysisSlice";
 import { dictionaryApi } from "@/entities/dictionary/api";
 import authSlice from "@/entities/user/model/authSlice";
+import { wordApi } from "@/entities/word/api/wordApi";
 import wordSlice from "@/entities/word/model/wordSlice";
 
 import formSlice from "@/shared/model/formSlice";
@@ -42,6 +43,7 @@ export const store = configureStore({
 
     // RTK Query APIs
     [dictionaryApi.reducerPath]: dictionaryApi.reducer,
+    [wordApi.reducerPath]: wordApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
@@ -65,6 +67,7 @@ export const store = configureStore({
     }).concat(
       // Add RTK Query middleware
       dictionaryApi.middleware,
+      wordApi.middleware,
     ),
 });
 

@@ -1,3 +1,5 @@
+import { WordStatus } from "@/types";
+
 export interface Phonetic {
   text: string;
   audio: string;
@@ -26,7 +28,8 @@ export interface Word {
   definition?: string;
   translation?: string;
   example?: string;
-  status: 1 | 2 | 3 | 4 | 5 | 6 | 7;
+  status: WordStatus;
+  phonetic: Phonetic;
   userId: string;
   createdAt: string;
   updatedAt: string;

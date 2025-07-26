@@ -93,14 +93,12 @@ export const wordApi = createApi({
       {
         langCode: string;
         id: string;
-        userId: string;
       }
     >({
-      query: ({ langCode, id, userId }) => ({
+      query: ({ langCode, id }) => ({
         functionName: "remove_word_from_dictionary",
         args: {
           lang_code: langCode,
-          p_user_id: userId,
           p_word_id: id,
         },
       }),

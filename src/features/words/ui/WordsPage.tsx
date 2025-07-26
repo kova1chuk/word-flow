@@ -16,7 +16,7 @@ import { useUpdateQueryParams } from "../../../shared/hooks/useUpdateQueryParams
 import { WordsList } from "../components";
 import { WordsListSkeleton } from "../components/WordsList";
 import { selectPageInfo } from "../model/selectors";
-import { fetchWordsPage } from "../model/thunks";
+import { fetchWordsPage, silentRefetchPage } from "../model/thunks";
 
 import { WordsPagePagination } from "./WordsPagePagination";
 
@@ -60,6 +60,10 @@ export const WordsPage: React.FC = () => {
     updateQueryParams("page", page);
   };
 
+  const handleSilentRefetchPage = () => {
+    dispatch(silentRefetchPage({ page, pageSize: PAGE_SIZE }));
+  };
+
   // const handleStatusFilterChange = (statusFilter: string[]) => {
   //   updateQueryParams("statusFilter", statusFilter);
   // };
@@ -90,10 +94,13 @@ export const WordsPage: React.FC = () => {
         skeleton={<WordsListSkeleton count={3} />}
         isLoading={isPageLoading}
       >
-        <WordsList currentPage={page} onWordAction={() => {}} />
+        <WordsList
+          currentPage={page}
+          onSilentRefetchPage={handleSilentRefetchPage}
+        />
       </WithSkeleton>
 
-      {shouldShowPagination && (
+      {!!shouldShowPagination && (
         <WordsPagePagination
           currentPage={page}
           totalPages={Math.ceil(pagination.totalWords / PAGE_SIZE)}

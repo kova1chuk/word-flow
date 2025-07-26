@@ -11,12 +11,12 @@ import {
 import type { Word } from "@/entities/word/types";
 
 function findEntryByIdInArray<T extends { id: string }>(
-  record: Record<string, T[]>,
+  record: Record<number, T[]>,
   targetId: string,
-): { key: string; value: T } | undefined {
+): { key: number; value: T } | undefined {
   for (const [key, items] of Object.entries(record)) {
     const match = items.find((item) => item.id === targetId);
-    if (match) return { key, value: match };
+    if (match) return { key: Number(key), value: match };
   }
   return undefined;
 }
@@ -258,7 +258,11 @@ const wordsSlice = createSlice({
       .addCase(removeWordFromDictionary.fulfilled, (state, action) => {
         const { id } = action.meta.arg;
         const entry = findEntryByIdInArray(state.words, id);
-        if (entry?.value) {
+        if (entry?.value && entry?.key) {
+          const pageWords = state.words[entry.key];
+          if (pageWords) {
+            state.words[entry.key] = pageWords.filter((word) => word.id !== id);
+          }
           entry.value.updatingWordDelete = false;
         }
       })

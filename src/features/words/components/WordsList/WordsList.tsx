@@ -8,8 +8,6 @@ import { selectPaginatedWordIds } from "@/features/words/model/selectors";
 
 import type { AppDispatch, RootState } from "@/shared/model/store";
 
-import { selectUser } from "../../../../entities/user";
-import { Word } from "../../../../entities/word";
 import { reloadWordDefinitionFromApi } from "../../lib/reloadWordDefinition";
 import { reloadWordTranslationFromApi } from "../../lib/reloadWordTranslation";
 import {
@@ -24,18 +22,18 @@ import {
 
 interface WordsListProps {
   currentPage: number;
-  onWordAction: (action: string, word: Word, data?: unknown) => void;
+  onSilentRefetchPage: () => void;
 }
 
-const WordsList: React.FC<WordsListProps> = ({ currentPage }) => {
+const WordsList: React.FC<WordsListProps> = ({
+  currentPage,
+  onSilentRefetchPage,
+}) => {
   const dispatch = useDispatch<AppDispatch>();
 
-  const user = useSelector(selectUser);
   const { wordIds } = useSelector((state: RootState) =>
     selectPaginatedWordIds(state, { page: currentPage }),
   );
-  // const { updatingDefinitions, updatingTranslations, updatingDelete } =
-  //   useSelector(selectUpdating());
 
   const handleReloadDefinition = useCallback(
     (wordId: string, wordText: string) => {
@@ -88,16 +86,13 @@ const WordsList: React.FC<WordsListProps> = ({ currentPage }) => {
 
   const handleRemoveWord = useCallback(
     (wordId: string) => {
-      if (!user) {
-        return;
-      }
       dispatch(
         removeWordFromDictionary({
           langCode: "en",
           id: wordId,
-          userId: user.id,
         }),
       );
+      onSilentRefetchPage();
     },
     [dispatch],
   );

@@ -144,11 +144,9 @@ export const removeWordFromDictionary = createAsyncThunk(
     {
       langCode,
       id,
-      userId,
     }: {
       langCode: string;
       id: string;
-      userId: string;
     },
     { dispatch },
   ) => {
@@ -156,7 +154,6 @@ export const removeWordFromDictionary = createAsyncThunk(
       wordApi.endpoints.removeWordFromDictionary.initiate({
         langCode,
         id,
-        userId,
       }),
     ).unwrap();
     return { id };

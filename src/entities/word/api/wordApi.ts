@@ -2,6 +2,8 @@ import { createApi } from "@reduxjs/toolkit/query/react";
 
 import { supabaseRpcBaseQuery } from "@/shared/api";
 
+import { WordStatus } from "../../../types";
+
 interface ReloadWordDefinitionResponse {
   definition: string;
   newPhoneticText: string;
@@ -80,12 +82,32 @@ export const wordApi = createApi({
           p_translations_text: translation ?? "",
           p_definition: "",
         },
+        invalidatesTags: ["Word"],
       }),
       transformResponse: (response: ReloadWordTranslationRow) => {
         return {
           translation: response.translations_text,
         };
       },
+    }),
+
+    updateWordStatus: builder.mutation<
+      void,
+      {
+        langCode: string;
+        id: string;
+        newStatus: WordStatus;
+      }
+    >({
+      query: ({ langCode, id, newStatus }) => ({
+        functionName: "update_word_status",
+        args: {
+          lang_code: langCode,
+          p_word_id: id,
+          p_new_status: newStatus,
+        },
+        invalidatesTags: ["Word"],
+      }),
     }),
 
     removeWordFromDictionary: builder.mutation<
@@ -101,6 +123,7 @@ export const wordApi = createApi({
           lang_code: langCode,
           p_word_id: id,
         },
+        invalidatesTags: ["Word"],
       }),
     }),
   }),

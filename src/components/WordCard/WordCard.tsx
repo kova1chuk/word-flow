@@ -50,6 +50,9 @@ const WordCard = memo(function WordCard({
   const handleReloadTranslation = () => {
     onReloadTranslation(wordId, word.word);
   };
+  const handleStatusChange = (status: WordStatus) => {
+    onStatusChange(wordId, status);
+  };
 
   return (
     <div className="relative mx-auto mb-6 w-full max-w-2xl rounded-xl bg-white p-4 shadow-md sm:p-6 dark:bg-gray-800">
@@ -78,7 +81,11 @@ const WordCard = memo(function WordCard({
           updating={word.updatingWordTranslation}
         />
 
-        <StatusSelector word={word} onStatusChange={onStatusChange} updating />
+        <StatusSelector
+          status={word.status}
+          onStatusChange={handleStatusChange}
+          updating={word.updatingWordStatus}
+        />
       </div>
     </div>
   );

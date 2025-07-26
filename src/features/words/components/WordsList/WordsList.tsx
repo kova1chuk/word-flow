@@ -8,12 +8,14 @@ import { selectPaginatedWordIds } from "@/features/words/model/selectors";
 
 import type { AppDispatch, RootState } from "@/shared/model/store";
 
+import { WordStatus } from "../../../../types";
 import { reloadWordDefinitionFromApi } from "../../lib/reloadWordDefinition";
 import { reloadWordTranslationFromApi } from "../../lib/reloadWordTranslation";
 import {
   reloadWordDefinition,
   reloadWordTranslation,
   removeWordFromDictionary,
+  updateWordStatus,
 } from "../../model/thunks";
 import {
   addUpdatingDefinition,
@@ -84,6 +86,13 @@ const WordsList: React.FC<WordsListProps> = ({
     [dispatch],
   );
 
+  const handleUpdateWordStatus = useCallback(
+    (wordId: string, newStatus: WordStatus) => {
+      dispatch(updateWordStatus({ langCode: "en", id: wordId, newStatus }));
+    },
+    [dispatch],
+  );
+
   const handleRemoveWord = useCallback(
     (wordId: string) => {
       dispatch(
@@ -114,11 +123,8 @@ const WordsList: React.FC<WordsListProps> = ({
           currentPage={currentPage}
           onReloadDefinition={handleReloadDefinition}
           onReloadTranslation={handleReloadTranslation}
+          onStatusChange={handleUpdateWordStatus}
           onDelete={handleRemoveWord}
-          onStatusChange={() => {}}
-          // updatingDefinition={updatingDefinitions.includes(word.id)}
-          // updatingTranslation={updatingTranslations.includes(word.id)}
-          // updatingDelete={updatingDelete.includes(word.id)}
         />
       ))}
     </div>

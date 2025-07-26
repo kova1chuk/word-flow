@@ -6,6 +6,7 @@ import {
   reloadWordTranslation,
   removeWordFromDictionary,
   silentRefetchPage,
+  updateWordStatus,
 } from "@/features/words/model/thunks";
 
 import type { Word } from "@/entities/word/types";
@@ -243,6 +244,31 @@ const wordsSlice = createSlice({
         const entry = findEntryByIdInArray(state.words, id);
         if (entry?.value) {
           entry.value.updatingWordTranslation = false;
+        }
+      });
+
+    builder
+      // === 🔄 Update Word Status
+      .addCase(updateWordStatus.pending, (state, action) => {
+        const { id } = action.meta.arg;
+        const entry = findEntryByIdInArray(state.words, id);
+        if (entry?.value) {
+          entry.value.updatingWordStatus = true;
+        }
+      })
+      .addCase(updateWordStatus.fulfilled, (state, action) => {
+        const { id, newStatus } = action.meta.arg;
+        const entry = findEntryByIdInArray(state.words, id);
+        if (entry?.value) {
+          entry.value.status = newStatus;
+          entry.value.updatingWordStatus = false;
+        }
+      })
+      .addCase(updateWordStatus.rejected, (state, action) => {
+        const { id } = action.meta.arg;
+        const entry = findEntryByIdInArray(state.words, id);
+        if (entry?.value) {
+          entry.value.updatingWordStatus = false;
         }
       });
 

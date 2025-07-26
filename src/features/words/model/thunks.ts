@@ -3,6 +3,7 @@ import { createAsyncThunk } from "@reduxjs/toolkit";
 import { dictionaryApi } from "@/entities/dictionary/api/dictionaryApi";
 
 import { wordApi } from "../../../entities/word/api/wordApi";
+import { WordStatus } from "../../../types";
 
 export const fetchWordsPage = createAsyncThunk(
   "words/fetchWordsPage",
@@ -135,6 +136,23 @@ export const reloadWordTranslation = createAsyncThunk(
       }),
     ).unwrap();
     return { id, ...result };
+  },
+);
+
+export const updateWordStatus = createAsyncThunk(
+  "words/updateWordStatus",
+  async (
+    {
+      langCode,
+      id,
+      newStatus,
+    }: { langCode: string; id: string; newStatus: WordStatus },
+    { dispatch },
+  ) => {
+    await dispatch(
+      wordApi.endpoints.updateWordStatus.initiate({ langCode, id, newStatus }),
+    ).unwrap();
+    return { id };
   },
 );
 

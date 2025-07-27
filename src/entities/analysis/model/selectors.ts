@@ -2,134 +2,85 @@ import { createSelector } from "@reduxjs/toolkit";
 
 import type { RootState } from "@/shared/model/store";
 
-// Base selectors
-const selectAnalysisState = (state: RootState) => state.analysis;
+// Analysis data selectors - Use direct selectors for simple property access
+export const selectAnalysis = (state: RootState) => state.analysis.analysis;
 
-// Analysis data selectors
-export const selectAnalysis = createSelector(
-  [selectAnalysisState],
-  (analysis) => analysis.analysis
-);
+export const selectSentences = (state: RootState) => state.analysis.sentences;
 
-export const selectSentences = createSelector(
-  [selectAnalysisState],
-  (analysis) => analysis.sentences
-);
+export const selectAnalysisLoading = (state: RootState) =>
+  state.analysis.loading;
 
-export const selectAnalysisLoading = createSelector(
-  [selectAnalysisState],
-  (analysis) => analysis.loading
-);
-
-export const selectAnalysisError = createSelector(
-  [selectAnalysisState],
-  (analysis) => analysis.error
-);
+export const selectAnalysisError = (state: RootState) => state.analysis.error;
 
 // Pagination selectors
-export const selectSentencesLoading = createSelector(
-  [selectAnalysisState],
-  (analysis) => analysis.sentencesLoading
-);
+export const selectSentencesLoading = (state: RootState) =>
+  state.analysis.sentencesLoading;
 
-export const selectHasMore = createSelector(
-  [selectAnalysisState],
-  (analysis) => analysis.hasMore
-);
+export const selectHasMore = (state: RootState) => state.analysis.hasMore;
 
-export const selectLastDoc = createSelector(
-  [selectAnalysisState],
-  (analysis) => analysis.lastDoc
-);
+export const selectLastDoc = (state: RootState) => state.analysis.lastDoc;
 
 // Training stats selectors
-export const selectTrainingStats = createSelector(
-  [selectAnalysisState],
-  (analysis) => analysis.trainingStats
-);
+export const selectTrainingStats = (state: RootState) =>
+  state.analysis.trainingStats;
 
-export const selectTrainingLoading = createSelector(
-  [selectAnalysisState],
-  (analysis) => analysis.trainingLoading
-);
+export const selectTrainingLoading = (state: RootState) =>
+  state.analysis.trainingLoading;
 
 // Translation selectors
-export const selectTranslatedSentences = createSelector(
-  [selectAnalysisState],
-  (analysis) => analysis.translatedSentences
-);
+export const selectTranslatedSentences = (state: RootState) =>
+  state.analysis.translatedSentences;
 
-export const selectTranslatingSentenceId = createSelector(
-  [selectAnalysisState],
-  (analysis) => analysis.translatingSentenceId
-);
+export const selectTranslatingSentenceId = (state: RootState) =>
+  state.analysis.translatingSentenceId;
 
 // Word info selectors
-export const selectSelectedWord = createSelector(
-  [selectAnalysisState],
-  (analysis) => analysis.selectedWord
-);
+export const selectSelectedWord = (state: RootState) =>
+  state.analysis.selectedWord;
 
-export const selectWordInfoLoading = createSelector(
-  [selectAnalysisState],
-  (analysis) => analysis.wordInfoLoading
-);
+export const selectWordInfoLoading = (state: RootState) =>
+  state.analysis.wordInfoLoading;
 
-export const selectReloadingDefinition = createSelector(
-  [selectAnalysisState],
-  (analysis) => analysis.reloadingDefinition
-);
+export const selectReloadingDefinition = (state: RootState) =>
+  state.analysis.reloadingDefinition;
 
-export const selectReloadingTranslation = createSelector(
-  [selectAnalysisState],
-  (analysis) => analysis.reloadingTranslation
-);
+export const selectReloadingTranslation = (state: RootState) =>
+  state.analysis.reloadingTranslation;
 
 // View state selectors
-export const selectViewMode = createSelector(
-  [selectAnalysisState],
-  (analysis) => analysis.view.viewMode
-);
+export const selectViewMode = (state: RootState) =>
+  state.analysis.view.viewMode;
 
-export const selectIsFullScreen = createSelector(
-  [selectAnalysisState],
-  (analysis) => analysis.view.isFullScreen
-);
+export const selectIsFullScreen = (state: RootState) =>
+  state.analysis.view.isFullScreen;
 
-export const selectCurrentPage = createSelector(
-  [selectAnalysisState],
-  (analysis) => analysis.view.currentPage
-);
+export const selectCurrentPage = (state: RootState) =>
+  state.analysis.view.currentPage;
 
-export const selectSentencesPerPage = createSelector(
-  [selectAnalysisState],
-  (analysis) => analysis.view.sentencesPerPage
-);
+export const selectSentencesPerPage = (state: RootState) =>
+  state.analysis.view.sentencesPerPage;
 
-export const selectShowSettings = createSelector(
-  [selectAnalysisState],
-  (analysis) => analysis.view.showSettings
-);
+export const selectShowSettings = (state: RootState) =>
+  state.analysis.view.showSettings;
 
-// Computed selectors
+// Computed selectors that need memoization
 export const selectTotalPages = createSelector(
-  [selectAnalysis, selectSentencesPerPage],
-  (analysis, sentencesPerPage) => {
-    const totalSentences = analysis?.sentencesCount || 0;
-    return Math.ceil(totalSentences / sentencesPerPage);
-  }
-);
-
-export const selectCurrentSentences = createSelector(
-  [selectSentences],
-  (sentences) => {
-    // Since we're using page-based loading (not accumulation),
-    // sentences already contains only the current page data
-    return sentences;
-  }
+  [selectSentences, selectSentencesPerPage],
+  (sentences, sentencesPerPage) => {
+    return Math.ceil(sentences.length / sentencesPerPage);
+  },
 );
 
 export const selectStartIndex = createSelector(
   [selectCurrentPage, selectSentencesPerPage],
-  (currentPage, sentencesPerPage) => (currentPage - 1) * sentencesPerPage
+  (currentPage, sentencesPerPage) => {
+    return (currentPage - 1) * sentencesPerPage;
+  },
+);
+
+export const selectCurrentSentences = createSelector(
+  [selectSentences, selectStartIndex, selectSentencesPerPage],
+  (sentences, startIndex, sentencesPerPage) => {
+    return sentences.slice(startIndex, startIndex + sentencesPerPage);
+  },
 );

@@ -8,7 +8,7 @@ import { useSelector } from "react-redux";
 
 import { selectUser } from "@/entities/user/model/selectors";
 
-import type { Word } from "@/types";
+import { Word } from "../../../entities/word";
 
 // --- Component ---
 export default function WordPage() {

@@ -1,6 +1,6 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
-import type { UserDictionaryStatsResponse } from "@/entities/dictionary/api";
+import type { UserDictionaryStatsResponse } from "@/entities/dictionary/api/types";
 
 import { fetchDictionaryStats } from "./thunks";
 

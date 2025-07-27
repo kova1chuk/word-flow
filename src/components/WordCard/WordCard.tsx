@@ -55,7 +55,7 @@ const WordCard = memo(function WordCard({
   };
 
   return (
-    <div className="relative mx-auto mb-6 w-full max-w-2xl rounded-xl bg-white p-4 shadow-md sm:p-6 dark:bg-gray-800">
+    <div className="relative mx-auto mb-6 w-full rounded-xl bg-white p-4 shadow-md sm:p-6 dark:bg-gray-800">
       <div className="mb-4 flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
         <div className="min-w-0 flex-1">
           <WordDisplay word={word} size="md" />

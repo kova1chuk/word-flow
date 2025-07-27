@@ -9,9 +9,11 @@ import {
 
 import AudioPlayer from "@/components/shared/AudioPlayer";
 
+import { Word } from "@/entities/word";
+
 import { ManualTrainingCard } from "./ManualTrainingCard";
 
-import type { TrainingQuestion, Word } from "@/types";
+import type { TrainingQuestion } from "@/types";
 
 interface TrainingQuestionCardProps {
   question: TrainingQuestion;
@@ -39,7 +41,7 @@ export function TrainingQuestionCard({
   onPrevious,
   canGoNext = false,
   canGoPrevious = false,
-  onStatusChange,
+  // onStatusChange,
   onDelete,
   onReloadDefinition,
   onReloadTranslation,
@@ -111,14 +113,14 @@ export function TrainingQuestionCard({
         return (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
-              <div className="text-xl font-medium text-gray-800 dark:text-gray-200 leading-relaxed">
+              <div className="text-xl leading-relaxed font-medium text-gray-800 dark:text-gray-200">
                 {question.question}
               </div>
               {onReloadTranslation && (
                 <button
                   onClick={() => onReloadTranslation()}
                   disabled={updating === word.id}
-                  className="flex items-center gap-2 px-3 py-2 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-xl hover:bg-green-200 dark:hover:bg-green-900/50 transition-all duration-200 font-medium text-sm"
+                  className="flex items-center gap-2 rounded-xl bg-green-100 px-3 py-2 text-sm font-medium text-green-700 transition-all duration-200 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-300 dark:hover:bg-green-900/50"
                   title="Reload translation"
                 >
                   <ArrowPathIcon
@@ -134,13 +136,13 @@ export function TrainingQuestionCard({
             <div className="space-y-4">
               {/* Translation Display */}
               {word.translation && (
-                <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-2xl border-2 border-blue-200 dark:border-blue-700">
-                  <div className="flex items-center gap-2 mb-2">
+                <div className="rounded-2xl border-2 border-blue-200 bg-blue-50 p-4 dark:border-blue-700 dark:bg-blue-900/20">
+                  <div className="mb-2 flex items-center gap-2">
                     <span className="text-sm font-semibold text-blue-700 dark:text-blue-300">
                       Current Translation:
                     </span>
                   </div>
-                  <p className="text-blue-800 dark:text-blue-200 font-medium">
+                  <p className="font-medium text-blue-800 dark:text-blue-200">
                     {word.translation}
                   </p>
                 </div>
@@ -152,13 +154,13 @@ export function TrainingQuestionCard({
                 onChange={(e) => setUserAnswer(e.target.value)}
                 onKeyPress={handleKeyPress}
                 disabled={isAnswered}
-                className="w-full px-6 py-4 border-2 border-gray-300 dark:border-gray-600 rounded-2xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-lg font-medium transition-all duration-200"
+                className="w-full rounded-2xl border-2 border-gray-300 bg-white px-6 py-4 text-lg font-medium text-gray-900 transition-all duration-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
                 placeholder="Type your answer..."
                 autoFocus
               />
 
               {showAnswer && !isAnswered && !answerRevealed && (
-                <div className="flex items-center justify-between p-4 bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-900/20 dark:to-yellow-900/20 rounded-2xl border-2 border-amber-200 dark:border-amber-700 shadow-lg">
+                <div className="flex items-center justify-between rounded-2xl border-2 border-amber-200 bg-gradient-to-r from-amber-50 to-yellow-50 p-4 shadow-lg dark:border-amber-700 dark:from-amber-900/20 dark:to-yellow-900/20">
                   <div className="flex items-center gap-3">
                     <LightBulbIcon className="h-5 w-5 text-amber-600 dark:text-amber-400" />
                     <span className="text-sm font-medium text-amber-700 dark:text-amber-300">
@@ -167,7 +169,7 @@ export function TrainingQuestionCard({
                   </div>
                   <button
                     onClick={handleShowAnswer}
-                    className="flex items-center gap-2 px-4 py-2 bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 rounded-xl hover:bg-amber-200 dark:hover:bg-amber-900/50 transition-all duration-200 font-medium text-sm"
+                    className="flex items-center gap-2 rounded-xl bg-amber-100 px-4 py-2 text-sm font-medium text-amber-700 transition-all duration-200 hover:bg-amber-200 dark:bg-amber-900/30 dark:text-amber-300 dark:hover:bg-amber-900/50"
                   >
                     <EyeIcon className="h-4 w-4" />
                     Show Answer
@@ -176,8 +178,8 @@ export function TrainingQuestionCard({
               )}
 
               {answerRevealed && !isAnswered && (
-                <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-2xl border-2 border-green-200 dark:border-green-700">
-                  <div className="flex items-center gap-2 mb-2">
+                <div className="rounded-2xl border-2 border-green-200 bg-green-50 p-4 dark:border-green-700 dark:bg-green-900/20">
+                  <div className="mb-2 flex items-center gap-2">
                     <LightBulbIcon className="h-5 w-5 text-green-600 dark:text-green-400" />
                     <span className="text-sm font-medium text-green-700 dark:text-green-300">
                       Answer revealed
@@ -200,14 +202,14 @@ export function TrainingQuestionCard({
         return (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
-              <div className="text-xl font-medium text-gray-800 dark:text-gray-200 leading-relaxed">
+              <div className="text-xl leading-relaxed font-medium text-gray-800 dark:text-gray-200">
                 {question.question}
               </div>
               {onReloadTranslation && (
                 <button
                   onClick={() => onReloadTranslation()}
                   disabled={updating === word.id}
-                  className="flex items-center gap-2 px-3 py-2 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-xl hover:bg-green-200 dark:hover:bg-green-900/50 transition-all duration-200 font-medium text-sm"
+                  className="flex items-center gap-2 rounded-xl bg-green-100 px-3 py-2 text-sm font-medium text-green-700 transition-all duration-200 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-300 dark:hover:bg-green-900/50"
                   title="Reload translation"
                 >
                   <ArrowPathIcon
@@ -222,13 +224,13 @@ export function TrainingQuestionCard({
 
             {/* Translation Display */}
             {word.translation && (
-              <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-2xl border-2 border-blue-200 dark:border-blue-700">
-                <div className="flex items-center gap-2 mb-2">
+              <div className="rounded-2xl border-2 border-blue-200 bg-blue-50 p-4 dark:border-blue-700 dark:bg-blue-900/20">
+                <div className="mb-2 flex items-center gap-2">
                   <span className="text-sm font-semibold text-blue-700 dark:text-blue-300">
                     Current Translation:
                   </span>
                 </div>
-                <p className="text-blue-800 dark:text-blue-200 font-medium">
+                <p className="font-medium text-blue-800 dark:text-blue-200">
                   {word.translation}
                 </p>
               </div>
@@ -240,10 +242,10 @@ export function TrainingQuestionCard({
                   key={index}
                   onClick={() => setSelectedOption(option)}
                   disabled={isAnswered}
-                  className={`p-4 text-left border-2 rounded-2xl transition-all duration-200 ${
+                  className={`rounded-2xl border-2 p-4 text-left transition-all duration-200 ${
                     selectedOption === option
-                      ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20 shadow-md"
-                      : "border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500 hover:shadow-sm"
+                      ? "border-blue-500 bg-blue-50 shadow-md dark:bg-blue-900/20"
+                      : "border-gray-300 hover:border-gray-400 hover:shadow-sm dark:border-gray-600 dark:hover:border-gray-500"
                   } ${
                     isAnswered && option === question.correctAnswer
                       ? "border-green-500 bg-green-50 dark:bg-green-900/20"
@@ -269,14 +271,14 @@ export function TrainingQuestionCard({
         return (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
-              <div className="text-xl font-medium text-gray-800 dark:text-gray-200 leading-relaxed">
+              <div className="text-xl leading-relaxed font-medium text-gray-800 dark:text-gray-200">
                 {question.question}
               </div>
               {onReloadTranslation && (
                 <button
                   onClick={() => onReloadTranslation()}
                   disabled={updating === word.id}
-                  className="flex items-center gap-2 px-3 py-2 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-xl hover:bg-green-200 dark:hover:bg-green-900/50 transition-all duration-200 font-medium text-sm"
+                  className="flex items-center gap-2 rounded-xl bg-green-100 px-3 py-2 text-sm font-medium text-green-700 transition-all duration-200 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-300 dark:hover:bg-green-900/50"
                   title="Reload translation"
                 >
                   <ArrowPathIcon
@@ -291,20 +293,20 @@ export function TrainingQuestionCard({
 
             {/* Translation Display */}
             {word.translation && (
-              <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-2xl border-2 border-blue-200 dark:border-blue-700">
-                <div className="flex items-center gap-2 mb-2">
+              <div className="rounded-2xl border-2 border-blue-200 bg-blue-50 p-4 dark:border-blue-700 dark:bg-blue-900/20">
+                <div className="mb-2 flex items-center gap-2">
                   <span className="text-sm font-semibold text-blue-700 dark:text-blue-300">
                     Current Translation:
                   </span>
                 </div>
-                <p className="text-blue-800 dark:text-blue-200 font-medium">
+                <p className="font-medium text-blue-800 dark:text-blue-200">
                   {word.translation}
                 </p>
               </div>
             )}
 
-            <div className="bg-gray-50 dark:bg-gray-800 p-6 rounded-2xl border border-gray-200 dark:border-gray-700">
-              <p className="text-lg text-gray-700 dark:text-gray-300 leading-relaxed">
+            <div className="rounded-2xl border border-gray-200 bg-gray-50 p-6 dark:border-gray-700 dark:bg-gray-800">
+              <p className="text-lg leading-relaxed text-gray-700 dark:text-gray-300">
                 {question.context}
               </p>
             </div>
@@ -314,7 +316,7 @@ export function TrainingQuestionCard({
               onChange={(e) => setUserAnswer(e.target.value)}
               onKeyPress={handleKeyPress}
               disabled={isAnswered}
-              className="w-full px-6 py-4 border-2 border-gray-300 dark:border-gray-600 rounded-2xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-lg font-medium transition-all duration-200"
+              className="w-full rounded-2xl border-2 border-gray-300 bg-white px-6 py-4 text-lg font-medium text-gray-900 transition-all duration-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
               placeholder="Type the missing word..."
               autoFocus
             />
@@ -325,14 +327,14 @@ export function TrainingQuestionCard({
         return (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
-              <div className="text-xl font-medium text-gray-800 dark:text-gray-200 leading-relaxed">
+              <div className="text-xl leading-relaxed font-medium text-gray-800 dark:text-gray-200">
                 {question.question}
               </div>
               {onReloadTranslation && (
                 <button
                   onClick={() => onReloadTranslation()}
                   disabled={updating === word.id}
-                  className="flex items-center gap-2 px-3 py-2 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300 rounded-xl hover:bg-green-200 dark:hover:bg-green-900/50 transition-all duration-200 font-medium text-sm"
+                  className="flex items-center gap-2 rounded-xl bg-green-100 px-3 py-2 text-sm font-medium text-green-700 transition-all duration-200 hover:bg-green-200 dark:bg-green-900/30 dark:text-green-300 dark:hover:bg-green-900/50"
                   title="Reload translation"
                 >
                   <ArrowPathIcon
@@ -347,13 +349,13 @@ export function TrainingQuestionCard({
 
             {/* Translation Display */}
             {word.translation && (
-              <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-2xl border-2 border-blue-200 dark:border-blue-700">
-                <div className="flex items-center gap-2 mb-2">
+              <div className="rounded-2xl border-2 border-blue-200 bg-blue-50 p-4 dark:border-blue-700 dark:bg-blue-900/20">
+                <div className="mb-2 flex items-center gap-2">
                   <span className="text-sm font-semibold text-blue-700 dark:text-blue-300">
                     Current Translation:
                   </span>
                 </div>
-                <p className="text-blue-800 dark:text-blue-200 font-medium">
+                <p className="font-medium text-blue-800 dark:text-blue-200">
                   {word.translation}
                 </p>
               </div>
@@ -370,7 +372,7 @@ export function TrainingQuestionCard({
               onChange={(e) => setUserAnswer(e.target.value)}
               onKeyPress={handleKeyPress}
               disabled={isAnswered}
-              className="w-full px-6 py-4 border-2 border-gray-300 dark:border-gray-600 rounded-2xl focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-white text-lg font-medium transition-all duration-200"
+              className="w-full rounded-2xl border-2 border-gray-300 bg-white px-6 py-4 text-lg font-medium text-gray-900 transition-all duration-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/20 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
               placeholder="Type what you hear..."
               autoFocus
             />
@@ -381,7 +383,7 @@ export function TrainingQuestionCard({
         return (
           <ManualTrainingCard
             word={word}
-            onStatusChange={onStatusChange!}
+            // onStatusChange={onStatusChange!}
             onDelete={onDelete}
             onNext={onNext!}
             onPrevious={onPrevious!}
@@ -399,10 +401,10 @@ export function TrainingQuestionCard({
   };
 
   return (
-    <div className="bg-white/90 dark:bg-gray-800/90 backdrop-blur-sm rounded-3xl shadow-xl p-8 w-full max-w-3xl mx-auto border border-gray-200/50 dark:border-gray-700/50">
+    <div className="mx-auto w-full max-w-3xl rounded-3xl border border-gray-200/50 bg-white/90 p-8 shadow-xl backdrop-blur-sm dark:border-gray-700/50 dark:bg-gray-800/90">
       {/* Question Type Badge */}
       <div className="mb-6">
-        <span className="inline-block px-4 py-2 text-sm font-semibold rounded-full bg-gradient-to-r from-blue-100 to-blue-200 text-blue-800 dark:from-blue-900/30 dark:to-blue-800/30 dark:text-blue-200 shadow-sm">
+        <span className="inline-block rounded-full bg-gradient-to-r from-blue-100 to-blue-200 px-4 py-2 text-sm font-semibold text-blue-800 shadow-sm dark:from-blue-900/30 dark:to-blue-800/30 dark:text-blue-200">
           {question.type.replace("_", " ").toUpperCase()}
         </span>
       </div>
@@ -413,10 +415,10 @@ export function TrainingQuestionCard({
       {/* Result Feedback */}
       {showResult && (
         <div
-          className={`mt-6 p-6 rounded-2xl border-2 ${
+          className={`mt-6 rounded-2xl border-2 p-6 ${
             isCorrect
-              ? "bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-700"
-              : "bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-700"
+              ? "border-green-200 bg-green-50 dark:border-green-700 dark:bg-green-900/20"
+              : "border-red-200 bg-red-50 dark:border-red-700 dark:bg-red-900/20"
           }`}
         >
           <div
@@ -429,7 +431,7 @@ export function TrainingQuestionCard({
             {isCorrect ? "✅ Correct!" : "❌ Incorrect"}
           </div>
           {!isCorrect && (
-            <div className="text-sm text-gray-600 dark:text-gray-400 mt-2">
+            <div className="mt-2 text-sm text-gray-600 dark:text-gray-400">
               Correct answer:{" "}
               <span className="font-semibold text-gray-800 dark:text-gray-200">
                 {question.correctAnswer}
@@ -440,13 +442,13 @@ export function TrainingQuestionCard({
       )}
 
       {/* Action Buttons */}
-      <div className="flex justify-between items-center mt-8">
+      <div className="mt-8 flex items-center justify-between">
         <div className="flex gap-4">
           {onSkip && (
             <button
               onClick={onSkip}
               disabled={isAnswered}
-              className="px-6 py-3 text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200 disabled:opacity-50 transition-colors duration-200 font-medium"
+              className="px-6 py-3 font-medium text-gray-600 transition-colors duration-200 hover:text-gray-800 disabled:opacity-50 dark:text-gray-400 dark:hover:text-gray-200"
             >
               Skip
             </button>
@@ -454,7 +456,7 @@ export function TrainingQuestionCard({
           {onDelete && (
             <button
               onClick={() => onDelete(word)}
-              className="px-6 py-3 text-red-600 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 transition-colors duration-200 flex items-center gap-2 font-medium"
+              className="flex items-center gap-2 px-6 py-3 font-medium text-red-600 transition-colors duration-200 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300"
               title="Delete word"
             >
               <TrashIcon className="h-4 w-4" />
@@ -469,7 +471,7 @@ export function TrainingQuestionCard({
             <button
               onClick={handleSubmit}
               disabled={isAnswered || !userAnswer.trim()}
-              className="px-8 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-2xl hover:from-blue-700 hover:to-blue-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-semibold shadow-lg hover:shadow-xl transform hover:scale-105"
+              className="transform rounded-2xl bg-gradient-to-r from-blue-600 to-blue-700 px-8 py-3 font-semibold text-white shadow-lg transition-all duration-200 hover:scale-105 hover:from-blue-700 hover:to-blue-800 hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-50"
             >
               Submit
             </button>
@@ -479,7 +481,7 @@ export function TrainingQuestionCard({
             <button
               onClick={handleSubmit}
               disabled={isAnswered || !selectedOption}
-              className="px-8 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-2xl hover:from-blue-700 hover:to-blue-800 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-semibold shadow-lg hover:shadow-xl transform hover:scale-105"
+              className="transform rounded-2xl bg-gradient-to-r from-blue-600 to-blue-700 px-8 py-3 font-semibold text-white shadow-lg transition-all duration-200 hover:scale-105 hover:from-blue-700 hover:to-blue-800 hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-50"
             >
               Submit
             </button>

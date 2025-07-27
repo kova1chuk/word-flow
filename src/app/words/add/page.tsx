@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 
 import { useDispatch, useSelector } from "react-redux";
 
-import { addWord } from "@/features/words/model/wordsSlice";
+import { addWord } from "@/features/words/model/thunks";
 
 import { selectUser } from "@/entities/user/model/selectors";
 
@@ -32,6 +32,7 @@ export default function AddWordPage() {
           userId: user.uid,
           langCode,
           wordText: word.trim(),
+          page: 1, // Add to first page
         }),
       ).unwrap();
 

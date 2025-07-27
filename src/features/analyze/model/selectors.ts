@@ -2,40 +2,21 @@ import { createSelector } from "@reduxjs/toolkit";
 
 import { RootState } from "@/shared/model/store";
 
-// Base selectors
-export const selectAnalyzeState = (state: RootState) => state.analyze;
+// Base selectors - Use direct selectors for simple property access
+export const selectAnalyzeText = () => ""; // TODO: Add text property to AnalyzeState
 
-export const selectAnalyzeText = createSelector(
-  [selectAnalyzeState],
-  () => "", // TODO: Add text property to AnalyzeState
-);
+export const selectAnalysisResult = (state: RootState) => state.analyze.result;
 
-export const selectAnalysisResult = createSelector(
-  [selectAnalyzeState],
-  (analyzeState) => analyzeState.result,
-);
+export const selectAnalyzeLoading = (state: RootState) => state.analyze.loading;
 
-export const selectAnalyzeLoading = createSelector(
-  [selectAnalyzeState],
-  (analyzeState) => analyzeState.loading,
-);
+export const selectAnalyzeSaving = (state: RootState) => state.analyze.saving;
 
-export const selectAnalyzeSaving = createSelector(
-  [selectAnalyzeState],
-  (analyzeState) => analyzeState.saving,
-);
+export const selectSavedAnalysisId = (state: RootState) =>
+  state.analyze.savedAnalysisId;
 
-export const selectSavedAnalysisId = createSelector(
-  [selectAnalyzeState],
-  (analyzeState) => analyzeState.savedAnalysisId,
-);
+export const selectAnalyzeError = (state: RootState) => state.analyze.error;
 
-export const selectAnalyzeError = createSelector(
-  [selectAnalyzeState],
-  (analyzeState) => analyzeState.error,
-);
-
-// Derived selectors
+// Derived selectors that need memoization
 export const selectHasAnalysisResult = createSelector(
   [selectAnalysisResult],
   (result) => result !== null,

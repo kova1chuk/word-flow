@@ -22,6 +22,8 @@ import formSlice from "@/shared/model/formSlice";
 import notificationSlice from "@/shared/model/notificationSlice";
 import uiSlice from "@/shared/model/uiSlice";
 
+import { analysisApi } from "../../entities/analysis/api/analysisApi";
+
 // Import RTK Query APIs
 
 export const store = configureStore({
@@ -44,6 +46,7 @@ export const store = configureStore({
     // RTK Query APIs
     [dictionaryApi.reducerPath]: dictionaryApi.reducer,
     [wordApi.reducerPath]: wordApi.reducer,
+    [analysisApi.reducerPath]: analysisApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
@@ -68,6 +71,7 @@ export const store = configureStore({
       // Add RTK Query middleware
       dictionaryApi.middleware,
       wordApi.middleware,
+      analysisApi.middleware,
     ),
 });
 

@@ -2,33 +2,31 @@ import React from "react";
 
 import Link from "next/link";
 
+import { useSelector } from "react-redux";
+
 import WordFilterControls from "@/shared/ui/WordFilterControls";
 
+import { selectAvailableAnalyses } from "../model/selectors";
+
 interface WordsPageHeaderProps {
-  error: string | null;
-  clearError: () => void;
   statusFilter: number[];
   search: string;
   setSearch: (search: string) => void;
-  STATUS_OPTIONS: Array<{ value: number; label: string }>;
-  analysesOptions: Array<{ value: string; label: string }>;
   selectedAnalyses: string[];
-  setSelectedAnalyses: (analyses: string[]) => void;
-  onStatusFilterChange: (statuses: (string | number)[]) => void;
+  onStatusFilterChange: (statuses: number[]) => void;
+  onAnalysesFilterChange: (analyses: string[]) => void;
 }
 
 export const WordsPageHeader: React.FC<WordsPageHeaderProps> = ({
-  error,
-  clearError,
   statusFilter,
   search,
   setSearch,
-  STATUS_OPTIONS,
-  analysesOptions,
   selectedAnalyses,
-  setSelectedAnalyses,
   onStatusFilterChange,
+  onAnalysesFilterChange,
 }) => {
+  const availableAnalyses = useSelector(selectAvailableAnalyses);
+
   return (
     <>
       {/* Header with Add Button */}
@@ -53,32 +51,18 @@ export const WordsPageHeader: React.FC<WordsPageHeaderProps> = ({
               d="M12 4.5v15m7.5-7.5h-15"
             />
           </svg>
-          Add Word
         </Link>
       </div>
 
       <WordFilterControls
+        availableAnalyses={availableAnalyses}
         selectedStatuses={statusFilter}
         onStatusFilterChange={onStatusFilterChange}
         search={search}
         onSearchChange={setSearch}
-        statusOptions={STATUS_OPTIONS}
-        analysesOptions={analysesOptions}
         selectedAnalyses={selectedAnalyses}
-        onAnalysesFilterChange={setSelectedAnalyses}
+        onAnalysesFilterChange={onAnalysesFilterChange}
       />
-
-      {error && (
-        <div className="mb-4 rounded-md border border-red-200 bg-red-50 p-4">
-          <p className="text-red-600">{error}</p>
-          <button
-            onClick={clearError}
-            className="mt-2 text-sm text-red-500 hover:text-red-700"
-          >
-            Dismiss
-          </button>
-        </div>
-      )}
     </>
   );
 };

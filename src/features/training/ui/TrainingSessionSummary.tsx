@@ -1,6 +1,6 @@
 import React from "react";
 
-import type { Word } from "@/types";
+import { Word } from "@/entities/word";
 
 interface TrainingSessionSummaryProps {
   words: Word[];

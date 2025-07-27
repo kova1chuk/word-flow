@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 
-import type { Word } from "@/types";
+import type { Word } from "@/entities/word";
 
 export function useWordFilters(words: Word[]) {
   const [statusFilter, setStatusFilter] = useState<(string | number)[]>([]);
@@ -31,7 +31,7 @@ export function useWordFilters(words: Word[]) {
       .filter((word) =>
         search.trim() === ""
           ? true
-          : word.word.toLowerCase().includes(search.trim().toLowerCase())
+          : word.word.toLowerCase().includes(search.trim().toLowerCase()),
       );
   }, [words, statusFilter, search]);
 

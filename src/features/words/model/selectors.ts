@@ -23,11 +23,10 @@ export const selectPageInfo = createSelector(
 export const selectPaginatedWordIds = createSelector(
   [
     (state: RootState) => state.words.words,
-    (_state: RootState, options: { page: number }) => options,
+    (_state: RootState, options: { page: number }) => options.page,
   ],
-  (words, { page }) => {
+  (words, page) => {
     const pageWords = words[page] || [];
-
     return {
       wordIds: pageWords.map((word) => word.id),
     };
@@ -37,9 +36,15 @@ export const selectPaginatedWordIds = createSelector(
 export const selectWordById = createSelector(
   [
     (state: RootState) => state.words.words,
-    (_state: RootState, options: { id: string; page: number }) => options,
+    (_state: RootState, options: { id: string; page: number }) => options.id,
+    (_state: RootState, options: { id: string; page: number }) => options.page,
   ],
-  (words, { id, page }) => {
-    return words[page].find((word) => word.id === id);
+  (words, id, page) => {
+    const pageWords = words[page] || [];
+    return pageWords.find((word) => word.id === id);
   },
 );
+
+// Use direct selector for simple property access
+export const selectAvailableAnalyses = (state: RootState) =>
+  state.words.availableAnalyses.items;

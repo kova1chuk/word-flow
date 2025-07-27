@@ -16,8 +16,13 @@ import { useUpdateQueryParams } from "../../../shared/hooks/useUpdateQueryParams
 import { WordsList } from "../components";
 import { WordsListSkeleton } from "../components/WordsList";
 import { selectPageInfo } from "../model/selectors";
-import { fetchWordsPage, silentRefetchPage } from "../model/thunks";
+import {
+  fetchAnalysesForFilter,
+  fetchWordsPage,
+  silentRefetchPage,
+} from "../model/thunks";
 
+import { WordsPageHeader } from "./WordsPageHeader";
 import { WordsPagePagination } from "./WordsPagePagination";
 
 const PAGE_SIZE = 24;
@@ -54,19 +59,28 @@ export const WordsPage: React.FC = () => {
         analysisIds: analysisIds || [],
       }),
     );
+    dispatch(fetchAnalysesForFilter("en"));
   }, [user?.uid, dispatch, page, statusFilter, search, analysisIds]);
 
   const handlePageChange = (page: number) => {
     updateQueryParams("page", page);
   };
 
+  const handleSearchChange = (search: string) => {
+    updateQueryParams("search", search);
+  };
+
+  const handleStatusFilterChange = (statusFilter: number[]) => {
+    updateQueryParams("statusFilter", statusFilter.map(String));
+  };
+
   const handleSilentRefetchPage = () => {
     dispatch(silentRefetchPage({ page, pageSize: PAGE_SIZE }));
   };
 
-  // const handleStatusFilterChange = (statusFilter: string[]) => {
-  //   updateQueryParams("statusFilter", statusFilter);
-  // };
+  const handleAnalysisIdsChange = (analysisIds: string[]) => {
+    updateQueryParams("analysisIds", analysisIds.map(String));
+  };
 
   const shouldShowPagination =
     Math.ceil(pagination.totalWords / PAGE_SIZE) &&
@@ -74,21 +88,15 @@ export const WordsPage: React.FC = () => {
     !isPageLoading;
 
   return (
-    <div className="container mx-auto">
-      {/* <WordsPageHeader
-        error={error}
-        clearError={clearError}
-        statusFilter={statusFilter}
+    <div className="w-full">
+      <WordsPageHeader
         search={search}
-        setSearch={setSearch}
-        STATUS_OPTIONS={STATUS_OPTIONS}
-        analysesOptions={analysesOptions}
-        selectedAnalyses={selectedAnalyses}
-        setSelectedAnalyses={setSelectedAnalyses}
+        setSearch={handleSearchChange}
+        statusFilter={statusFilter.map(Number)}
         onStatusFilterChange={handleStatusFilterChange}
-      /> */}
-
-      {/* Show skeleton loading during page transitions */}
+        selectedAnalyses={analysisIds}
+        onAnalysesFilterChange={handleAnalysisIdsChange}
+      />
 
       <WithSkeleton
         skeleton={<WordsListSkeleton count={3} />}

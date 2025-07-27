@@ -1,15 +1,18 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
+import type { AnalysesForFilterResponse } from "@/entities/analysis/api/analysisApi";
+import type { Word } from "@/entities/word/types";
+
 import {
   fetchWordsPage,
+  silentRefetchPage,
   reloadWordDefinition,
   reloadWordTranslation,
-  removeWordFromDictionary,
-  silentRefetchPage,
   updateWordStatus,
-} from "@/features/words/model/thunks";
-
-import type { Word } from "@/entities/word/types";
+  removeWordFromDictionary,
+  fetchAnalysesForFilter,
+  addWord,
+} from "./thunks";
 
 function findEntryByIdInArray<T extends { id: string }>(
   record: Record<number, T[]>,
@@ -32,6 +35,10 @@ interface WordWithUpdate extends Word {
 // === 🧠 State ===
 
 interface WordsState {
+  availableAnalyses: {
+    loading: boolean;
+    items: AnalysesForFilterResponse;
+  };
   words: Record<number, WordWithUpdate[]>;
   loading: boolean;
   error: string | null;
@@ -43,6 +50,10 @@ interface WordsState {
 }
 
 const initialState: WordsState = {
+  availableAnalyses: {
+    loading: false,
+    items: [],
+  },
   words: {},
   loading: false,
   error: null,
@@ -298,6 +309,30 @@ const wordsSlice = createSlice({
         if (entry?.value) {
           entry.value.updatingWordDelete = false;
         }
+      });
+
+    builder
+      // === 🔄 Fetch Analyses for Filter
+      .addCase(fetchAnalysesForFilter.fulfilled, (state, action) => {
+        state.availableAnalyses.items = action.payload;
+        state.availableAnalyses.loading = false;
+      })
+      .addCase(fetchAnalysesForFilter.pending, (state) => {
+        state.availableAnalyses.loading = true;
+      })
+      .addCase(fetchAnalysesForFilter.rejected, (state) => {
+        state.availableAnalyses.loading = false;
+      });
+
+    builder
+      // === 💾 Add Word
+      .addCase(addWord.pending, (state) => {
+        state.loading = true;
+        state.error = null;
+      })
+      .addCase(addWord.rejected, (state, action) => {
+        state.loading = false;
+        state.error = action.error.message || "Failed to add word";
       });
   },
 });

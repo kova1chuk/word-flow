@@ -1,6 +1,6 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
-import type { Word } from "@/types";
+import { Word } from "../../../entities/word";
 
 interface TrainingQuestion {
   id: string;
@@ -72,7 +72,7 @@ const trainingSlice = createSlice({
     },
     answerQuestion: (
       state,
-      action: PayloadAction<{ answer: string; isCorrect: boolean }>
+      action: PayloadAction<{ answer: string; isCorrect: boolean }>,
     ) => {
       if (
         state.currentSession &&
@@ -92,7 +92,7 @@ const trainingSlice = createSlice({
         state.currentSession.score = Math.round(
           (state.currentSession.correctAnswers /
             state.currentSession.totalQuestions) *
-            100
+            100,
         );
       }
     },

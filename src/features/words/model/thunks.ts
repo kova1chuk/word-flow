@@ -2,8 +2,44 @@ import { createAsyncThunk } from "@reduxjs/toolkit";
 
 import { dictionaryApi } from "@/entities/dictionary/api/dictionaryApi";
 
+import { analysisApi } from "../../../entities/analysis/api/analysisApi";
 import { wordApi } from "../../../entities/word/api/wordApi";
 import { WordStatus } from "../../../types";
+
+export const addWord = createAsyncThunk(
+  "words/addWord",
+  async ({
+    userId,
+    langCode,
+    wordText,
+    page = 1,
+  }: {
+    userId: string;
+    langCode: string;
+    wordText: string;
+    page?: number;
+  }) => {
+    // TODO: Implement actual add word functionality
+    // For now, just return a mock response
+    console.log("Adding word:", { userId, langCode, wordText });
+
+    // Simulate API call
+    await new Promise((resolve) => setTimeout(resolve, 1000));
+
+    return {
+      word: {
+        id: `temp-${Date.now()}`,
+        word: wordText,
+        definition: "",
+        translation: "",
+        status: 1 as WordStatus,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      },
+      page,
+    };
+  },
+);
 
 export const fetchWordsPage = createAsyncThunk(
   "words/fetchWordsPage",
@@ -175,5 +211,15 @@ export const removeWordFromDictionary = createAsyncThunk(
       }),
     ).unwrap();
     return { id };
+  },
+);
+
+export const fetchAnalysesForFilter = createAsyncThunk(
+  "words/fetchAnalysesForFilter",
+  async (langCode: string, { dispatch }) => {
+    const result = await dispatch(
+      analysisApi.endpoints.getAnalysesForFilter.initiate({ langCode }),
+    ).unwrap();
+    return result;
   },
 );

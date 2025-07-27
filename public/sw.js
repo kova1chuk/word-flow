@@ -1,4 +1,4 @@
-const CACHE_NAME = "word-flow-78798ec";
+const CACHE_NAME = "word-flow-82aff62";
 const urlsToCache = [
   "/",
   "/analyses",

@@ -1,0 +1,1 @@
+export { useWordFilters } from "./useWordFilters";

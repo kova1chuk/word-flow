@@ -1,3 +1,7 @@
 export { AnalysesPage } from "./ui/AnalysesPage";
 export { useAnalyses } from "./lib/useAnalyses";
-export { analysesApi } from "./lib/analysesApi";
+export {
+  fetchAnalysesSupabase,
+  updateAnalysisTitleSupabase,
+  deleteAnalysisSupabase,
+} from "./lib/analysesApi";

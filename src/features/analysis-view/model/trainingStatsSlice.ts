@@ -1,14 +1,6 @@
-import {
-  getDocs,
-  getCountFromServer,
-  collection,
-  query,
-  where,
-} from "firebase/firestore";
-
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 
-import { db } from "@/lib/firebase";
+import { createClient } from "@/utils/supabase/client";
 
 export interface TrainingStats {
   learned: number;
@@ -25,52 +17,24 @@ export interface TrainingStatsState {
 export const fetchTrainingStats = createAsyncThunk<
   TrainingStats,
   { userId: string; analysisId: string }
->("trainingStats/fetch", async ({ analysisId }) => {
-  // Fetch words from the analysis words subcollection
-  const analysisWordsQuery = query(
-    collection(db, "analyses", analysisId, "words")
-  );
-  const analysisWordsSnapshot = await getDocs(analysisWordsQuery);
+>("trainingStats/fetch", async ({ analysisId, userId }) => {
+  // TODO: Implement Supabase RPC for training stats
+  console.log("Would fetch training stats for:", { analysisId, userId });
 
-  // Get all word IDs from the analysis
-  const wordIds = analysisWordsSnapshot.docs.map((doc) => doc.data().wordId);
+  // Placeholder implementation
+  const supabase = createClient();
+  const { data, error } = await supabase.rpc("get_training_stats", {
+    p_analysis_id: analysisId,
+    p_user_id: userId,
+  });
 
-  if (wordIds.length === 0) {
+  if (error) {
+    console.log("Training stats RPC not implemented yet:", error);
+    // Return default stats for now
     return { learned: 0, notLearned: 0, total: 0 };
   }
 
-  // Use getCountFromServer for efficient counting
-  let learnedCount = 0;
-  let notLearnedCount = 0;
-
-  // Process words in chunks to avoid query limits
-  const chunkSize = 10;
-  for (let i = 0; i < wordIds.length; i += chunkSize) {
-    const chunk = wordIds.slice(i, i + chunkSize);
-
-    // Count learned words (status >= 6)
-    const learnedQuery = query(
-      collection(db, "words"),
-      where("__name__", "in", chunk),
-      where("status", ">=", 6)
-    );
-    const learnedSnapshot = await getCountFromServer(learnedQuery);
-    learnedCount += learnedSnapshot.data().count;
-
-    // Count not learned words (status < 6 or no status)
-    const notLearnedQuery = query(
-      collection(db, "words"),
-      where("__name__", "in", chunk),
-      where("status", "<", 6)
-    );
-    const notLearnedSnapshot = await getCountFromServer(notLearnedQuery);
-    notLearnedCount += notLearnedSnapshot.data().count;
-  }
-
-  const total = wordIds.length;
-  const notLearned = notLearnedCount; // Use the counted value
-
-  return { learned: learnedCount, notLearned, total };
+  return data || { learned: 0, notLearned: 0, total: 0 };
 });
 
 const initialState: TrainingStatsState = {
@@ -99,7 +63,7 @@ const trainingStatsSlice = createSlice({
         (state, action: PayloadAction<TrainingStats>) => {
           state.loading = false;
           state.stats = action.payload;
-        }
+        },
       )
       .addCase(fetchTrainingStats.rejected, (state, action) => {
         state.loading = false;

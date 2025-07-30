@@ -2,7 +2,7 @@ import { useRef, useLayoutEffect, useState } from "react";
 
 import * as RadixSlider from "@radix-ui/react-slider";
 
-import type { Word } from "@/types";
+import type { WordStatus } from "@/types";
 
 const STATUS_OPTIONS = [
   { value: 1, color: "#6b7280", label: "Not Learned" }, // gray-500
@@ -15,19 +15,19 @@ const STATUS_OPTIONS = [
 ];
 
 interface StatusSelectorProps {
-  word: Word;
-  onStatusChange: (id: string, status: 1 | 2 | 3 | 4 | 5 | 6 | 7) => void;
-  updating?: string | null;
+  status: WordStatus;
+  onStatusChange: (status: WordStatus) => void;
+  updating?: boolean;
   className?: string;
 }
 
 export default function StatusSelector({
-  word,
+  status,
   onStatusChange,
   updating,
   className = "",
 }: StatusSelectorProps) {
-  const currentStatus = word.status || 1;
+  const currentStatus = status || 1;
 
   // For label positioning
   const trackRef = useRef<HTMLDivElement>(null);
@@ -41,14 +41,14 @@ export default function StatusSelector({
 
   const getVisualColor = () => {
     const visualOption = STATUS_OPTIONS.find(
-      (opt) => opt.value === visualStatus
+      (opt) => opt.value === visualStatus,
     );
     return visualOption ? visualOption.color : "#6b7280";
   };
 
   const getVisualLabel = () => {
     const visualOption = STATUS_OPTIONS.find(
-      (opt) => opt.value === visualStatus
+      (opt) => opt.value === visualStatus,
     );
     return visualOption ? visualOption.label : "";
   };
@@ -87,7 +87,7 @@ export default function StatusSelector({
       if (newStatus !== currentStatus) {
         // Delay API call to show visual feedback first
         timeoutRef.current = setTimeout(() => {
-          onStatusChange(word.id, newStatus as 1 | 2 | 3 | 4 | 5 | 6 | 7);
+          onStatusChange(newStatus as WordStatus);
           setIsChanging(false);
         }, 300); // 300ms delay for visual feedback
       } else {
@@ -107,16 +107,16 @@ export default function StatusSelector({
 
   return (
     <div
-      className={`w-full flex flex-col items-center ${className}`}
+      className={`flex w-full flex-col items-center ${className} pt-6`}
       style={{ position: "relative" }}
     >
       <div
-        className="relative w-full max-w-xl flex items-center"
-        style={{ height: 80 }} // Increased height for bigger clickable area
+        className="relative flex w-full max-w-xl items-center"
+        style={{ height: 40 }} // Increased height for bigger clickable area
       >
         {/* Dots with bigger clickable areas */}
         <div
-          className="absolute left-0 right-0 top-1/2 -translate-y-1/2 flex justify-between w-full"
+          className="absolute top-1/2 right-0 left-0 flex w-full -translate-y-1/2 justify-between"
           style={{ zIndex: 2 }}
         >
           {STATUS_OPTIONS.map((opt) => (
@@ -132,7 +132,7 @@ export default function StatusSelector({
                 outline: "none",
               }}
               onClick={() => handleChange([opt.value])}
-              disabled={updating === word.id}
+              disabled={updating}
               title={opt.label}
             >
               <span
@@ -171,7 +171,7 @@ export default function StatusSelector({
               left = Math.max(0, Math.min(left, trackWidth - labelWidth));
               return left;
             })(),
-            top: -15, // Moved up for more space
+            top: -24,
             minWidth: 80,
             textAlign: "center",
             pointerEvents: "none",
@@ -188,17 +188,17 @@ export default function StatusSelector({
 
         {/* Radix Slider with bigger track */}
         <RadixSlider.Root
-          className="relative w-full h-4 flex items-center select-none touch-none" // Added px-6 for padding
+          className="relative flex h-4 w-full touch-none items-center select-none" // Added px-6 for padding
           min={1}
           max={7}
           step={1}
           value={[visualStatus]}
           onValueChange={handleChange}
-          disabled={updating === word.id}
+          disabled={updating}
         >
           <RadixSlider.Track
             ref={trackRef}
-            className="bg-gray-700 rounded-full h-4 w-full relative" // Increased height
+            className="relative h-4 w-full rounded-full bg-gray-700" // Increased height
             style={{
               background: `linear-gradient(to right, ${getVisualColor()} 0%, ${getVisualColor()} ${
                 ((visualStatus - 1) / 6) * 100
@@ -215,7 +215,7 @@ export default function StatusSelector({
             />
           </RadixSlider.Track>
           <RadixSlider.Thumb
-            className="block w-6 h-6 rounded-full shadow-lg focus:outline-none focus:ring-2 focus:ring-blue-500 hover:scale-110 transition-transform flex items-center justify-center" // Added flex for centering spinner
+            className="block flex h-6 w-6 items-center justify-center rounded-full shadow-lg transition-transform hover:scale-110 focus:ring-2 focus:ring-blue-500 focus:outline-none" // Added flex for centering spinner
             style={{
               background: getVisualColor(),
               border: "2px solid white",
@@ -226,7 +226,7 @@ export default function StatusSelector({
           >
             {isChanging && (
               <svg
-                className="w-3 h-3 text-white animate-spin"
+                className="h-3 w-3 animate-spin text-white"
                 fill="none"
                 viewBox="0 0 24 24"
               >

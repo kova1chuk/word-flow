@@ -1,17 +1,15 @@
-"use client";
-
-import AuthGuard from "@/components/AuthGuard";
-
 import {
   WordStatsChart,
   NavigationLinks,
   WelcomeScreen,
 } from "@/features/main";
 
+import getServerUser from "../utils/supabase/getServerUser";
+
 function AuthenticatedDashboard() {
   return (
-    <div className="max-w-2xl mx-auto p-4">
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-8">
+    <div className="mx-auto max-w-2xl p-4">
+      <div className="mb-8 rounded-lg bg-white p-6 shadow-md dark:bg-gray-800">
         <WordStatsChart />
       </div>
       <NavigationLinks />
@@ -19,10 +17,8 @@ function AuthenticatedDashboard() {
   );
 }
 
-export default function HomePage() {
-  return (
-    <AuthGuard fallback={<WelcomeScreen />}>
-      <AuthenticatedDashboard />
-    </AuthGuard>
-  );
+export default async function HomePage() {
+  const user = await getServerUser();
+
+  return !user ? <WelcomeScreen /> : <AuthenticatedDashboard />;
 }

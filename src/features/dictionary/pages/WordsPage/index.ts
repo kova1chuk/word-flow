@@ -1,0 +1,1 @@
+export { WordsPage } from "./WordsPage";

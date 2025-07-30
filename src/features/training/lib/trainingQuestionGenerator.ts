@@ -1,4 +1,5 @@
-import type { Word, TrainingQuestion, TrainingType } from "@/types";
+import type { Word } from "../../../entities/word";
+import type { TrainingQuestion, TrainingType } from "../../../types";
 
 export class TrainingQuestionGenerator {
   private static generateId(): string {
@@ -40,7 +41,7 @@ export class TrainingQuestionGenerator {
 
   // 2. Choose the Correct Translation
   private static generateChooseTranslationQuestion(
-    word: Word
+    word: Word,
   ): TrainingQuestion {
     // Generate fake translations for multiple choice
     const fakeTranslations = [
@@ -190,7 +191,7 @@ export class TrainingQuestionGenerator {
   // Generate multiple questions for a word
   static generateQuestionsForWord(
     word: Word,
-    types: TrainingType[] = []
+    types: TrainingType[] = [],
   ): TrainingQuestion[] {
     if (types.length === 0) {
       // Generate one random question

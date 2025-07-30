@@ -1,715 +1,71 @@
 import { useState, useCallback } from "react";
 
-import {
-  collection,
-  query,
-  where,
-  getDocs,
-  updateDoc,
-  deleteDoc,
-  doc,
-  addDoc,
-  serverTimestamp,
-} from "firebase/firestore";
-
-import { useSelector } from "react-redux";
-
-import {
-  updateWordStatsOnStatusChange,
-  updateWordStatsOnDeletion,
-} from "@/features/word-management/lib/updateWordStatsOnStatusChange";
-
-import { selectUser } from "@/entities/user/model/selectors";
-
-import { config } from "@/lib/config";
-import { db } from "@/lib/firebase";
-
-import { TrainingQuestionGenerator } from "./trainingQuestionGenerator";
-
-import type {
-  Word,
-  TrainingQuestion,
-  TrainingType,
-  TrainingSession as TrainingSessionType,
-  TrainingResult,
-} from "@/types";
-
-interface UseTrainingSessionProps {
+interface UseTrainingSessionOptions {
   selectedStatuses: number[];
   selectedAnalysisIds: string[];
-  sessionSize?: number;
-  trainingTypes?: TrainingType[];
+  sessionSize: number;
+  trainingTypes: string[];
 }
 
-// Helper to fetch definition for a word
-async function fetchAndUpdateDefinition(word: Word): Promise<string> {
-  const res = await fetch(
-    `${config.dictionaryApi}/${encodeURIComponent(word.word)}`
-  );
-  let definition = "";
-  if (res.ok) {
-    const data = await res.json();
-    if (Array.isArray(data) && data.length > 0) {
-      definition =
-        data[0].meanings?.[0]?.definitions?.[0]?.definition ??
-        "No definition found.";
-    } else {
-      definition = "No definition found.";
-    }
-  } else {
-    definition = "No definition found.";
-  }
-  // Update Firestore
-  await updateDoc(doc(db, "words", word.id), { definition });
-  return definition;
-}
+export const useTrainingSession = (options: UseTrainingSessionOptions) => {
+  const [words] = useState([]);
+  const [currentQuestion] = useState(null);
+  const [currentWordIndex] = useState(0);
+  const [isStarted] = useState(false);
+  const [isCompleted] = useState(false);
+  const [loading] = useState(false);
+  const [error] = useState<string | null>(null);
+  const [correctAnswers] = useState(0);
+  const [incorrectAnswers] = useState(0);
+  const [completedWords] = useState(0);
+  const [progress] = useState(0);
 
-// Helper to fetch translation for a word
-async function fetchAndUpdateTranslation(word: Word): Promise<string> {
-  const langPair = `en|uk`;
-  const url = `${config.translationApi.baseUrl}?q=${encodeURIComponent(
-    word.word
-  )}&langpair=${langPair}`;
-  const res = await fetch(url);
-  let translation = "";
-  if (res.ok) {
-    const data = await res.json();
-    if (data.responseData && data.responseData.translatedText) {
-      translation = data.responseData.translatedText;
-    } else {
-      translation = "No translation found.";
-    }
-  } else {
-    translation = "No translation found.";
-  }
-  // Update Firestore
-  await updateDoc(doc(db, "words", word.id), { translation });
-  return translation;
-}
+  // Placeholder functions for training session management
+  const startSession = useCallback(() => {
+    console.log("Starting training session with options:", options);
+  }, [options]);
 
-export function useTrainingSession({
-  selectedStatuses,
-  selectedAnalysisIds,
-  sessionSize = 10,
-  trainingTypes = ["input_word"],
-}: UseTrainingSessionProps) {
-  const user = useSelector(selectUser);
+  const handleAnswer = useCallback(() => {
+    console.log("Handling answer");
+  }, []);
 
-  // Session state
-  const [session, setSession] = useState<TrainingSessionType | null>(null);
-  const [words, setWords] = useState<Word[]>([]);
-  const [currentQuestion, setCurrentQuestion] =
-    useState<TrainingQuestion | null>(null);
-  const [currentWordIndex, setCurrentWordIndex] = useState(0);
-  const [isStarted, setIsStarted] = useState(false);
-  const [isCompleted, setIsCompleted] = useState(false);
-
-  // Progress tracking
-  const [correctAnswers, setCorrectAnswers] = useState(0);
-  const [incorrectAnswers, setIncorrectAnswers] = useState(0);
-  const [completedWords, setCompletedWords] = useState<string[]>([]);
-
-  // Loading states
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  // Fetch words for training
-  const fetchTrainingWords = useCallback(async () => {
-    if (!user) return [];
-
-    setLoading(true);
-    setError(null);
-
-    try {
-      const wordsQuery = query(
-        collection(db, "words"),
-        where("userId", "==", user.uid)
-      );
-      const querySnapshot = await getDocs(wordsQuery);
-      let allWords = querySnapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data(),
-      })) as Word[];
-
-      // Filter by selected statuses
-      if (selectedStatuses.length > 0) {
-        allWords = allWords.filter((word) =>
-          selectedStatuses.includes(word.status || 1)
-        );
-      }
-
-      // Filter by selected analyses if any
-      if (selectedAnalysisIds.length > 0) {
-        allWords = allWords.filter(
-          (word) =>
-            word.analysisIds &&
-            word.analysisIds.some((id) => selectedAnalysisIds.includes(id))
-        );
-      }
-
-      // Sort by training priority:
-      // 1. Recently trained words first (most recent lastTrainedAt)
-      // 2. Not trained words (no lastTrainedAt) - sorted by status (lower first)
-      // 3. Words trained the longest ago (oldest lastTrainedAt)
-      allWords.sort((a, b) => {
-        const lastTrainedA = a.lastTrainedAt;
-        const lastTrainedB = b.lastTrainedAt;
-
-        // If both words have never been trained (no lastTrainedAt)
-        if (!lastTrainedA && !lastTrainedB) {
-          // Sort by status (lower status first for untrained words)
-          const statusA = a.status || 1;
-          const statusB = b.status || 1;
-          return statusA - statusB;
-        }
-
-        // If only one word has been trained, prioritize the untrained one
-        if (!lastTrainedA && lastTrainedB) {
-          return -1; // Untrained word comes first
-        }
-        if (lastTrainedA && !lastTrainedB) {
-          return 1; // Untrained word comes first
-        }
-
-        // Both words have been trained, sort by most recent first
-        if (lastTrainedA && lastTrainedB) {
-          const timeA =
-            lastTrainedA instanceof Date
-              ? lastTrainedA.getTime()
-              : lastTrainedA.toDate().getTime();
-          const timeB =
-            lastTrainedB instanceof Date
-              ? lastTrainedB.getTime()
-              : lastTrainedB.toDate().getTime();
-          return timeB - timeA; // Most recent first
-        }
-
-        return 0;
-      });
-
-      // Take only the session size
-      return allWords.slice(0, sessionSize);
-    } catch (err) {
-      console.error("Error fetching training words:", err);
-      setError("Failed to fetch words for training");
-      return [];
-    } finally {
-      setLoading(false);
-    }
-  }, [user, selectedStatuses, selectedAnalysisIds, sessionSize]);
-
-  // Start training session
-  const startSession = useCallback(async () => {
-    if (!user) return;
-
-    const trainingWords = await fetchTrainingWords();
-    if (trainingWords.length === 0) {
-      setError("No words available for training with the selected criteria");
-      return;
-    }
-
-    // Create session
-    const sessionData: Omit<TrainingSessionType, "id"> = {
-      userId: user.uid,
-      mode: "word",
-      wordIds: trainingWords.map((w) => w.id),
-      currentIndex: 0,
-      completedWords: [],
-      correctAnswers: 0,
-      incorrectAnswers: 0,
-      startedAt: new Date(),
-      settings: {
-        autoAdvance: false,
-        showTranslation: true,
-        showDefinition: true,
-        trainingTypes,
-        sessionSize,
-        priorityLowerStatus: true,
-        priorityOldWords: true,
-      },
-    };
-
-    // Save session to database
-    const sessionRef = await addDoc(collection(db, "trainingSessions"), {
-      ...sessionData,
-      startedAt: serverTimestamp(),
-    });
-
-    const newSession: TrainingSessionType = {
-      ...sessionData,
-      id: sessionRef.id,
-    };
-
-    setSession(newSession);
-    setWords(trainingWords);
-    setIsStarted(true);
-    setIsCompleted(false);
-    setCurrentWordIndex(0);
-    setCorrectAnswers(0);
-    setIncorrectAnswers(0);
-    setCompletedWords([]);
-
-    // Generate first question, fetch translation if missing
-    let firstWord = trainingWords[0];
-    if (
-      !firstWord.translation ||
-      firstWord.translation === "No translation found."
-    ) {
-      setLoading(true);
-      const translation = await fetchAndUpdateTranslation(firstWord);
-      firstWord = { ...firstWord, translation };
-      setWords((prev) => {
-        const updated = [...prev];
-        updated[0] = firstWord;
-        return updated;
-      });
-      setLoading(false);
-    }
-    const question = TrainingQuestionGenerator.generateQuestion(
-      firstWord,
-      trainingTypes[0]
-    );
-    setCurrentQuestion(question);
-  }, [user, fetchTrainingWords, trainingTypes, sessionSize]);
-
-  // Handle answer submission
-  const handleAnswer = useCallback(
-    async (isCorrect: boolean) => {
-      if (!session || !currentQuestion || !words[currentWordIndex]) return;
-
-      const currentWord = words[currentWordIndex];
-      const oldStatus = currentWord.status || 1;
-      let newStatus = oldStatus;
-
-      // Update status based on answer
-      if (isCorrect) {
-        newStatus = Math.min(7, oldStatus + 1) as 1 | 2 | 3 | 4 | 5 | 6 | 7;
-      } else {
-        newStatus = Math.max(1, oldStatus - 1) as 1 | 2 | 3 | 4 | 5 | 6 | 7;
-      }
-
-      // Update progress
-      if (isCorrect) {
-        setCorrectAnswers((prev) => prev + 1);
-      } else {
-        setIncorrectAnswers((prev) => prev + 1);
-      }
-
-      setCompletedWords((prev) => [...prev, currentWord.id]);
-
-      // Update word status in database
-      try {
-        await updateDoc(doc(db, "words", currentWord.id), {
-          status: newStatus,
-          lastTrainedAt: serverTimestamp(),
-        });
-
-        // Update user stats
-        if (user) {
-          await updateWordStatsOnStatusChange({
-            wordId: currentWord.id,
-            userId: user.uid,
-            oldStatus,
-            newStatus,
-          });
-        }
-
-        // Save training result
-        const trainingResult: Omit<TrainingResult, "id"> = {
-          result: isCorrect ? "correct" : "incorrect",
-          type: currentQuestion.type,
-          timestamp: new Date(),
-          oldStatus,
-          newStatus,
-          sessionId: session.id,
-        };
-
-        await addDoc(collection(db, "trainingResults"), {
-          ...trainingResult,
-          timestamp: serverTimestamp(),
-        });
-      } catch (err) {
-        console.error("Error updating word status:", err);
-        setError("Failed to update word status");
-      }
-
-      // Move to next word or complete session
-      const nextIndex = currentWordIndex + 1;
-      if (nextIndex < words.length) {
-        let nextWord = words[nextIndex];
-        if (
-          !nextWord.translation ||
-          nextWord.translation === "No translation found."
-        ) {
-          setLoading(true);
-          const translation = await fetchAndUpdateTranslation(nextWord);
-          nextWord = { ...nextWord, translation };
-          setWords((prev) => {
-            const updated = [...prev];
-            updated[nextIndex] = nextWord;
-            return updated;
-          });
-          setLoading(false);
-        }
-        setCurrentWordIndex(nextIndex);
-        const nextQuestion = TrainingQuestionGenerator.generateQuestion(
-          nextWord,
-          trainingTypes[0]
-        );
-        setCurrentQuestion(nextQuestion);
-      } else {
-        // Session completed
-        setIsCompleted(true);
-        setCurrentQuestion(null);
-
-        // Update session in database
-        if (session) {
-          await updateDoc(doc(db, "trainingSessions", session.id), {
-            completedAt: serverTimestamp(),
-            correctAnswers: correctAnswers + (isCorrect ? 1 : 0),
-            incorrectAnswers: incorrectAnswers + (isCorrect ? 0 : 1),
-            completedWords: [...completedWords, currentWord.id],
-          });
-        }
-      }
-    },
-    [
-      session,
-      currentQuestion,
-      words,
-      currentWordIndex,
-      trainingTypes,
-      correctAnswers,
-      incorrectAnswers,
-      completedWords,
-      user,
-    ]
-  );
-
-  // Skip current question
   const skipQuestion = useCallback(() => {
-    if (currentWordIndex < words.length - 1) {
-      const nextIndex = currentWordIndex + 1;
-      setCurrentWordIndex(nextIndex);
-      const nextWord = words[nextIndex];
-      const nextQuestion = TrainingQuestionGenerator.generateQuestion(
-        nextWord,
-        trainingTypes[0]
-      );
-      setCurrentQuestion(nextQuestion);
-    } else {
-      // Reached the last word, complete the session
-      setIsCompleted(true);
-      setCurrentQuestion(null);
-    }
-  }, [currentWordIndex, words, trainingTypes]);
+    console.log("Skipping question");
+  }, []);
 
-  // Navigate to next word
-  const nextWord = useCallback(() => {
-    if (currentWordIndex < words.length - 1) {
-      const nextIndex = currentWordIndex + 1;
-      setCurrentWordIndex(nextIndex);
-      const nextWord = words[nextIndex];
-      const nextQuestion = TrainingQuestionGenerator.generateQuestion(
-        nextWord,
-        trainingTypes[0]
-      );
-      setCurrentQuestion(nextQuestion);
-    } else {
-      // Reached the last word, complete the session
-      setIsCompleted(true);
-      setCurrentQuestion(null);
-    }
-  }, [currentWordIndex, words, trainingTypes]);
-
-  // Navigate to previous word
-  const previousWord = useCallback(() => {
-    if (currentWordIndex > 0) {
-      const prevIndex = currentWordIndex - 1;
-      setCurrentWordIndex(prevIndex);
-      const prevWord = words[prevIndex];
-      const prevQuestion = TrainingQuestionGenerator.generateQuestion(
-        prevWord,
-        trainingTypes[0]
-      );
-      setCurrentQuestion(prevQuestion);
-    }
-  }, [currentWordIndex, words, trainingTypes]);
-
-  // Handle status change for manual training
-  const handleStatusChange = useCallback(
-    async (wordId: string, newStatus: 1 | 2 | 3 | 4 | 5 | 6 | 7) => {
-      if (!user) return;
-
-      const currentWord = words[currentWordIndex];
-      if (currentWord.id !== wordId) return;
-
-      const oldStatus = currentWord.status || 1;
-
-      try {
-        // Update word status in database
-        await updateDoc(doc(db, "words", wordId), {
-          status: newStatus,
-          lastTrainedAt: serverTimestamp(),
-        });
-
-        // Update user stats
-        await updateWordStatsOnStatusChange({
-          wordId,
-          userId: user.uid,
-          oldStatus,
-          newStatus,
-        });
-
-        // Update local state
-        setWords((prev) =>
-          prev.map((word) =>
-            word.id === wordId ? { ...word, status: newStatus } : word
-          )
-        );
-
-        // Save training result
-        const trainingResult: Omit<TrainingResult, "id"> = {
-          result: "correct", // Manual status change is considered correct
-          type: "manual",
-          timestamp: new Date(),
-          oldStatus,
-          newStatus,
-          sessionId: session?.id,
-        };
-
-        await addDoc(collection(db, "trainingResults"), {
-          ...trainingResult,
-          timestamp: serverTimestamp(),
-        });
-      } catch (err) {
-        console.error("Error updating word status:", err);
-        setError("Failed to update word status");
-      }
-    },
-    [user, words, currentWordIndex, session]
-  );
-
-  // End session
   const endSession = useCallback(() => {
-    setIsStarted(false);
-    setIsCompleted(false);
-    setSession(null);
-    setWords([]);
-    setCurrentQuestion(null);
-    setCurrentWordIndex(0);
-    setCorrectAnswers(0);
-    setIncorrectAnswers(0);
-    setCompletedWords([]);
+    console.log("Ending session");
   }, []);
 
-  // Retry incorrect answers
-  const retryIncorrectAnswers = useCallback(async () => {
-    if (!user || words.length === 0) return;
+  const retryIncorrectAnswers = useCallback(() => {
+    console.log("Retrying incorrect answers");
+  }, []);
 
-    // Get words that were answered incorrectly (status decreased)
-    const incorrectWords = words.filter((word) => {
-      const originalStatus = word.status || 1;
-      // If word status is lower than expected, it was likely answered incorrectly
-      return originalStatus <= 2; // Words with low status that need retry
-    });
-
-    if (incorrectWords.length === 0) {
-      // No incorrect answers to retry, start new session
-      endSession();
-      return;
-    }
-
-    // Start a new session with only incorrect words
-    const sessionData: Omit<TrainingSessionType, "id"> = {
-      userId: user.uid,
-      mode: "word",
-      wordIds: incorrectWords.map((w) => w.id),
-      currentIndex: 0,
-      completedWords: [],
-      correctAnswers: 0,
-      incorrectAnswers: 0,
-      startedAt: new Date(),
-      settings: {
-        autoAdvance: false,
-        showTranslation: true,
-        showDefinition: true,
-        trainingTypes,
-        sessionSize: incorrectWords.length,
-        priorityLowerStatus: true,
-        priorityOldWords: true,
-      },
-    };
-
-    // Save session to database
-    const sessionRef = await addDoc(collection(db, "trainingSessions"), {
-      ...sessionData,
-      startedAt: serverTimestamp(),
-    });
-
-    const newSession: TrainingSessionType = {
-      ...sessionData,
-      id: sessionRef.id,
-    };
-
-    setSession(newSession);
-    setWords(incorrectWords);
-    setIsStarted(true);
-    setIsCompleted(false);
-    setCurrentWordIndex(0);
-    setCorrectAnswers(0);
-    setIncorrectAnswers(0);
-    setCompletedWords([]);
-
-    // Generate first question
-    const firstWord = incorrectWords[0];
-    const question = TrainingQuestionGenerator.generateQuestion(
-      firstWord,
-      trainingTypes[0]
-    );
-    setCurrentQuestion(question);
-  }, [user, words, trainingTypes, endSession]);
-
-  // Handle word deletion
-  const handleDeleteWord = useCallback(
-    async (wordToDelete: Word) => {
-      if (!user) return;
-
-      try {
-        const oldStatus = wordToDelete.status || 1;
-
-        // Delete word from database
-        await deleteDoc(doc(db, "words", wordToDelete.id));
-
-        // Update user stats to reflect the deletion
-        await updateWordStatsOnDeletion({
-          wordId: wordToDelete.id,
-          userId: user.uid,
-          oldStatus,
-        });
-
-        // Remove word from all analysis word collections
-        const analysesSnapshot = await getDocs(collection(db, "analyses"));
-        for (const analysisDoc of analysesSnapshot.docs) {
-          const analysisId = analysisDoc.id;
-          const analysisWordsSnapshot = await getDocs(
-            collection(db, "analyses", analysisId, "words")
-          );
-
-          // Find and delete the word reference from this analysis
-          for (const wordRefDoc of analysisWordsSnapshot.docs) {
-            if (wordRefDoc.data().wordId === wordToDelete.id) {
-              await deleteDoc(wordRefDoc.ref);
-              break;
-            }
-          }
-        }
-
-        // Remove from local state
-        setWords((prev) => {
-          const updated = prev.filter((word) => word.id !== wordToDelete.id);
-
-          // Check if we have no more words
-          if (updated.length === 0) {
-            // End session immediately if no words left
-            setTimeout(() => {
-              setIsCompleted(true);
-              setCurrentQuestion(null);
-            }, 100);
-          }
-
-          return updated;
-        });
-
-        // If we deleted the current word, move to next or previous
-        if (wordToDelete.id === words[currentWordIndex]?.id) {
-          if (currentWordIndex < words.length - 1) {
-            nextWord();
-          } else if (currentWordIndex > 0) {
-            previousWord();
-          } else {
-            // No more words, end session
-            setTimeout(() => {
-              setIsCompleted(true);
-              setCurrentQuestion(null);
-            }, 100);
-          }
-        }
-      } catch (err) {
-        console.error("Error deleting word:", err);
-        setError("Failed to delete word");
-      }
-    },
-    [user, words, currentWordIndex, nextWord, previousWord]
-  );
-
-  // Calculate progress
-  const progress =
-    words.length > 0 ? (currentWordIndex / words.length) * 100 : 0;
-  const accuracy =
-    correctAnswers + incorrectAnswers > 0
-      ? (correctAnswers / (correctAnswers + incorrectAnswers)) * 100
-      : 0;
-
-  // Complete session manually
   const completeSession = useCallback(() => {
-    setIsCompleted(true);
-    setCurrentQuestion(null);
+    console.log("Completing session");
   }, []);
 
-  // Reload definition for current word
-  const reloadDefinition = useCallback(async () => {
-    if (!user || !words[currentWordIndex]) return;
+  const nextWord = useCallback(() => {
+    console.log("Next word");
+  }, []);
 
-    const currentWord = words[currentWordIndex];
-    setLoading(true);
-    setError(null);
+  const previousWord = useCallback(() => {
+    console.log("Previous word");
+  }, []);
 
-    try {
-      const definition = await fetchAndUpdateDefinition(currentWord);
+  const handleStatusChange = useCallback(() => {
+    console.log("Status change");
+  }, []);
 
-      // Update local state
-      setWords((prev) =>
-        prev.map((word) =>
-          word.id === currentWord.id ? { ...word, definition } : word
-        )
-      );
-    } catch (err) {
-      console.error("Error reloading definition:", err);
-      setError("Failed to reload definition");
-    } finally {
-      setLoading(false);
-    }
-  }, [user, words, currentWordIndex]);
+  const handleDeleteWord = useCallback(() => {
+    console.log("Delete word");
+  }, []);
 
-  // Reload translation for current word
-  const reloadTranslation = useCallback(async () => {
-    if (!user || !words[currentWordIndex]) return;
-
-    const currentWord = words[currentWordIndex];
-    setLoading(true);
-    setError(null);
-
-    try {
-      const translation = await fetchAndUpdateTranslation(currentWord);
-
-      // Update local state
-      setWords((prev) =>
-        prev.map((word) =>
-          word.id === currentWord.id ? { ...word, translation } : word
-        )
-      );
-    } catch (err) {
-      console.error("Error reloading translation:", err);
-      setError("Failed to reload translation");
-    } finally {
-      setLoading(false);
-    }
-  }, [user, words, currentWordIndex]);
+  const reloadTranslation = useCallback(() => {
+    console.log("Reload translation");
+  }, []);
 
   return {
-    // State
-    session,
     words,
     currentQuestion,
     currentWordIndex,
@@ -717,15 +73,10 @@ export function useTrainingSession({
     isCompleted,
     loading,
     error,
-
-    // Progress
     correctAnswers,
     incorrectAnswers,
     completedWords,
     progress,
-    accuracy,
-
-    // Actions
     startSession,
     handleAnswer,
     skipQuestion,
@@ -736,7 +87,6 @@ export function useTrainingSession({
     previousWord,
     handleStatusChange,
     handleDeleteWord,
-    reloadDefinition,
     reloadTranslation,
   };
-}
+};

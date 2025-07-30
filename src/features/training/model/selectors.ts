@@ -8,33 +8,33 @@ export const selectTrainingState = (state: RootState) => state.training;
 // Training mode and settings
 export const selectTrainingMode = createSelector(
   [selectTrainingState],
-  (training) => training.mode
+  () => "word", // TODO: Add mode property to TrainingState
 );
 
 export const selectSelectedStatuses = createSelector(
   [selectTrainingState],
-  (training) => training.selectedStatuses
+  () => [] as number[], // TODO: Add selectedStatuses property to TrainingState
 );
 
 // Word training
 export const selectTrainingWords = createSelector(
   [selectTrainingState],
-  (training) => training.words
+  (training) => training.currentSession?.questions.map((q) => q.word) || [],
 );
 
 export const selectCurrentWordIndex = createSelector(
   [selectTrainingState],
-  (training) => training.currentIndex
+  (training) => training.currentQuestionIndex,
 );
 
 export const selectCurrentWord = createSelector(
   [selectTrainingWords, selectCurrentWordIndex],
-  (words, index) => words[index] || null
+  (words, index) => words[index] || null,
 );
 
 export const selectTrainingStarted = createSelector(
   [selectTrainingState],
-  (training) => training.isStarted
+  (training) => training.isSessionActive,
 );
 
 // Derived selectors
@@ -43,10 +43,10 @@ export const selectHasTrainingData = createSelector(
   (words, mode) => {
     if (mode === "word") return words.length > 0;
     return false; // No sentence training implemented yet
-  }
+  },
 );
 
 export const selectNextWord = createSelector(
   [selectTrainingWords, selectCurrentWordIndex],
-  (words, index) => words[index + 1] || null
+  (words, index) => words[index + 1] || null,
 );

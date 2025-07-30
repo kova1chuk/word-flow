@@ -22,14 +22,14 @@ import { useTrainingStatsRTK } from "@/features/analysis-view/lib/useTrainingSta
 const AnalysisHeaderSkeleton = () => (
   <div className="mb-8">
     <div className="mb-6">
-      <div className="w-32 h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+      <div className="h-4 w-32 animate-pulse rounded bg-gray-200 dark:bg-gray-700" />
     </div>
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
+    <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">
       <div className="flex items-start justify-between">
-        <div className="flex-1 min-w-0">
+        <div className="min-w-0 flex-1">
           <div className="space-y-4">
-            <div className="w-3/4 h-8 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-            <div className="w-48 h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+            <div className="h-8 w-3/4 animate-pulse rounded bg-gray-200 dark:bg-gray-700" />
+            <div className="h-4 w-48 animate-pulse rounded bg-gray-200 dark:bg-gray-700" />
           </div>
         </div>
       </div>
@@ -39,32 +39,32 @@ const AnalysisHeaderSkeleton = () => (
 
 const TrainingStatsSectionSkeleton = () => (
   <div className="mb-8">
-    <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-      <div className="flex items-center justify-between mb-6">
-        <div className="w-48 h-6 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+    <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+      <div className="mb-6 flex items-center justify-between">
+        <div className="h-6 w-48 animate-pulse rounded bg-gray-200 dark:bg-gray-700" />
         <div className="flex items-center gap-3">
-          <div className="w-24 h-10 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse" />
-          <div className="w-32 h-10 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse" />
+          <div className="h-10 w-24 animate-pulse rounded-lg bg-gray-200 dark:bg-gray-700" />
+          <div className="h-10 w-32 animate-pulse rounded-lg bg-gray-200 dark:bg-gray-700" />
         </div>
       </div>
       <div className="mb-6">
-        <div className="flex items-center justify-between mb-2">
-          <div className="w-16 h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-          <div className="w-12 h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+        <div className="mb-2 flex items-center justify-between">
+          <div className="h-4 w-16 animate-pulse rounded bg-gray-200 dark:bg-gray-700" />
+          <div className="h-4 w-12 animate-pulse rounded bg-gray-200 dark:bg-gray-700" />
         </div>
-        <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-3 animate-pulse" />
+        <div className="h-3 w-full animate-pulse rounded-full bg-gray-200 dark:bg-gray-700" />
       </div>
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         {[1, 2, 3].map((i) => (
           <div
             key={i}
-            className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 border border-gray-200 dark:border-gray-600"
+            className="rounded-lg border border-gray-200 bg-gray-50 p-4 dark:border-gray-600 dark:bg-gray-700/50"
           >
             <div className="flex items-center">
-              <div className="w-8 h-8 bg-gray-200 dark:bg-gray-600 rounded-full animate-pulse" />
+              <div className="h-8 w-8 animate-pulse rounded-full bg-gray-200 dark:bg-gray-600" />
               <div className="ml-3 flex-1">
-                <div className="w-20 h-4 bg-gray-200 dark:bg-gray-600 rounded animate-pulse mb-2" />
-                <div className="w-12 h-6 bg-gray-200 dark:bg-gray-600 rounded animate-pulse" />
+                <div className="mb-2 h-4 w-20 animate-pulse rounded bg-gray-200 dark:bg-gray-600" />
+                <div className="h-6 w-12 animate-pulse rounded bg-gray-200 dark:bg-gray-600" />
               </div>
             </div>
           </div>
@@ -75,19 +75,19 @@ const TrainingStatsSectionSkeleton = () => (
 );
 
 const AnalysisContentSkeleton = () => (
-  <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 overflow-hidden">
+  <div className="overflow-hidden rounded-xl border border-gray-200 bg-white shadow-sm dark:border-gray-700 dark:bg-gray-800">
     <div className="border-b border-gray-200 dark:border-gray-700">
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6 p-4 bg-gray-50 dark:bg-gray-800/50">
+      <div className="mb-6 flex flex-col gap-4 bg-gray-50 p-4 sm:flex-row sm:items-center sm:justify-between dark:bg-gray-800/50">
         <div className="flex items-center gap-4">
           <div className="flex items-center gap-2">
-            <div className="w-5 h-5 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-            <div className="w-32 h-6 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+            <div className="h-5 w-5 animate-pulse rounded bg-gray-200 dark:bg-gray-700" />
+            <div className="h-6 w-32 animate-pulse rounded bg-gray-200 dark:bg-gray-700" />
           </div>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-20 h-10 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse" />
-          <div className="w-10 h-10 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse" />
-          <div className="w-10 h-10 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse" />
+          <div className="h-10 w-20 animate-pulse rounded-lg bg-gray-200 dark:bg-gray-700" />
+          <div className="h-10 w-10 animate-pulse rounded-lg bg-gray-200 dark:bg-gray-700" />
+          <div className="h-10 w-10 animate-pulse rounded-lg bg-gray-200 dark:bg-gray-700" />
         </div>
       </div>
     </div>
@@ -95,15 +95,15 @@ const AnalysisContentSkeleton = () => (
       {Array.from({ length: 5 }).map((_, index) => (
         <div
           key={index}
-          className="flex items-start gap-4 p-4 border-b border-gray-100 dark:border-gray-700 last:border-b-0"
+          className="flex items-start gap-4 border-b border-gray-100 p-4 last:border-b-0 dark:border-gray-700"
         >
-          <div className="flex-shrink-0 w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse" />
+          <div className="h-8 w-8 flex-shrink-0 animate-pulse rounded-full bg-gray-200 dark:bg-gray-700" />
           <div className="flex-1 space-y-3">
             <div className="space-y-2">
-              <div className="w-full h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-              <div className="w-3/4 h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+              <div className="h-4 w-full animate-pulse rounded bg-gray-200 dark:bg-gray-700" />
+              <div className="h-4 w-3/4 animate-pulse rounded bg-gray-200 dark:bg-gray-700" />
             </div>
-            <div className="w-1/2 h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+            <div className="h-4 w-1/2 animate-pulse rounded bg-gray-200 dark:bg-gray-700" />
           </div>
         </div>
       ))}
@@ -152,6 +152,11 @@ function AnalysisPageContent() {
   // Custom hooks
   const { handleStartTraining } = useTrainingStatsRTK(analysisId);
 
+  // Handle start training without parameters
+  const handleStartTrainingWrapper = useCallback(() => {
+    handleStartTraining("general"); // Default training type
+  }, [handleStartTraining]);
+
   // Handle page change
   const handlePageChange = useCallback(
     (newPage: number) => {
@@ -162,7 +167,7 @@ function AnalysisPageContent() {
         loadSentencesPage(newPage);
       }
     },
-    [setCurrentPage, sentences.length, sentencesPerPage, loadSentencesPage]
+    [setCurrentPage, sentences.length, sentencesPerPage, loadSentencesPage],
   );
 
   // Handle word click
@@ -174,11 +179,18 @@ function AnalysisPageContent() {
   // Handle translate sentence
   const handleTranslate = useCallback(
     async (sentenceId: string, text: string) => {
+      console.log("🔍 Translation requested:", {
+        sentenceId,
+        text: text.substring(0, 100) + "...",
+      });
+      console.log("🔍 Current translated sentences:", translatedSentences);
+
       if (translatedSentences[sentenceId]) return;
       setTranslatingSentenceId(sentenceId);
 
       try {
         const translation = await translateSentence(text);
+        console.log("✅ Translation received:", { sentenceId, translation });
         addTranslation(sentenceId, translation);
       } catch (error) {
         console.error("Translation error:", error);
@@ -187,7 +199,7 @@ function AnalysisPageContent() {
         setTranslatingSentenceId(null);
       }
     },
-    [translatedSentences, setTranslatingSentenceId, addTranslation]
+    [translatedSentences, setTranslatingSentenceId, addTranslation],
   );
 
   if (loading) {
@@ -196,12 +208,12 @@ function AnalysisPageContent() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-        <div className="max-w-md mx-auto text-center p-8">
-          <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 p-6">
-            <div className="w-16 h-16 mx-auto mb-4 bg-red-100 dark:bg-red-900/20 rounded-full flex items-center justify-center">
+      <div className="flex min-h-screen items-center justify-center bg-gray-50 dark:bg-gray-900">
+        <div className="mx-auto max-w-md p-8 text-center">
+          <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-800">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/20">
               <svg
-                className="w-8 h-8 text-red-600 dark:text-red-400"
+                className="h-8 w-8 text-red-600 dark:text-red-400"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -214,18 +226,18 @@ function AnalysisPageContent() {
                 />
               </svg>
             </div>
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+            <h2 className="mb-2 text-xl font-semibold text-gray-900 dark:text-white">
               Error Loading Analysis
             </h2>
-            <p className="text-red-600 dark:text-red-400 text-sm mb-6">
+            <p className="mb-6 text-sm text-red-600 dark:text-red-400">
               {error}
             </p>
             <Link
               href="/analyses"
-              className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors duration-200"
+              className="inline-flex items-center rounded-lg bg-blue-600 px-4 py-2 font-medium text-white transition-colors duration-200 hover:bg-blue-700"
             >
               <svg
-                className="w-4 h-4 mr-2"
+                className="mr-2 h-4 w-4"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -260,8 +272,8 @@ function AnalysisPageContent() {
       <div
         className={`${
           isFullScreen
-            ? "h-full flex flex-col"
-            : "max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8"
+            ? "flex h-full flex-col"
+            : "mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8"
         }`}
       >
         {/* Header Section */}
@@ -278,7 +290,7 @@ function AnalysisPageContent() {
               analysisId={analysisId}
               trainingStats={trainingStats}
               trainingLoading={trainingLoading}
-              onStartTraining={handleStartTraining}
+              onStartTraining={handleStartTrainingWrapper}
             />
           </Suspense>
         )}
@@ -287,7 +299,6 @@ function AnalysisPageContent() {
         <div className={`${isFullScreen ? "flex-1" : ""}`}>
           <Suspense fallback={<AnalysisContentSkeleton />}>
             <AnalysisContent
-              sentences={sentences}
               currentSentences={currentSentences}
               currentPage={currentPage}
               totalPages={totalPages}

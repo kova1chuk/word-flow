@@ -1,0 +1,17 @@
+#!/bin/sh
+
+echo "🔄 Pre-commit: Updating service worker cache version..."
+
+# Set environment variable to indicate we're in a git hook
+export GIT_HOOK=true
+
+# Run the update script
+node scripts/update-sw-version.js
+
+# Check if the script succeeded
+if [ $? -eq 0 ]; then
+  echo "✅ Pre-commit: Service worker cache version updated successfully"
+else
+  echo "❌ Pre-commit: Failed to update service worker cache version"
+  exit 1
+fi 

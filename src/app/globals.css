@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@tailwind utilities;
 
 :root {
   --background: #ffffff;
@@ -27,8 +28,6 @@ body {
   margin: 0;
   padding: 0;
 }
-
-@tailwind utilities;
 
 /* Line clamp utilities for text truncation */
 .line-clamp-1 {

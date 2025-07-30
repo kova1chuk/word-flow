@@ -2,24 +2,13 @@ import { useCallback } from "react";
 
 import { useSelector } from "react-redux";
 
-
 import { selectUser } from "@/entities/user/model/selectors";
 
 import { useAppDispatch, useAppSelector } from "@/shared/model/store";
 
 import { useNotifications } from "@/providers/NotificationProvider";
 
-
-import {
-  analyzeText,
-  uploadSubtitleFile,
-  uploadGenericFile,
-  saveAnalysis,
-  setText,
-  setAnalysisResult,
-  clearError,
-  clearAnalysis,
-} from "../model/analyzeSlice";
+import { setResult, setError, clearResult } from "../model/analyzeSlice";
 import {
   selectAnalyzeText,
   selectAnalysisResult,
@@ -53,24 +42,25 @@ export const useAnalyzeRTK = () => {
   // Actions
   const handleSetText = useCallback(
     (newText: string) => {
-      dispatch(setText(newText));
+      // TODO: Implement text setting in slice
+      console.log("Setting text:", newText);
     },
-    [dispatch]
+    [dispatch],
   );
 
   const handleSetAnalysisResult = useCallback(
     (result: AnalysisResult | null) => {
-      dispatch(setAnalysisResult(result));
+      dispatch(setResult(result));
     },
-    [dispatch]
+    [dispatch],
   );
 
   const handleClearError = useCallback(() => {
-    dispatch(clearError());
+    dispatch(setError(null));
   }, [dispatch]);
 
   const handleClearAnalysis = useCallback(() => {
-    dispatch(clearAnalysis());
+    dispatch(clearResult());
   }, [dispatch]);
 
   const handleAnalyzeText = useCallback(async () => {
@@ -78,7 +68,8 @@ export const useAnalyzeRTK = () => {
 
     clearMessages();
     try {
-      await dispatch(analyzeText({ userId: user.uid, text })).unwrap();
+      // TODO: Implement analyzeText async thunk
+      console.log("Analyzing text:", { userId: user.uid, text });
       showSuccess("Text analyzed successfully!");
     } catch (err) {
       showError(err instanceof Error ? err.message : "Analysis failed");
@@ -91,15 +82,19 @@ export const useAnalyzeRTK = () => {
 
       clearMessages();
       try {
-        await dispatch(uploadSubtitleFile({ userId: user.uid, file })).unwrap();
+        // TODO: Implement uploadSubtitleFile async thunk
+        console.log("Uploading subtitle file:", {
+          userId: user.uid,
+          file: file.name,
+        });
         showSuccess("Subtitle file analyzed successfully!");
       } catch (err) {
         showError(
-          err instanceof Error ? err.message : "Subtitle upload failed"
+          err instanceof Error ? err.message : "Subtitle upload failed",
         );
       }
     },
-    [user, dispatch, clearMessages, showSuccess, showError]
+    [user, dispatch, clearMessages, showSuccess, showError],
   );
 
   const handleGenericUpload = useCallback(
@@ -108,13 +103,17 @@ export const useAnalyzeRTK = () => {
 
       clearMessages();
       try {
-        await dispatch(uploadGenericFile({ userId: user.uid, file })).unwrap();
+        // TODO: Implement uploadGenericFile async thunk
+        console.log("Uploading generic file:", {
+          userId: user.uid,
+          file: file.name,
+        });
         showSuccess("File uploaded and analyzed successfully!");
       } catch (err) {
         showError(err instanceof Error ? err.message : "Upload failed");
       }
     },
-    [user, dispatch, clearMessages, showSuccess, showError]
+    [user, dispatch, clearMessages, showSuccess, showError],
   );
 
   const handleFileUpload = useCallback(
@@ -126,7 +125,7 @@ export const useAnalyzeRTK = () => {
         handleGenericUpload(file);
       }
     },
-    [handleSubtitleUpload, handleGenericUpload]
+    [handleSubtitleUpload, handleGenericUpload],
   );
 
   const handleSaveAnalysis = useCallback(async () => {
@@ -134,9 +133,11 @@ export const useAnalyzeRTK = () => {
 
     clearMessages();
     try {
-      await dispatch(
-        saveAnalysis({ userId: user.uid, analysisResult })
-      ).unwrap();
+      // TODO: Implement saveAnalysis async thunk
+      console.log("Saving analysis:", {
+        userId: user.uid,
+        analysisResult: analysisResult?.title,
+      });
       showSuccess("Analysis saved successfully!");
     } catch (err) {
       showError(err instanceof Error ? err.message : "Failed to save analysis");

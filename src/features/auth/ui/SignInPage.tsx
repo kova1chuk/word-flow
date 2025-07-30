@@ -1,30 +1,28 @@
+"use client";
+
+import { Suspense } from "react";
+
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
+
+import { login, signInWithGoogle } from "@/app/auth/actions";
 
 import { colors, getPageBackground } from "@/shared/config/colors";
 
-import { useAuth } from "../lib/useAuth";
-
 import { AuthForm } from "./AuthForm";
 
-export const SignInPage: React.FC = () => {
-  const {
-    email,
-    password,
-    error,
-    loading,
-    setEmail,
-    setPassword,
-    handleEmailSignIn,
-    handleGoogleAuth,
-  } = useAuth();
+function SignInContent() {
+  const searchParams = useSearchParams();
+  const error = searchParams.get("error");
+  const message = searchParams.get("message");
 
   return (
     <div
-      className={`min-h-screen ${getPageBackground()} flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8`}
+      className={`min-h-screen ${getPageBackground()} flex items-center justify-center px-4 py-12 sm:px-6 lg:px-8`}
     >
-      <div className="max-w-md w-full space-y-8">
+      <div className="w-full max-w-md space-y-8">
         <div
-          className={`bg-white/90 dark:bg-gray-900/80 rounded-2xl shadow-2xl p-8 pb-6 border border-gray-100 dark:border-gray-800 transition-all duration-300 backdrop-blur-md`}
+          className={`rounded-2xl border border-gray-100 bg-white/90 p-8 pb-6 shadow-2xl backdrop-blur-md transition-all duration-300 dark:border-gray-800 dark:bg-gray-900/80`}
         >
           <h2
             className={`text-center text-3xl font-extrabold ${colors.text.primary.light} dark:${colors.text.primary.dark} mb-2`}
@@ -37,20 +35,17 @@ export const SignInPage: React.FC = () => {
             Or{" "}
             <Link
               href="/auth/signup"
-              className="font-medium text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300 transition-colors"
+              className="font-medium text-blue-600 transition-colors hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300"
             >
               create a new account
             </Link>
           </p>
+
           <AuthForm
-            email={email}
-            password={password}
-            error={error}
-            loading={loading}
-            onEmailChange={setEmail}
-            onPasswordChange={setPassword}
-            onSubmit={handleEmailSignIn}
-            onGoogleAuth={handleGoogleAuth}
+            serverAction={login}
+            googleServerAction={signInWithGoogle}
+            urlError={error ?? undefined}
+            urlMessage={message ?? undefined}
             submitText="Sign in"
             googleText="Sign in with Google"
             showConfirmPassword={false}
@@ -58,5 +53,13 @@ export const SignInPage: React.FC = () => {
         </div>
       </div>
     </div>
+  );
+}
+
+export const SignInPage: React.FC = () => {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <SignInContent />
+    </Suspense>
   );
 };

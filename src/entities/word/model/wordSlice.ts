@@ -23,13 +23,13 @@ const wordSlice = createSlice({
     },
     updateWord: (state, action: PayloadAction<UpdateWordRequest>) => {
       const index = state.words.findIndex(
-        (word) => word.id === action.payload.id
+        (word) => word.id === action.payload.id,
       );
       if (index !== -1) {
         state.words[index] = {
           ...state.words[index],
           ...action.payload,
-          status: action.payload.status as Word["status"],
+          status: action.payload.status as unknown as Word["status"],
         };
       }
       state.error = null;

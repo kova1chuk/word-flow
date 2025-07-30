@@ -2,42 +2,31 @@ import { createSelector } from "@reduxjs/toolkit";
 
 import { RootState } from "@/shared/model/store";
 
-// Base selectors
-export const selectAnalysisWordsState = (state: RootState) =>
-  state.analysisWords;
+// Base selectors - Use direct selectors for simple property access
+export const selectAnalysisWords = (state: RootState) =>
+  state.analysisWords.words;
 
-export const selectAnalysisWords = createSelector(
-  [selectAnalysisWordsState],
-  (analysisWordsState) => analysisWordsState.words
-);
+export const selectAnalysisWordsLoading = (state: RootState) =>
+  state.analysisWords.loading;
 
-export const selectAnalysisWordsLoading = createSelector(
-  [selectAnalysisWordsState],
-  (analysisWordsState) => analysisWordsState.loading
-);
+export const selectAnalysisWordsError = (state: RootState) =>
+  state.analysisWords.error;
 
-export const selectAnalysisWordsError = createSelector(
-  [selectAnalysisWordsState],
-  (analysisWordsState) => analysisWordsState.error
-);
+export const selectAnalysisWordsStats = (state: RootState) =>
+  state.analysisWords.stats;
 
-export const selectAnalysisWordsStats = createSelector(
-  [selectAnalysisWordsState],
-  (analysisWordsState) => analysisWordsState.stats
-);
-
-// Derived selectors
+// Derived selectors that need memoization
 export const selectLearnedWords = createSelector(
   [selectAnalysisWords],
-  (words) => words.filter((word) => word.isLearned)
+  (words) => words.filter((word) => word.isLearned),
 );
 
 export const selectNotLearnedWords = createSelector(
   [selectAnalysisWords],
-  (words) => words.filter((word) => !word.isLearned)
+  (words) => words.filter((word) => !word.isLearned),
 );
 
 export const selectWordsInDictionary = createSelector(
   [selectAnalysisWords],
-  (words) => words.filter((word) => word.isInDictionary)
+  (words) => words.filter((word) => word.isInDictionary),
 );

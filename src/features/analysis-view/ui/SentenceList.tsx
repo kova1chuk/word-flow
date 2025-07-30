@@ -21,17 +21,25 @@ export const SentenceList: React.FC<SentenceListProps> = ({
   onTranslate,
   loading = false,
 }) => {
+  console.log("🔍 SentenceList render:", {
+    sentenceCount: sentences.length,
+    sentenceIds: sentences.map((s) => s.id),
+    translatedSentences,
+    translatingSentenceId,
+  });
   // Highlight words in text and make them clickable
-  const renderClickableText = (text: string) => {
+  const renderClickableText = (text: string, sentenceId: string) => {
     const words = text.split(/(\s+)/);
     return words.map((word, index) => {
       const cleanWord = word.replace(/[^\w]/g, "");
+      const uniqueKey = `${sentenceId}-word-${index}`;
+
       if (cleanWord.length > 2) {
         return (
-          <span key={index}>
+          <span key={uniqueKey}>
             <button
               onClick={() => onWordClick(cleanWord.toLowerCase())}
-              className="hover:bg-yellow-200 dark:hover:bg-yellow-800 hover:text-gray-900 dark:hover:text-yellow-100 px-1 rounded transition-all duration-200 font-medium"
+              className="rounded px-1 font-medium transition-all duration-200 hover:bg-yellow-200 hover:text-gray-900 dark:hover:bg-yellow-800 dark:hover:text-yellow-100"
               title={`Click to see info about "${cleanWord}"`}
             >
               {word}
@@ -39,7 +47,7 @@ export const SentenceList: React.FC<SentenceListProps> = ({
           </span>
         );
       }
-      return <span key={index}>{word}</span>;
+      return <span key={uniqueKey}>{word}</span>;
     });
   };
 
@@ -49,21 +57,18 @@ export const SentenceList: React.FC<SentenceListProps> = ({
         {Array.from({ length: 5 }).map((_, index) => (
           <div
             key={index}
-            className="flex items-start gap-4 p-4 border-b border-gray-100 dark:border-gray-700 last:border-b-0"
+            className="flex items-start border-b border-gray-100 p-4 last:border-b-0 dark:border-gray-700"
           >
-            {/* Sentence Number Skeleton */}
-            <div className="flex-shrink-0 w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded-full animate-pulse" />
-
             {/* Content Skeleton */}
             <div className="flex-1 space-y-3">
               {/* Sentence Text Skeleton */}
               <div className="space-y-2">
-                <div className="w-full h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
-                <div className="w-3/4 h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+                <div className="h-4 w-full animate-pulse rounded bg-gray-200 dark:bg-gray-700" />
+                <div className="h-4 w-3/4 animate-pulse rounded bg-gray-200 dark:bg-gray-700" />
               </div>
 
               {/* Translation Skeleton */}
-              <div className="w-1/2 h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+              <div className="h-4 w-1/2 animate-pulse rounded bg-gray-200 dark:bg-gray-700" />
             </div>
           </div>
         ))}
@@ -76,7 +81,7 @@ export const SentenceList: React.FC<SentenceListProps> = ({
       <div className="flex items-center justify-center p-12">
         <div className="text-center">
           <svg
-            className="w-12 h-12 text-gray-400 mx-auto mb-4"
+            className="mx-auto mb-4 h-12 w-12 text-gray-400"
             fill="none"
             stroke="currentColor"
             viewBox="0 0 24 24"
@@ -88,7 +93,7 @@ export const SentenceList: React.FC<SentenceListProps> = ({
               d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
             />
           </svg>
-          <p className="text-gray-500 dark:text-gray-400 text-lg">
+          <p className="text-lg text-gray-500 dark:text-gray-400">
             No sentences found
           </p>
         </div>
@@ -105,30 +110,25 @@ export const SentenceList: React.FC<SentenceListProps> = ({
       }`}
     >
       <div className="space-y-0">
-        {sentences.map((sentence, index) => {
+        {sentences.map((sentence) => {
           const translation = translatedSentences[sentence.id];
           const isTranslating = translatingSentenceId === sentence.id;
 
           return (
             <div
               key={sentence.id}
-              className="px-6 py-4 border-b border-gray-100 dark:border-gray-700 last:border-b-0 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors duration-200"
+              className="border-b border-gray-100 px-6 py-4 transition-colors duration-200 last:border-b-0 hover:bg-gray-50 dark:border-gray-700 dark:hover:bg-gray-800/50"
             >
-              <div className="flex items-start gap-4">
-                {/* Sentence Number */}
-                <div className="flex-shrink-0 w-8 h-8 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center text-sm font-semibold">
-                  {index + 1}
-                </div>
-
+              <div className="flex items-start">
                 {/* Content */}
-                <div className="flex-1 min-w-0">
+                <div className="min-w-0 flex-1">
                   {viewMode === "columns" && (
-                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                    <div className="grid grid-cols-1 gap-6 lg:grid-cols-2">
                       {/* Original Text */}
                       <div className="space-y-3">
                         <div className="flex items-center gap-2">
                           <svg
-                            className="w-4 h-4 text-gray-400"
+                            className="h-4 w-4 text-gray-400"
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
@@ -140,12 +140,12 @@ export const SentenceList: React.FC<SentenceListProps> = ({
                               d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"
                             />
                           </svg>
-                          <span className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
+                          <span className="text-xs font-medium tracking-wide text-gray-500 uppercase dark:text-gray-400">
                             Original
                           </span>
                         </div>
-                        <p className="text-gray-900 dark:text-gray-100 text-lg leading-relaxed">
-                          {renderClickableText(sentence.text)}
+                        <p className="text-lg leading-relaxed text-gray-900 dark:text-gray-100">
+                          {renderClickableText(sentence.text, sentence.id)}
                         </p>
                       </div>
 
@@ -153,7 +153,7 @@ export const SentenceList: React.FC<SentenceListProps> = ({
                       <div className="space-y-3">
                         <div className="flex items-center gap-2">
                           <svg
-                            className="w-4 h-4 text-blue-400"
+                            className="h-4 w-4 text-blue-400"
                             fill="none"
                             stroke="currentColor"
                             viewBox="0 0 24 24"
@@ -165,12 +165,12 @@ export const SentenceList: React.FC<SentenceListProps> = ({
                               d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"
                             />
                           </svg>
-                          <span className="text-xs font-medium text-blue-500 dark:text-blue-400 uppercase tracking-wide">
+                          <span className="text-xs font-medium tracking-wide text-blue-500 uppercase dark:text-blue-400">
                             Translation
                           </span>
                         </div>
                         {translation ? (
-                          <p className="text-blue-600 dark:text-blue-400 text-lg leading-relaxed">
+                          <p className="text-lg leading-relaxed text-blue-600 dark:text-blue-400">
                             {translation}
                           </p>
                         ) : (
@@ -179,12 +179,12 @@ export const SentenceList: React.FC<SentenceListProps> = ({
                               onTranslate(sentence.id, sentence.text)
                             }
                             disabled={isTranslating}
-                            className="inline-flex items-center gap-2 px-4 py-2 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="inline-flex items-center gap-2 rounded-lg bg-blue-50 px-4 py-2 text-sm text-blue-600 transition-colors duration-200 hover:bg-blue-100 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-blue-900/20 dark:text-blue-400 dark:hover:bg-blue-900/30 dark:hover:text-blue-300"
                           >
                             {isTranslating ? (
                               <>
                                 <svg
-                                  className="animate-spin w-4 h-4"
+                                  className="h-4 w-4 animate-spin"
                                   fill="none"
                                   viewBox="0 0 24 24"
                                 >
@@ -207,7 +207,7 @@ export const SentenceList: React.FC<SentenceListProps> = ({
                             ) : (
                               <>
                                 <svg
-                                  className="w-4 h-4"
+                                  className="h-4 w-4"
                                   fill="none"
                                   stroke="currentColor"
                                   viewBox="0 0 24 24"
@@ -232,15 +232,15 @@ export const SentenceList: React.FC<SentenceListProps> = ({
                     <div className="space-y-4">
                       {/* Original Text */}
                       <div>
-                        <p className="text-gray-900 dark:text-gray-100 text-lg leading-relaxed">
-                          {renderClickableText(sentence.text)}
+                        <p className="text-lg leading-relaxed text-gray-900 dark:text-gray-100">
+                          {renderClickableText(sentence.text, sentence.id)}
                         </p>
                       </div>
 
                       {/* Translation */}
                       {translation && (
-                        <div className="pl-4 border-l-4 border-blue-500 bg-blue-50 dark:bg-blue-900/20 rounded-r-lg p-4">
-                          <p className="text-blue-600 dark:text-blue-400 text-base leading-relaxed">
+                        <div className="rounded-r-lg border-l-4 border-blue-500 bg-blue-50 p-4 pl-4 dark:bg-blue-900/20">
+                          <p className="text-base leading-relaxed text-blue-600 dark:text-blue-400">
                             {translation}
                           </p>
                         </div>
@@ -254,12 +254,12 @@ export const SentenceList: React.FC<SentenceListProps> = ({
                               onTranslate(sentence.id, sentence.text)
                             }
                             disabled={isTranslating}
-                            className="inline-flex items-center gap-2 px-4 py-2 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 bg-blue-50 dark:bg-blue-900/20 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="inline-flex items-center gap-2 rounded-lg bg-blue-50 px-4 py-2 text-sm text-blue-600 transition-colors duration-200 hover:bg-blue-100 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-blue-900/20 dark:text-blue-400 dark:hover:bg-blue-900/30 dark:hover:text-blue-300"
                           >
                             {isTranslating ? (
                               <>
                                 <svg
-                                  className="animate-spin w-4 h-4"
+                                  className="h-4 w-4 animate-spin"
                                   fill="none"
                                   viewBox="0 0 24 24"
                                 >
@@ -282,7 +282,7 @@ export const SentenceList: React.FC<SentenceListProps> = ({
                             ) : (
                               <>
                                 <svg
-                                  className="w-4 h-4"
+                                  className="h-4 w-4"
                                   fill="none"
                                   stroke="currentColor"
                                   viewBox="0 0 24 24"

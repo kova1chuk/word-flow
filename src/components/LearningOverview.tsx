@@ -2,17 +2,18 @@ import { WORD_STATUS_LABELS, WORD_STATUS_COLORS } from "@/entities/word/types";
 
 interface LearningOverviewProps {
   statusCounts: { [key: number]: number };
-  totalStatusWords: number;
 }
 
 export const LearningOverview: React.FC<LearningOverviewProps> = ({
   statusCounts,
-  totalStatusWords,
 }) => {
-  if (totalStatusWords === 0) return null;
+  const totalStatusWords = Object.values(statusCounts).reduce(
+    (acc, val) => acc + val,
+    0
+  );
+
   return (
     <div className="my-4">
-      {/* Segmented Progress Bar */}
       <div className="flex w-full h-4 rounded-full overflow-hidden border border-gray-200 dark:border-gray-700">
         {Array.from({ length: 7 }, (_, i) => i + 1).map((status) => {
           const count = statusCounts[status] || 0;
@@ -29,7 +30,6 @@ export const LearningOverview: React.FC<LearningOverviewProps> = ({
           );
         })}
       </div>
-      {/* Legend */}
       <div className="flex flex-wrap justify-between mt-2 text-xs">
         {Array.from({ length: 7 }, (_, i) => i + 1).map((status) => (
           <div key={status} className="flex items-center mr-2 mb-1">

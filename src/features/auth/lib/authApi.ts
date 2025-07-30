@@ -1,42 +1,69 @@
-import {
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  signInWithPopup,
-  GoogleAuthProvider,
-  signOut,
-  User,
-} from "firebase/auth";
+import { createClient } from "@/utils/supabase/client";
 
-import { auth } from "@/lib/firebase";
+import type { User as SupabaseUser } from "@supabase/supabase-js";
 
 export interface AuthError {
   code: string;
   message: string;
 }
 
+function mapSupabaseUser(user: SupabaseUser | null) {
+  if (!user) return null;
+  return {
+    uid: user.id,
+    email: user.email || "",
+    displayName: user.user_metadata?.full_name || undefined,
+    photoURL: user.user_metadata?.avatar_url || undefined,
+    emailVerified: user.email_confirmed_at !== null,
+    id: user.id,
+    createdAt: user.created_at,
+  };
+}
+
 export const authApi = {
   // Sign in with email and password
-  async signInWithEmail(email: string, password: string): Promise<User> {
-    const result = await signInWithEmailAndPassword(auth, email, password);
-    return result.user;
+  async signInWithEmail(email: string, password: string) {
+    const supabase = createClient();
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+    if (error || !data.user)
+      throw {
+        code: error?.code || "auth_error",
+        message: error?.message || "Sign in failed",
+      };
+    return mapSupabaseUser(data.user);
   },
 
   // Sign up with email and password
-  async signUpWithEmail(email: string, password: string): Promise<User> {
-    const result = await createUserWithEmailAndPassword(auth, email, password);
-    return result.user;
+  async signUpWithEmail(email: string, password: string) {
+    const supabase = createClient();
+    const { data, error } = await supabase.auth.signUp({ email, password });
+    if (error || !data.user)
+      throw {
+        code: error?.code || "auth_error",
+        message: error?.message || "Sign up failed",
+      };
+    return mapSupabaseUser(data.user);
   },
 
   // Sign in with Google
-  async signInWithGoogle(): Promise<User> {
-    const provider = new GoogleAuthProvider();
-    const result = await signInWithPopup(auth, provider);
-    return result.user;
+  async signInWithGoogle() {
+    const supabase = createClient();
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: "google",
+    });
+    if (error) throw { code: error.code, message: error.message };
+    // For OAuth, user will be redirected, so no user object is returned here
+    return null;
   },
 
   // Sign out
-  async signOut(): Promise<void> {
-    await signOut(auth);
+  async signOut() {
+    const supabase = createClient();
+    const { error } = await supabase.auth.signOut();
+    if (error) throw { code: error.code, message: error.message };
   },
 
   // Validate password
@@ -50,7 +77,7 @@ export const authApi = {
   // Validate password confirmation
   validatePasswordConfirmation(
     password: string,
-    confirmPassword: string
+    confirmPassword: string,
   ): string | null {
     if (password !== confirmPassword) {
       return "Passwords do not match";

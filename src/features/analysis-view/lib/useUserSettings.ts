@@ -21,7 +21,7 @@ import {
 export const useUserSettings = (
   analysisId: string,
   sentences: Sentence[],
-  currentPage: number
+  currentPage: number,
 ) => {
   const dispatch = useAppDispatch();
   const user = useSelector(selectUser);
@@ -71,7 +71,7 @@ export const useUserSettings = (
         console.error("Error saving reading progress:", error);
       }
     },
-    [user, analysisId]
+    [user, analysisId],
   );
 
   // Save user settings
@@ -80,7 +80,9 @@ export const useUserSettings = (
       if (!user) return;
 
       try {
-        await saveUserSettings(user.uid, newSentencesPerPage);
+        await saveUserSettings(user.uid, {
+          sentencesPerPage: newSentencesPerPage,
+        });
         dispatch(setSentencesPerPage(newSentencesPerPage));
 
         // Recalculate current page to maintain position
@@ -92,7 +94,7 @@ export const useUserSettings = (
         console.error("Error saving user settings:", error);
       }
     },
-    [user, sentences.length, currentPage, dispatch, saveProgress]
+    [user, sentences.length, currentPage, dispatch, saveProgress],
   );
 
   return {

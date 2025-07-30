@@ -1,8 +1,8 @@
 import Link from "next/link";
 
-import AudioPlayer from "./AudioPlayer";
+import { Word } from "../../entities/word";
 
-import type { Word } from "@/types";
+import AudioPlayer from "./AudioPlayer";
 
 interface WordDisplayProps {
   word: Word;
@@ -52,7 +52,7 @@ export default function WordDisplay({
       {showLink ? (
         <Link
           href={`/words/${word.word}`}
-          className="hover:text-blue-900 dark:hover:text-blue-300 transition-colors"
+          className="transition-colors hover:text-blue-900 dark:hover:text-blue-300"
         >
           {wordElement}
         </Link>
@@ -60,17 +60,21 @@ export default function WordDisplay({
         wordElement
       )}
 
-      {word.details?.phonetics && word.details.phonetics.length > 0 && (
+      {word.phonetic && word.phonetic.audio && (
         <div className="flex items-center space-x-2">
-          <span
-            className={`text-gray-500 dark:text-gray-400 ${phoneticSizeClasses[size]}`}
-          >
-            {word.details.phonetics[0].text}
-          </span>
-          <AudioPlayer
-            audioUrl={word.details.phonetics[0].audio}
-            size={audioSizeClasses[size]}
-          />
+          {word.phonetic.text && (
+            <span
+              className={`text-gray-500 dark:text-gray-400 ${phoneticSizeClasses[size]}`}
+            >
+              {word.phonetic.text}
+            </span>
+          )}
+          {word.phonetic.audio && (
+            <AudioPlayer
+              audioUrl={word.phonetic.audio}
+              size={audioSizeClasses[size]}
+            />
+          )}
         </div>
       )}
     </div>

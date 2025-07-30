@@ -7,8 +7,6 @@ import { useRouter, useSearchParams } from "next/navigation";
 
 import { useSelector } from "react-redux";
 
-
-
 import {
   ChevronDownIcon,
   ChevronRightIcon,
@@ -21,10 +19,6 @@ import { TrainingQuestionCard } from "@/features/training/ui/TrainingQuestionCar
 import { TrainingSessionSummary } from "@/features/training/ui/TrainingSessionSummary";
 
 import { selectUser } from "@/entities/user/model/selectors";
-
-import { useAnalysisFilteredStats } from "@/shared/hooks/useAnalysisFilteredStats";
-import { useUserStatsRTK } from "@/shared/hooks/useUserStatsRTK";
-
 
 export default function ManualTrainingPage() {
   const user = useSelector(selectUser);
@@ -75,9 +69,6 @@ export default function ManualTrainingPage() {
   // Training settings
   const [sessionSize, setSessionSize] = useState(10);
 
-  const { wordStats: userWordStats } = useUserStatsRTK();
-  const { filteredWordStats } = useAnalysisFilteredStats(selectedAnalysisIds);
-
   // Training session
   const {
     words,
@@ -90,19 +81,10 @@ export default function ManualTrainingPage() {
     correctAnswers,
     incorrectAnswers,
     completedWords,
-    progress,
     startSession,
     handleAnswer,
     skipQuestion,
-    endSession,
     retryIncorrectAnswers,
-    completeSession,
-    nextWord,
-    previousWord,
-    handleStatusChange,
-    handleDeleteWord,
-    reloadDefinition,
-    reloadTranslation,
   } = useTrainingSession({
     selectedStatuses,
     selectedAnalysisIds,
@@ -124,7 +106,7 @@ export default function ManualTrainingPage() {
     setSelectedStatuses((prev) =>
       prev.includes(status)
         ? prev.filter((s) => s !== status)
-        : [...prev, status]
+        : [...prev, status],
     );
   };
 
@@ -132,7 +114,7 @@ export default function ManualTrainingPage() {
     setSelectedAnalysisIds((prev) =>
       prev.includes(id)
         ? prev.filter((analysisId) => analysisId !== id)
-        : [...prev, id]
+        : [...prev, id],
     );
   };
 
@@ -144,333 +126,200 @@ export default function ManualTrainingPage() {
     }
   };
 
-  const getStatusCount = (status: number) => {
-    // If analyses are selected, use filtered stats; otherwise use overall stats
-    if (selectedAnalysisIds.length > 0 && filteredWordStats) {
-      return filteredWordStats[status] || 0;
-    }
-    return userWordStats?.[status] || 0;
-  };
-
-  const getTotalSelectedWords = () => {
-    let total = 0;
-    selectedStatuses.forEach((status) => {
-      total += getStatusCount(status);
-    });
-    return total;
+  const getStatusCount = () => {
+    return 0; // Placeholder - no stats available
   };
 
   if (!user) {
     return (
-      <div className="bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">
-            Please sign in to access training
-          </h1>
-        </div>
-      </div>
-    );
-  }
-
-  if (loading) {
-    return (
-      <div className="bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600 dark:text-gray-400">
-            Loading training...
-          </p>
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+        <div className="mx-auto max-w-4xl p-4">
+          <div className="py-8 text-center">
+            <h1 className="mb-4 text-2xl font-bold text-gray-900 dark:text-white">
+              Please sign in to access training
+            </h1>
+            <Link
+              href="/auth/signin"
+              className="inline-flex items-center rounded-md bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
+            >
+              Sign In
+            </Link>
+          </div>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-gray-50 dark:bg-gray-900">
-      <div className="max-w-7xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
-        {/* Header with back button */}
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="mx-auto max-w-4xl p-4">
+        {/* Header */}
         <div className="mb-6">
           <Link
             href="/training"
-            className="inline-flex items-center text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 mb-4"
+            className="mb-4 inline-flex items-center text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
           >
-            <ArrowLeftIcon className="h-5 w-5 mr-2" />
-            Back to Training Selection
+            <ArrowLeftIcon className="mr-2 h-4 w-4" />
+            Back to Training
           </Link>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-            Manual Review Training
+            Manual Training
           </h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-2">
-            Review words and update their status manually
+          <p className="mt-2 text-gray-600 dark:text-gray-400">
+            Manual word review and practice
           </p>
         </div>
 
-        {!isStarted && !isCompleted && (
-          <>
-            {/* Stats Overview */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-                Your Learning Stats
-              </h2>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="text-center p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                  <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                    {Object.values(userWordStats || {}).reduce(
-                      (sum, count) => sum + count,
-                      0
-                    )}
-                  </div>
-                  <div className="text-sm text-gray-600 dark:text-gray-400">
-                    Total Words
-                  </div>
-                </div>
-                <div className="text-center p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                  <div className="text-2xl font-bold text-green-600 dark:text-green-400">
-                    {selectedAnalysisIds.length > 0
-                      ? getTotalSelectedWords()
-                      : Object.values(userWordStats || {}).reduce(
-                          (sum, count) => sum + count,
-                          0
-                        )}
-                  </div>
-                  <div className="text-sm text-gray-600 dark:text-gray-400">
-                    Available for Training
-                  </div>
-                </div>
-                <div className="text-center p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-                  <div className="text-2xl font-bold text-purple-600 dark:text-purple-400">
-                    {analyses.length}
-                  </div>
-                  <div className="text-sm text-gray-600 dark:text-gray-400">
-                    Analyses
-                  </div>
-                </div>
-              </div>
-            </div>
+        {/* Training Configuration */}
+        <div className="mb-6 rounded-lg bg-white p-6 shadow-md dark:bg-gray-800">
+          <h2 className="mb-4 text-xl font-semibold text-gray-900 dark:text-white">
+            Training Configuration
+          </h2>
 
-            {/* Analyses Selection */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                  Select Analyses (Optional)
-                </h2>
+          {/* Status Selection */}
+          <div className="mb-6">
+            <h3 className="mb-3 text-lg font-medium text-gray-900 dark:text-white">
+              Word Status
+            </h3>
+            <div className="flex flex-wrap gap-2">
+              {STATUS_OPTIONS.map((status) => (
                 <button
-                  onClick={() => setAnalysesExpanded(!analysesExpanded)}
-                  className="flex items-center text-gray-600 dark:text-gray-400 hover:text-gray-800 dark:hover:text-gray-200"
+                  key={status.value}
+                  onClick={() => toggleStatusSelection(status.value)}
+                  className={`rounded-full px-3 py-1 text-sm font-medium transition-colors ${
+                    selectedStatuses.includes(status.value)
+                      ? `${status.color} text-white`
+                      : "bg-gray-200 text-gray-700 hover:bg-gray-300 dark:bg-gray-700 dark:text-gray-300 dark:hover:bg-gray-600"
+                  }`}
                 >
-                  {analysesExpanded ? (
-                    <ChevronDownIcon className="h-5 w-5" />
-                  ) : (
-                    <ChevronRightIcon className="h-5 w-5" />
-                  )}
+                  {status.label} ({getStatusCount()})
                 </button>
-              </div>
-
-              {analysesExpanded && (
-                <div className="space-y-3">
-                  <div className="flex items-center gap-3">
-                    <button
-                      onClick={toggleAll}
-                      className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
-                    >
-                      {selectedAnalysisIds.length === analyses.length
-                        ? "Deselect All"
-                        : "Select All"}
-                    </button>
-                    <span className="text-sm text-gray-500 dark:text-gray-400">
-                      {selectedAnalysisIds.length} of {analyses.length} selected
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-                    {analyses.map((analysis) => (
-                      <button
-                        key={analysis.id}
-                        onClick={() => toggleAnalysis(analysis.id)}
-                        className={`p-3 text-left rounded-lg border-2 transition-colors ${
-                          selectedAnalysisIds.includes(analysis.id)
-                            ? "border-blue-500 bg-blue-50 dark:bg-blue-900/20"
-                            : "border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500"
-                        }`}
-                      >
-                        <div className="font-medium text-gray-900 dark:text-white">
-                          {analysis.title}
-                        </div>
-                        <div className="text-sm text-gray-500 dark:text-gray-400">
-                          {analysis.summary?.totalWords ?? 0} words
-                        </div>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
+              ))}
             </div>
+          </div>
 
-            {/* Status Selection */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-                  Select Word Statuses to Train
-                </h2>
-                {selectedAnalysisIds.length > 0 && (
-                  <div className="text-sm text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 px-3 py-1 rounded-full">
-                    Filtered by {selectedAnalysisIds.length} analysis
-                    {selectedAnalysisIds.length > 1 ? "es" : ""}
-                  </div>
-                )}
-              </div>
-              <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
-                {STATUS_OPTIONS.map((option) => (
+          {/* Analyses Selection */}
+          <div className="mb-6">
+            <button
+              onClick={() => setAnalysesExpanded(!analysesExpanded)}
+              className="mb-3 flex items-center text-lg font-medium text-gray-900 dark:text-white"
+            >
+              {analysesExpanded ? (
+                <ChevronDownIcon className="mr-2 h-5 w-5" />
+              ) : (
+                <ChevronRightIcon className="mr-2 h-5 w-5" />
+              )}
+              Analyses ({selectedAnalysisIds.length} selected)
+            </button>
+
+            {analysesExpanded && (
+              <div className="ml-7 space-y-2">
+                <div className="mb-2 flex items-center gap-2">
                   <button
-                    key={option.value}
-                    onClick={() => toggleStatusSelection(option.value)}
-                    className={`p-2 rounded-md border transition-colors text-xs sm:text-sm h-20 sm:h-24 flex flex-col items-center justify-center ${
-                      selectedStatuses.includes(option.value)
-                        ? `border-${option.color.split("-")[1]}-500 bg-${
-                            option.color.split("-")[1]
-                          }-50 dark:bg-${option.color.split("-")[1]}-900/20`
-                        : "border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500"
-                    }`}
+                    onClick={toggleAll}
+                    className="text-sm text-blue-600 hover:underline dark:text-blue-400"
                   >
-                    <div className="flex flex-col items-center">
-                      <div
-                        className={`w-2 h-2 sm:w-2.5 sm:h-2.5 rounded-full ${option.color} mb-1`}
-                      ></div>
-                      <div className="font-medium text-gray-900 dark:text-white text-xs sm:text-sm">
-                        {option.label}
-                      </div>
-                      <div className="text-[11px] sm:text-xs text-gray-500 dark:text-gray-400 mt-0.5">
-                        {getStatusCount(option.value)}
-                      </div>
-                    </div>
+                    {selectedAnalysisIds.length === analyses.length
+                      ? "Deselect All"
+                      : "Select All"}
                   </button>
+                </div>
+                {analyses.map((analysis) => (
+                  <label
+                    key={analysis.id}
+                    className="flex cursor-pointer items-center space-x-2"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedAnalysisIds.includes(analysis.id)}
+                      onChange={() => toggleAnalysis(analysis.id)}
+                      className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                    />
+                    <span className="text-gray-700 dark:text-gray-300">
+                      {analysis.title}
+                    </span>
+                  </label>
                 ))}
               </div>
-            </div>
+            )}
+          </div>
 
-            {/* Training Settings */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-4">
-                Training Settings
-              </h2>
+          {/* Session Size */}
+          <div className="mb-6">
+            <label className="mb-3 block text-lg font-medium text-gray-900 dark:text-white">
+              Session Size
+            </label>
+            <select
+              value={sessionSize}
+              onChange={(e) => setSessionSize(Number(e.target.value))}
+              className="block w-full max-w-xs rounded-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-blue-500 focus:outline-none dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+            >
+              <option value={5}>5 words</option>
+              <option value={10}>10 words</option>
+              <option value={15}>15 words</option>
+              <option value={20}>20 words</option>
+              <option value={25}>25 words</option>
+              <option value={30}>30 words</option>
+            </select>
+          </div>
 
-              {/* Session Size */}
-              <div className="mb-6">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Session Size: {sessionSize} words
-                </label>
-                <input
-                  type="range"
-                  min="5"
-                  max="50"
-                  value={sessionSize}
-                  onChange={(e) => setSessionSize(Number(e.target.value))}
-                  className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer dark:bg-gray-700"
-                />
-                <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mt-1">
-                  <span>5</span>
-                  <span>50</span>
-                </div>
-              </div>
-            </div>
-
-            {/* Summary and Start Button */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 mb-6">
-              <div className="text-center">
-                <div className="text-2xl font-bold text-gray-900 dark:text-white mb-2">
-                  {getTotalSelectedWords()} words available
-                </div>
-                <p className="text-gray-600 dark:text-gray-400 mb-6">
-                  Ready to train{" "}
-                  {Math.min(sessionSize, getTotalSelectedWords())} words
-                </p>
-
-                {error && (
-                  <div className="text-red-600 dark:text-red-400 mb-4">
-                    {error}
-                  </div>
-                )}
-
-                <button
-                  onClick={startSession}
-                  disabled={
-                    selectedStatuses.length === 0 ||
-                    getTotalSelectedWords() === 0
-                  }
-                  className="px-8 py-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-lg font-medium"
-                >
-                  🚀 Start Manual Review Training
-                </button>
-              </div>
-            </div>
-          </>
-        )}
+          {/* Start Session Button */}
+          <button
+            onClick={startSession}
+            disabled={loading || selectedStatuses.length === 0}
+            className="w-full rounded-md bg-blue-600 px-4 py-3 font-medium text-white hover:bg-blue-700 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+          >
+            {loading ? "Starting..." : "Start Training Session"}
+          </button>
+        </div>
 
         {/* Training Session */}
-        {isStarted && !isCompleted && currentQuestion && (
-          <div className="space-y-6">
-            {/* Progress Bar */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-4">
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Progress: {currentWordIndex + 1} / {words.length}
-                </span>
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  {progress.toFixed(1)}%
-                </span>
-              </div>
-              <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-2">
-                <div
-                  className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                  style={{ width: `${progress}%` }}
-                ></div>
-              </div>
-            </div>
-
-            {/* Current Question */}
+        {isStarted && currentQuestion && (
+          <div className="rounded-lg bg-white p-6 shadow-md dark:bg-gray-800">
             <TrainingQuestionCard
               question={currentQuestion}
               word={words[currentWordIndex]}
               onAnswer={handleAnswer}
               onSkip={skipQuestion}
-              onNext={nextWord}
-              onPrevious={previousWord}
-              canGoNext={currentWordIndex < words.length - 1}
-              canGoPrevious={currentWordIndex > 0}
-              onStatusChange={handleStatusChange}
-              onDelete={handleDeleteWord}
-              onReloadDefinition={reloadDefinition}
-              onReloadTranslation={reloadTranslation}
-              updating={null}
             />
-
-            {/* Complete Session Button - Show when on last word */}
-            {currentWordIndex === words.length - 1 && (
-              <div className="text-center">
-                <button
-                  onClick={completeSession}
-                  className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
-                >
-                  ✅ Complete Session
-                </button>
-              </div>
-            )}
           </div>
         )}
 
         {/* Session Summary */}
         {isCompleted && (
-          <TrainingSessionSummary
-            words={words}
-            correctAnswers={correctAnswers}
-            incorrectAnswers={incorrectAnswers}
-            completedWords={completedWords}
-            onRetry={retryIncorrectAnswers}
-            onNewSession={() => {
-              endSession();
-            }}
-            onEndSession={endSession}
-          />
+          <div className="rounded-lg bg-white p-6 shadow-md dark:bg-gray-800">
+            <TrainingSessionSummary
+              words={words}
+              correctAnswers={correctAnswers}
+              incorrectAnswers={incorrectAnswers}
+              completedWords={completedWords}
+              onRetry={retryIncorrectAnswers}
+              onNewSession={() => {
+                // Reset session state
+                startSession();
+              }}
+              onEndSession={() => {
+                // Navigate back to training page
+                window.location.href = "/training";
+              }}
+            />
+          </div>
+        )}
+
+        {/* Error Display */}
+        {error && (
+          <div className="mb-6 rounded-md border border-red-200 bg-red-50 p-4 dark:border-red-800 dark:bg-red-900/20">
+            <div className="flex">
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-red-800 dark:text-red-200">
+                  Error
+                </h3>
+                <div className="mt-2 text-sm text-red-700 dark:text-red-300">
+                  {error}
+                </div>
+              </div>
+            </div>
+          </div>
         )}
       </div>
     </div>

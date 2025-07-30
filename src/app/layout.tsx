@@ -2,13 +2,13 @@ import type { Metadata } from "next";
 
 import { Geist, Geist_Mono } from "next/font/google";
 
-import { AuthSyncProvider } from "@/providers/AuthSyncProvider";
-import { NotificationProvider } from "@/providers/NotificationProvider";
-import { PWAProvider } from "@/providers/PWAProvider";
-import { StoreProvider } from "@/providers/StoreProvider";
-
 import "./globals.css";
-import MainLayout from "../components/MainLayout";
+import MainLayout from "@/components/MainLayout";
+
+import Providers from "./providers";
+
+// Force dynamic rendering for all pages since we use cookies for auth
+export const dynamic = "force-dynamic";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -69,14 +69,9 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <StoreProvider>
-          <AuthSyncProvider />
-          <PWAProvider>
-            <NotificationProvider>
-              <MainLayout>{children}</MainLayout>
-            </NotificationProvider>
-          </PWAProvider>
-        </StoreProvider>
+        <Providers>
+          <MainLayout>{children}</MainLayout>
+        </Providers>
       </body>
     </html>
   );

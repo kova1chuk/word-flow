@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 
-import { analysesApi, Analysis } from "../lib/analysesApi";
+import { fetchAnalysesSupabase, Analysis } from "../lib/analysesApi";
 
 export interface AnalysesState {
   analyses: Analysis[];
@@ -11,8 +11,8 @@ export interface AnalysesState {
 export const fetchUserAnalyses = createAsyncThunk<Analysis[], string>(
   "analyses/fetchUserAnalyses",
   async (userId: string) => {
-    const analysesData = await analysesApi.fetchUserAnalyses(userId);
-    return analysesData;
+    const result = await fetchAnalysesSupabase(userId, 1, 50); // Fetch first 50 analyses
+    return result.analyses;
   }
 );
 

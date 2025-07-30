@@ -6,7 +6,7 @@ import { useSelector } from "react-redux";
 
 import WordFilterControls from "@/shared/ui/WordFilterControls";
 
-import { selectAvailableAnalyses } from "../model/selectors";
+import { selectAvailableAnalyses } from "../../../model/selectors";
 
 interface WordsPageHeaderProps {
   statusFilter: number[];
@@ -15,6 +15,7 @@ interface WordsPageHeaderProps {
   selectedAnalyses: string[];
   onStatusFilterChange: (statuses: number[]) => void;
   onAnalysesFilterChange: (analyses: string[]) => void;
+  onSearch: () => void;
 }
 
 export const WordsPageHeader: React.FC<WordsPageHeaderProps> = ({
@@ -24,6 +25,7 @@ export const WordsPageHeader: React.FC<WordsPageHeaderProps> = ({
   selectedAnalyses,
   onStatusFilterChange,
   onAnalysesFilterChange,
+  onSearch,
 }) => {
   const availableAnalyses = useSelector(selectAvailableAnalyses);
 
@@ -62,6 +64,7 @@ export const WordsPageHeader: React.FC<WordsPageHeaderProps> = ({
         onSearchChange={setSearch}
         selectedAnalyses={selectedAnalyses}
         onAnalysesFilterChange={onAnalysesFilterChange}
+        onSearchButton={onSearch}
       />
     </>
   );

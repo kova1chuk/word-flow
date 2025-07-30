@@ -27,5 +27,29 @@ export const useUpdateQueryParams = () => {
     router.push(`${pathname}?${params.toString()}`);
   };
 
-  return updateQueryParam;
+  const updateQueryParamsBatch = (
+    updates: Record<string, string | string[] | number>,
+  ) => {
+    const params = new URLSearchParams(searchParams.toString());
+
+    Object.entries(updates).forEach(([key, value]) => {
+      if (Array.isArray(value)) {
+        if (value.length === 0) {
+          params.delete(key);
+        } else {
+          params.set(key, value.join(","));
+        }
+      } else {
+        if (value === "" || value === undefined) {
+          params.delete(key);
+        } else {
+          params.set(key, value.toString());
+        }
+      }
+    });
+
+    router.push(`${pathname}?${params.toString()}`);
+  };
+
+  return { updateQueryParam, updateQueryParamsBatch };
 };

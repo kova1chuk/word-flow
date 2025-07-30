@@ -36,6 +36,7 @@ export interface WordFilterControlsProps {
   onSearchChange: (value: string) => void;
   onStatusFilterChange: (selected: number[]) => void;
   onAnalysesFilterChange?: (selected: string[]) => void;
+  onSearchButton: () => void;
 }
 
 const WordFilterControls: React.FC<WordFilterControlsProps> = ({
@@ -47,6 +48,7 @@ const WordFilterControls: React.FC<WordFilterControlsProps> = ({
   availableAnalyses = [],
   selectedAnalyses = [],
   onAnalysesFilterChange,
+  onSearchButton,
 }) => {
   const [showFilters, setShowFilters] = useState(false);
 
@@ -88,6 +90,7 @@ const WordFilterControls: React.FC<WordFilterControlsProps> = ({
             onSearchChange={onSearchChange}
             showFilters={showFilters}
             onToggleFilters={() => setShowFilters(!showFilters)}
+            onSearchButton={onSearchButton}
           />
         </div>
 

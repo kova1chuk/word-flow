@@ -84,10 +84,10 @@ export default function Header() {
   };
 
   const navLinks = [
-    { href: "/words", label: "My Words" },
-    { href: "/analyze", label: "Analyze Text" },
-    { href: "/analyses", label: "My Analyses" },
-    { href: "/training", label: "Training" },
+    { href: "/dictionary", label: "Dictionary" },
+    { href: "/analyses", label: "Reviews" },
+    { href: "/hub", label: "Hub" },
+    { href: "/training", label: "Training", disabled: true },
   ];
 
   const closeMenus = () => {
@@ -139,6 +139,31 @@ export default function Header() {
                 <>
                   {navLinks.map((link) => {
                     const isActive = isLinkActive(link.href);
+                    const isDisabled = link.disabled;
+
+                    if (isDisabled) {
+                      return (
+                        <div
+                          key={link.href}
+                          className="group relative"
+                          title="Coming Soon"
+                        >
+                          <button
+                            disabled
+                            className="cursor-not-allowed rounded-xl px-3 py-2 text-sm font-medium text-gray-400 opacity-50 transition-all duration-200 dark:text-gray-500"
+                          >
+                            {link.label}
+                          </button>
+                          <div className="absolute bottom-full left-1/2 mb-2 -translate-x-1/2 transform opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+                            <div className="rounded-lg bg-gray-900 px-2 py-1 text-xs text-white dark:bg-gray-700">
+                              Coming Soon
+                              <div className="absolute top-full left-1/2 -translate-x-1/2 transform border-4 border-transparent border-t-gray-900 dark:border-t-gray-700"></div>
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    }
+
                     return (
                       <Link
                         key={link.href}
@@ -254,6 +279,31 @@ export default function Header() {
                     <>
                       {navLinks.map((link) => {
                         const isActive = isLinkActive(link.href);
+                        const isDisabled = link.disabled;
+
+                        if (isDisabled) {
+                          return (
+                            <div
+                              key={link.href}
+                              className="group relative"
+                              title="Coming Soon"
+                            >
+                              <button
+                                disabled
+                                className="block w-full cursor-not-allowed rounded-xl px-3 py-2 text-base font-medium text-gray-400 opacity-50 transition-all duration-200 dark:text-gray-500"
+                              >
+                                {link.label}
+                              </button>
+                              <div className="absolute top-1/2 left-full ml-2 -translate-y-1/2 transform opacity-0 transition-opacity duration-200 group-hover:opacity-100">
+                                <div className="rounded-lg bg-gray-900 px-2 py-1 text-xs whitespace-nowrap text-white dark:bg-gray-700">
+                                  Coming Soon
+                                  <div className="absolute top-1/2 left-0 -translate-y-1/2 transform border-4 border-transparent border-r-gray-900 dark:border-r-gray-700"></div>
+                                </div>
+                              </div>
+                            </div>
+                          );
+                        }
+
                         return (
                           <Link
                             key={link.href}

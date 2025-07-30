@@ -76,7 +76,11 @@ export async function signInWithGoogle(origin?: string) {
   }
 
   if (data.url) {
-    console.log("✅ Google OAuth initialized, redirecting to provider");
+    console.log(
+      "✅ Google OAuth initialized, redirecting to provider",
+      data.url,
+      `${baseUrl}/auth/confirm`,
+    );
     redirect(data.url);
   }
 

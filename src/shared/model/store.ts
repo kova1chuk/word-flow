@@ -10,7 +10,6 @@ import analyzeSlice from "@/features/analyze/model/analyzeSlice";
 import mainSlice from "@/features/main/model/mainSlice";
 import profileReducer from "@/features/profile/model/profileSlice";
 import trainingSlice from "@/features/training/model/trainingSlice";
-import { wordsReducer } from "@/features/words/model";
 
 import analysisSlice from "@/entities/analysis/model/analysisSlice";
 import { dictionaryApi } from "@/entities/dictionary/api";
@@ -23,6 +22,7 @@ import notificationSlice from "@/shared/model/notificationSlice";
 import uiSlice from "@/shared/model/uiSlice";
 
 import { analysisApi } from "../../entities/analysis/api/analysisApi";
+import wordsSlice from "../../features/dictionary/model/wordsSlice";
 
 // Import RTK Query APIs
 
@@ -36,7 +36,7 @@ export const store = configureStore({
     trainingStats: trainingStatsSlice,
     analyze: analyzeSlice,
     main: mainSlice,
-    words: wordsReducer,
+    words: wordsSlice,
     ui: uiSlice,
     form: formSlice,
     notification: notificationSlice,

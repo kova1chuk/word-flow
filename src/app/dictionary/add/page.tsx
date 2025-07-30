@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 
 import { useDispatch, useSelector } from "react-redux";
 
-import { addWord } from "@/features/words/model/thunks";
+import { addWord } from "@/features/dictionary/model/thunks";
 
 import { selectUser } from "@/entities/user/model/selectors";
 

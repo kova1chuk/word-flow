@@ -1,4 +1,4 @@
-import { fetchWordTranslation } from "@/features/words/lib/fetchWordTranslation";
+import { fetchWordTranslation } from "@/features/dictionary/lib/fetchWordTranslation";
 
 interface ReloadWordTranslationParams {
   wordId: string;

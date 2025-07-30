@@ -2,7 +2,7 @@ import { memo } from "react";
 
 import { useSelector } from "react-redux";
 
-import { selectWordById } from "@/features/words/model/selectors";
+import { selectWordById } from "@/features/dictionary/model/selectors";
 
 import { RootState } from "../../shared/model/store";
 

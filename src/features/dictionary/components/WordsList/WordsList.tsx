@@ -4,7 +4,7 @@ import { useDispatch, useSelector } from "react-redux";
 
 import WordCard from "@/components/WordCard";
 
-import { selectPaginatedWordIds } from "@/features/words/model/selectors";
+import { selectPaginatedWordIds } from "@/features/dictionary/model/selectors";
 
 import type { AppDispatch, RootState } from "@/shared/model/store";
 

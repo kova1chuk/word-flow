@@ -2,30 +2,24 @@ import Link from "next/link";
 
 export default function NavigationLinks() {
   return (
-    <div className="flex flex-col sm:flex-row gap-4 justify-center">
+    <div className="flex flex-col justify-center gap-4 sm:flex-row">
       <Link
-        href="/words"
-        className="bg-gray-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-gray-700 transition text-center"
+        href="/dictionary"
+        className="rounded-lg bg-gray-600 px-6 py-3 text-center font-semibold text-white transition hover:bg-gray-700"
       >
-        Words
+        Dictionary
       </Link>
       <Link
         href="/training"
-        className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700 transition text-center"
+        className="rounded-lg bg-blue-600 px-6 py-3 text-center font-semibold text-white transition hover:bg-blue-700"
       >
         Training Words
       </Link>
       <Link
         href="/analyses"
-        className="bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700 transition text-center"
+        className="rounded-lg bg-green-600 px-6 py-3 text-center font-semibold text-white transition hover:bg-green-700"
       >
         Analyses
-      </Link>
-      <Link
-        href="/analyze"
-        className="bg-purple-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-purple-700 transition text-center"
-      >
-        Analyze
       </Link>
     </div>
   );

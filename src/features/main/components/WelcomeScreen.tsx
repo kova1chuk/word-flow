@@ -4,26 +4,24 @@ import { useState } from "react";
 
 import Link from "next/link";
 
-import { colors, getPageBackground } from "@/shared/config/colors";
+import { colors } from "@/shared/config/colors";
 
 export default function WelcomeScreen() {
   const [isHovered, setIsHovered] = useState(false);
 
   return (
-    <div
-      className={`min-h-screen ${getPageBackground()} flex items-center justify-center p-4 pt-26`}
-    >
-      <div className="max-w-4xl mx-auto text-center">
+    <div className={`flex min-h-screen items-center justify-center p-4 pt-26`}>
+      <div className="mx-auto max-w-4xl text-center">
         {/* Hero Section */}
         <div className="mb-12">
           {/* Animated Icon */}
           <div className="mb-8 flex justify-center">
             <div className="relative">
               <div
-                className={`w-24 h-24 bg-gradient-to-r ${colors.primary.light} rounded-2xl flex items-center justify-center ${colors.shadow.card} transform hover:scale-110 transition-transform duration-300`}
+                className={`h-24 w-24 bg-gradient-to-r ${colors.primary.light} flex items-center justify-center rounded-2xl ${colors.shadow.card} transform transition-transform duration-300 hover:scale-110`}
               >
                 <svg
-                  className="w-12 h-12 text-white"
+                  className="h-12 w-12 text-white"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -37,21 +35,21 @@ export default function WelcomeScreen() {
                 </svg>
               </div>
               {/* Floating elements */}
-              <div className="absolute -top-2 -right-2 w-6 h-6 bg-yellow-400 rounded-full animate-bounce"></div>
-              <div className="absolute -bottom-2 -left-2 w-4 h-4 bg-green-400 rounded-full animate-pulse"></div>
+              <div className="absolute -top-2 -right-2 h-6 w-6 animate-bounce rounded-full bg-yellow-400"></div>
+              <div className="absolute -bottom-2 -left-2 h-4 w-4 animate-pulse rounded-full bg-green-400"></div>
             </div>
           </div>
 
           {/* Main Heading */}
           <h1
-            className={`text-5xl md:text-6xl font-bold ${colors.gradientText.primary} mb-6`}
+            className={`text-5xl font-bold md:text-6xl ${colors.gradientText.primary} mb-6`}
           >
             Welcome to Word Flow
           </h1>
 
           {/* Subtitle */}
           <p
-            className={`text-xl md:text-2xl ${colors.text.secondary.light} dark:${colors.text.secondary.dark} mb-8 max-w-2xl mx-auto leading-relaxed`}
+            className={`text-xl md:text-2xl ${colors.text.secondary.light} dark:${colors.text.secondary.dark} mx-auto mb-8 max-w-2xl leading-relaxed`}
           >
             Master vocabulary through intelligent analysis, personalized
             training, and seamless learning experiences
@@ -59,15 +57,15 @@ export default function WelcomeScreen() {
         </div>
 
         {/* Features Grid */}
-        <div className="grid md:grid-cols-3 gap-6 mb-12 max-w-4xl mx-auto">
+        <div className="mx-auto mb-12 grid max-w-4xl gap-6 md:grid-cols-3">
           <div
             className={`${colors.background.card.light} dark:${colors.background.card.dark} rounded-xl p-6 ${colors.shadow.card} ${colors.shadow.cardHover} transition-shadow duration-300`}
           >
             <div
-              className={`w-12 h-12 ${colors.features.analysis.icon.light} dark:${colors.features.analysis.icon.dark} rounded-lg flex items-center justify-center mb-4 mx-auto`}
+              className={`h-12 w-12 ${colors.features.analysis.icon.light} dark:${colors.features.analysis.icon.dark} mx-auto mb-4 flex items-center justify-center rounded-lg`}
             >
               <svg
-                className={`w-6 h-6 ${colors.features.analysis.text.light} dark:${colors.features.analysis.text.dark}`}
+                className={`h-6 w-6 ${colors.features.analysis.text.light} dark:${colors.features.analysis.text.dark}`}
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -97,10 +95,10 @@ export default function WelcomeScreen() {
             className={`${colors.background.card.light} dark:${colors.background.card.dark} rounded-xl p-6 ${colors.shadow.card} ${colors.shadow.cardHover} transition-shadow duration-300`}
           >
             <div
-              className={`w-12 h-12 ${colors.features.training.icon.light} dark:${colors.features.training.icon.dark} rounded-lg flex items-center justify-center mb-4 mx-auto`}
+              className={`h-12 w-12 ${colors.features.training.icon.light} dark:${colors.features.training.icon.dark} mx-auto mb-4 flex items-center justify-center rounded-lg`}
             >
               <svg
-                className={`w-6 h-6 ${colors.features.training.text.light} dark:${colors.features.training.text.dark}`}
+                className={`h-6 w-6 ${colors.features.training.text.light} dark:${colors.features.training.text.dark}`}
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -130,10 +128,10 @@ export default function WelcomeScreen() {
             className={`${colors.background.card.light} dark:${colors.background.card.dark} rounded-xl p-6 ${colors.shadow.card} ${colors.shadow.cardHover} transition-shadow duration-300`}
           >
             <div
-              className={`w-12 h-12 ${colors.features.progress.icon.light} dark:${colors.features.progress.icon.dark} rounded-lg flex items-center justify-center mb-4 mx-auto`}
+              className={`h-12 w-12 ${colors.features.progress.icon.light} dark:${colors.features.progress.icon.dark} mx-auto mb-4 flex items-center justify-center rounded-lg`}
             >
               <svg
-                className={`w-6 h-6 ${colors.features.progress.text.light} dark:${colors.features.progress.text.dark}`}
+                className={`h-6 w-6 ${colors.features.progress.text.light} dark:${colors.features.progress.text.dark}`}
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -162,10 +160,10 @@ export default function WelcomeScreen() {
 
         {/* CTA Section */}
         <div className="space-y-4">
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <div className="flex flex-col justify-center gap-4 sm:flex-row">
             <Link
               href="/auth/signin"
-              className={`inline-flex items-center justify-center px-8 py-4 text-lg font-semibold rounded-xl transition-all duration-300 transform hover:scale-105 ${
+              className={`inline-flex transform items-center justify-center rounded-xl px-8 py-4 text-lg font-semibold transition-all duration-300 hover:scale-105 ${
                 isHovered
                   ? `bg-gradient-to-r ${colors.primary.hover} ${colors.button.primary.text} ${colors.shadow.buttonHover}`
                   : `bg-gradient-to-r ${colors.button.primary.background} ${colors.button.primary.text} ${colors.shadow.button}`
@@ -174,7 +172,7 @@ export default function WelcomeScreen() {
               onMouseLeave={() => setIsHovered(false)}
             >
               <svg
-                className="w-5 h-5 mr-2"
+                className="mr-2 h-5 w-5"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -194,7 +192,7 @@ export default function WelcomeScreen() {
               className={`inline-flex items-center justify-center px-8 py-4 text-lg font-semibold ${colors.button.secondary.background} ${colors.button.secondary.text.light} dark:${colors.button.secondary.text.dark} rounded-xl ${colors.button.secondary.hover.light} dark:${colors.button.secondary.hover.dark} transition-all duration-300`}
             >
               <svg
-                className="w-5 h-5 mr-2"
+                className="mr-2 h-5 w-5"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"

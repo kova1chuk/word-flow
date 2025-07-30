@@ -37,7 +37,7 @@ export const WordsPageHeader: React.FC<WordsPageHeaderProps> = ({
           My Words
         </h1>
         <Link
-          href="/words/add"
+          href="/dictionary/add"
           className="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2 font-medium text-white shadow-sm transition-colors duration-200 hover:bg-blue-700 hover:shadow-md"
         >
           <svg

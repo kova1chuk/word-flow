@@ -37,7 +37,7 @@ export default function AddWordPage() {
       ).unwrap();
 
       // Redirect back to words page on success
-      router.push("/words");
+      router.push("/dictionary");
     } catch (error) {
       console.error("Error adding word:", error);
       // Error is handled by Redux state
@@ -56,10 +56,10 @@ export default function AddWordPage() {
             Add New Word
           </h1>
           <Link
-            href="/words"
+            href="/dictionary"
             className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300"
           >
-            Back to Words
+            Back to Dictionary
           </Link>
         </div>
 
@@ -92,7 +92,7 @@ export default function AddWordPage() {
 
             <div className="flex justify-end space-x-3">
               <Link
-                href="/words"
+                href="/dictionary"
                 className="rounded-md border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:outline-none dark:border-gray-600 dark:text-gray-300 dark:hover:bg-gray-700"
               >
                 Cancel

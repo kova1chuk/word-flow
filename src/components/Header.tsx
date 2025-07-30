@@ -11,8 +11,6 @@ import { signOut } from "@/app/auth/actions";
 
 import { selectUser } from "@/entities/user/model/selectors";
 
-import LoadingSpinner from "./LoadingSpinner";
-
 export default function Header() {
   const user = useSelector(selectUser);
   const pathname = usePathname();
@@ -86,7 +84,7 @@ export default function Header() {
   const navLinks = [
     { href: "/dictionary", label: "Dictionary" },
     { href: "/analyses", label: "Reviews" },
-    { href: "/hub", label: "Hub" },
+    { href: "/hub", label: "Hub", disabled: true },
     { href: "/training", label: "Training", disabled: true },
   ];
 
@@ -100,12 +98,32 @@ export default function Header() {
       <header className="fixed top-4 right-4 left-4 z-50 rounded-2xl border border-gray-200/50 bg-white/80 shadow-lg backdrop-blur-md dark:border-gray-700/50 dark:bg-gray-800/80">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
           <div className="flex h-14 items-center justify-between">
-            <div className="flex-shrink-0">
-              <span className="text-2xl font-bold text-gray-900 dark:text-white">
-                Word Flow
-              </span>
+            <div className="flex items-center">
+              <div className="flex-shrink-0">
+                <Link
+                  href="/"
+                  className="text-2xl font-bold text-gray-800 transition-colors hover:text-blue-500 dark:text-white dark:hover:text-blue-400"
+                >
+                  Word Flow
+                </Link>
+              </div>
             </div>
-            <LoadingSpinner size="sm" />
+
+            {/* Auth Links */}
+            <div className="flex items-center space-x-2">
+              <Link
+                href="/auth/signin"
+                className="rounded-xl px-4 py-2 text-sm font-medium text-gray-600 transition-all duration-200 hover:bg-gray-100/50 hover:text-blue-600 dark:text-gray-300 dark:hover:bg-gray-700/50 dark:hover:text-white"
+              >
+                Sign In
+              </Link>
+              <Link
+                href="/auth/signup"
+                className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-all duration-200 hover:bg-blue-700"
+              >
+                Sign Up
+              </Link>
+            </div>
           </div>
         </div>
       </header>

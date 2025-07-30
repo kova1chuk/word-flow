@@ -18,7 +18,7 @@ function AuthenticatedDashboard() {
 }
 
 export default async function HomePage() {
-  const user = await getServerUser();
+  const { user } = await getServerUser();
 
   return !user ? <WelcomeScreen /> : <AuthenticatedDashboard />;
 }

@@ -4,15 +4,15 @@ import Link from "next/link";
 
 export default function Footer() {
   return (
-    <footer className="bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
+    <footer className="border-t border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-900">
+      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 gap-8 md:grid-cols-4">
           {/* Brand Section */}
           <div className="col-span-1 md:col-span-2">
-            <div className="flex items-center mb-4">
-              <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center mr-3">
+            <div className="mb-4 flex items-center">
+              <div className="mr-3 flex h-10 w-10 items-center justify-center rounded-lg bg-gradient-to-r from-blue-500 to-indigo-600">
                 <svg
-                  className="w-6 h-6 text-white"
+                  className="h-6 w-6 text-white"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -25,7 +25,7 @@ export default function Footer() {
                   />
                 </svg>
               </div>
-              <h3 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+              <h3 className="bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-xl font-bold text-transparent">
                 Word Flow
               </h3>
             </div>
@@ -44,14 +44,14 @@ export default function Footer() {
 
           {/* Quick Links */}
           <div>
-            <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+            <h4 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
               Quick Links
             </h4>
             <ul className="space-y-2">
               <li>
                 <Link
                   href="/analyze"
-                  className="text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                  className="text-gray-600 transition-colors hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400"
                 >
                   Analyze Text
                 </Link>
@@ -59,7 +59,7 @@ export default function Footer() {
               <li>
                 <Link
                   href="/analyses"
-                  className="text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                  className="text-gray-600 transition-colors hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400"
                 >
                   My Analyses
                 </Link>
@@ -67,15 +67,15 @@ export default function Footer() {
               <li>
                 <Link
                   href="/training"
-                  className="text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                  className="text-gray-600 transition-colors hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400"
                 >
                   Training
                 </Link>
               </li>
               <li>
                 <Link
-                  href="/words"
-                  className="text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                  href="/dictionary"
+                  className="text-gray-600 transition-colors hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400"
                 >
                   Word List
                 </Link>
@@ -85,14 +85,14 @@ export default function Footer() {
 
           {/* Account */}
           <div>
-            <h4 className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
+            <h4 className="mb-4 text-lg font-semibold text-gray-900 dark:text-white">
               Account
             </h4>
             <ul className="space-y-2">
               <li>
                 <Link
                   href="/auth/signin"
-                  className="text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                  className="text-gray-600 transition-colors hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400"
                 >
                   Sign In
                 </Link>
@@ -100,7 +100,7 @@ export default function Footer() {
               <li>
                 <Link
                   href="/auth/signup"
-                  className="text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+                  className="text-gray-600 transition-colors hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400"
                 >
                   Create Account
                 </Link>
@@ -110,21 +110,21 @@ export default function Footer() {
         </div>
 
         {/* Bottom Section */}
-        <div className="mt-8 pt-8 border-t border-gray-200 dark:border-gray-700">
-          <div className="flex flex-col md:flex-row justify-between items-center">
+        <div className="mt-8 border-t border-gray-200 pt-8 dark:border-gray-700">
+          <div className="flex flex-col items-center justify-between md:flex-row">
             <p className="text-sm text-gray-500 dark:text-gray-400">
               © {new Date().getFullYear()} Word Flow. All rights reserved.
             </p>
-            <div className="flex space-x-6 mt-4 md:mt-0">
+            <div className="mt-4 flex space-x-6 md:mt-0">
               <Link
                 href="#"
-                className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300 transition-colors"
+                className="text-gray-400 transition-colors hover:text-gray-500 dark:hover:text-gray-300"
               >
                 Privacy Policy
               </Link>
               <Link
                 href="#"
-                className="text-gray-400 hover:text-gray-500 dark:hover:text-gray-300 transition-colors"
+                className="text-gray-400 transition-colors hover:text-gray-500 dark:hover:text-gray-300"
               >
                 Terms of Service
               </Link>

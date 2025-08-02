@@ -1,4 +1,4 @@
-import { memo } from "react";
+import { memo, useEffect } from "react";
 
 import { useSelector } from "react-redux";
 
@@ -35,6 +35,16 @@ const WordCard = memo(function WordCard({
     selectWordById(state, { id: wordId, page: currentPage }),
   );
 
+  useEffect(() => {
+    // TODO: remove this after backend fix
+    if (!word?.definition) {
+      onReloadDefinition(wordId, word?.word ?? "");
+    }
+    if (!word?.translation) {
+      onReloadTranslation(wordId, word?.word ?? "");
+    }
+  }, [wordId]);
+
   if (!word) {
     return null;
   }
@@ -67,6 +77,28 @@ const WordCard = memo(function WordCard({
       </div>
 
       <div className="space-y-4">
+        {/* Usage Count Display */}
+        {word.usageCount !== undefined && word.usageCount > 0 && (
+          <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+            <svg
+              className="h-4 w-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M13 10V3L4 14h7v7l9-11h-7z"
+              />
+            </svg>
+            <span>
+              Used {word.usageCount} time{word.usageCount !== 1 ? "s" : ""}
+            </span>
+          </div>
+        )}
+
         <WordCardInfo
           type="definition"
           infoText={word.definition}

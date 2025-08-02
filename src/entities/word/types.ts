@@ -39,6 +39,7 @@ export interface Word {
   usages?: string[];
   analysisIds?: string[];
   lastTrainedAt?: string;
+  usageCount?: number;
 }
 
 export interface WordState {

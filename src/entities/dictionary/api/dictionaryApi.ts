@@ -57,6 +57,7 @@ export const dictionaryApi = createApi({
           limit_count: pageSize,
           offset_count: (page - 1) * pageSize,
           sort_order: "desc",
+          sort_by_usage_count: "desc",
         },
       }),
       invalidatesTags: ["Words"],
@@ -83,6 +84,7 @@ export const dictionaryApi = createApi({
             audio: row.phonetic_audio_link,
           },
           analysisIds: row.in_analyses ? arg.analysesIds : undefined,
+          usageCount: row.usagecount,
         }));
 
         return {

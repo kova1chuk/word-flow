@@ -37,4 +37,5 @@ export interface DictionaryWordRow {
   in_analyses: boolean;
   translation: string;
   translation_definition: string;
+  usagecount: number;
 }

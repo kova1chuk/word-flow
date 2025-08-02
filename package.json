@@ -9,6 +9,8 @@
     "start": "next start",
     "lint": "next lint",
     "lint:fix": "next lint --fix",
+    "lint:watch": "eslint src --ext .ts,.tsx,.js,.jsx --format=compact",
+    "tsc:watch": "tsc --noEmit --watch",
     "prepare": "husky",
     "sw:version": "node scripts/update-sw-version.js",
     "sw:version:commit": "npm run sw:version && git add public/sw.js",

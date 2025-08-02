@@ -7,12 +7,31 @@ export async function POST(req: NextRequest) {
     const body = await req.json();
     const text = body.text;
 
+    console.log(body);
+
     if (!text) {
       return NextResponse.json({ error: "No text provided" }, { status: 400 });
     }
 
+    // Check if backend is available
+    if (!config.isCustomBackend) {
+      // Return mock response for development
+      console.log("Backend not configured, returning mock response");
+      return NextResponse.json({
+        words: [
+          {
+            word: "example",
+            frequency: 1,
+            sentences: ["This is an example sentence."],
+          },
+        ],
+        total_words: 1,
+        source: "Mock Response",
+      });
+    }
+
     console.log(
-      `Forwarding text analysis request to: ${config.textAnalysisUrl}`
+      `Forwarding text analysis request to: ${config.textAnalysisUrl}`,
     );
 
     // Forward the text to the actual analysis service
@@ -46,7 +65,7 @@ export async function POST(req: NextRequest) {
     console.error("Error forwarding text analysis request:", error);
     return NextResponse.json(
       { error: "Internal Server Error" },
-      { status: 500 }
+      { status: 500 },
     );
   }
 }

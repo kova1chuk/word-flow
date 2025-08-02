@@ -50,13 +50,13 @@ export const AnalysisCard: React.FC<AnalysisCardProps> = ({
 
   // Calculate completeness from statusCounts using weighted average
   function calculateCompletenessFromCounts(
-    counts: Record<1 | 2 | 3 | 4 | 5 | 6 | 7, number>
+    counts: Record<1 | 2 | 3 | 4 | 5 | 6 | 7, number>,
   ): number {
     if (!counts) return 0;
     // Only allow keys 1-7, and avoid TS error by explicit typing
     const arr = Array.from(
       { length: 7 },
-      (_, i) => counts[(i + 1) as 1 | 2 | 3 | 4 | 5 | 6 | 7] || 0
+      (_, i) => counts[(i + 1) as 1 | 2 | 3 | 4 | 5 | 6 | 7] || 0,
     );
     const total = arr.reduce((a, b) => a + b, 0);
     if (total === 0) return 0;
@@ -73,17 +73,17 @@ export const AnalysisCard: React.FC<AnalysisCardProps> = ({
 
   // Calculate completion percentage from statusCounts
   const completionPercentage = Math.round(
-    calculateCompletenessFromCounts(analysis.wordsStat)
+    calculateCompletenessFromCounts(analysis.wordsStat),
   );
 
   return (
-    <Link href={`/analyses/${analysis.id}`}>
-      <div className="group relative bg-white dark:bg-gray-800 rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-500 p-6 h-full flex flex-col justify-between overflow-hidden border border-gray-100 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600 hover:scale-[1.02] transform">
+    <Link href={`/reviews/${analysis.id}`}>
+      <div className="group relative flex h-full transform flex-col justify-between overflow-hidden rounded-2xl border border-gray-100 bg-white p-6 shadow-lg transition-all duration-500 hover:scale-[1.02] hover:border-blue-300 hover:shadow-2xl dark:border-gray-700 dark:bg-gray-800 dark:hover:border-blue-600">
         {/* Enhanced Gradient Background */}
-        <div className="absolute inset-0 bg-gradient-to-br from-blue-50/60 via-indigo-50/40 to-purple-50/60 dark:from-blue-900/30 dark:via-indigo-900/20 dark:to-purple-900/30 opacity-0 group-hover:opacity-100 transition-all duration-500" />
+        <div className="absolute inset-0 bg-gradient-to-br from-blue-50/60 via-indigo-50/40 to-purple-50/60 opacity-0 transition-all duration-500 group-hover:opacity-100 dark:from-blue-900/30 dark:via-indigo-900/20 dark:to-purple-900/30" />
 
         {/* Animated Background Pattern */}
-        <div className="absolute inset-0 opacity-0 group-hover:opacity-5 transition-opacity duration-700">
+        <div className="absolute inset-0 opacity-0 transition-opacity duration-700 group-hover:opacity-5">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_50%,rgba(59,130,246,0.1),transparent_50%)]" />
         </div>
 
@@ -91,11 +91,11 @@ export const AnalysisCard: React.FC<AnalysisCardProps> = ({
         <button
           onClick={handleReload}
           disabled={isReloading}
-          className="absolute top-4 right-4 z-20 p-3 rounded-xl bg-white/90 dark:bg-gray-700/90 hover:bg-white dark:hover:bg-gray-700 transition-all duration-300 opacity-0 group-hover:opacity-100 disabled:opacity-50 shadow-lg backdrop-blur-sm border border-gray-200/50 dark:border-gray-600/50 hover:shadow-xl hover:scale-110"
+          className="absolute top-4 right-4 z-20 rounded-xl border border-gray-200/50 bg-white/90 p-3 opacity-0 shadow-lg backdrop-blur-sm transition-all duration-300 group-hover:opacity-100 hover:scale-110 hover:bg-white hover:shadow-xl disabled:opacity-50 dark:border-gray-600/50 dark:bg-gray-700/90 dark:hover:bg-gray-700"
           title="Reload statistics"
         >
           <svg
-            className={`w-4 h-4 text-gray-600 dark:text-gray-400 ${
+            className={`h-4 w-4 text-gray-600 dark:text-gray-400 ${
               isReloading ? "animate-spin" : ""
             }`}
             fill="none"
@@ -115,13 +115,13 @@ export const AnalysisCard: React.FC<AnalysisCardProps> = ({
         <div className="relative z-10">
           {/* Enhanced Header */}
           <div className="mb-6">
-            <h3 className="font-bold text-xl text-gray-900 dark:text-white mb-3 line-clamp-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-300 pr-16 leading-tight">
+            <h3 className="mb-3 line-clamp-2 pr-16 text-xl leading-tight font-bold text-gray-900 transition-colors duration-300 group-hover:text-blue-600 dark:text-white dark:group-hover:text-blue-400">
               {analysis.title}
             </h3>
             <div className="flex items-center justify-between">
-              <p className="text-sm text-gray-500 dark:text-gray-400 flex items-center">
+              <p className="flex items-center text-sm text-gray-500 dark:text-gray-400">
                 <svg
-                  className="w-4 h-4 mr-2 text-gray-400"
+                  className="mr-2 h-4 w-4 text-gray-400"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -140,8 +140,8 @@ export const AnalysisCard: React.FC<AnalysisCardProps> = ({
 
               {/* Completion Badge */}
               {analysis.uniqueWords > 0 && (
-                <div className="flex items-center bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 px-3 py-1 rounded-full text-xs font-medium">
-                  <div className="w-2 h-2 bg-green-500 rounded-full mr-2 animate-pulse" />
+                <div className="flex items-center rounded-full bg-green-100 px-3 py-1 text-xs font-medium text-green-700 dark:bg-green-900/30 dark:text-green-400">
+                  <div className="mr-2 h-2 w-2 animate-pulse rounded-full bg-green-500" />
                   {completionPercentage}% Complete
                 </div>
               )}
@@ -152,31 +152,31 @@ export const AnalysisCard: React.FC<AnalysisCardProps> = ({
           <LearningOverview statusCounts={analysis.wordsStat} />
 
           {/* Enhanced Summary Stats */}
-          <div className="grid grid-cols-2 gap-4 mb-4">
-            <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700/50 dark:to-gray-800/50 rounded-xl p-4 border border-gray-200/50 dark:border-gray-600/50">
-              <span className="text-gray-500 dark:text-gray-400 block mb-2 text-xs font-medium uppercase tracking-wide">
+          <div className="mb-4 grid grid-cols-2 gap-4">
+            <div className="rounded-xl border border-gray-200/50 bg-gradient-to-br from-gray-50 to-gray-100 p-4 dark:border-gray-600/50 dark:from-gray-700/50 dark:to-gray-800/50">
+              <span className="mb-2 block text-xs font-medium tracking-wide text-gray-500 uppercase dark:text-gray-400">
                 Total Words
               </span>
-              <span className="font-bold text-gray-800 dark:text-white text-lg">
+              <span className="text-lg font-bold text-gray-800 dark:text-white">
                 {analysis.totalWords?.toLocaleString?.() ?? "-"}
               </span>
             </div>
-            <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700/50 dark:to-gray-800/50 rounded-xl p-4 border border-gray-200/50 dark:border-gray-600/50">
-              <span className="text-gray-500 dark:text-gray-400 block mb-2 text-xs font-medium uppercase tracking-wide">
+            <div className="rounded-xl border border-gray-200/50 bg-gradient-to-br from-gray-50 to-gray-100 p-4 dark:border-gray-600/50 dark:from-gray-700/50 dark:to-gray-800/50">
+              <span className="mb-2 block text-xs font-medium tracking-wide text-gray-500 uppercase dark:text-gray-400">
                 Unique Words
               </span>
-              <span className="font-bold text-gray-800 dark:text-white text-lg">
+              <span className="text-lg font-bold text-gray-800 dark:text-white">
                 {analysis.uniqueWords?.toLocaleString?.() ?? "-"}
               </span>
             </div>
           </div>
 
           {/* Quick Action Footer */}
-          <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+          <div className="mt-6 border-t border-gray-200 pt-4 dark:border-gray-700">
             <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
               <span className="flex items-center">
                 <svg
-                  className="w-3 h-3 mr-1"
+                  className="mr-1 h-3 w-3"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"
@@ -190,10 +190,10 @@ export const AnalysisCard: React.FC<AnalysisCardProps> = ({
                 </svg>
                 Click to view details
               </span>
-              <span className="flex items-center group-hover:text-blue-500 transition-colors duration-300">
+              <span className="flex items-center transition-colors duration-300 group-hover:text-blue-500">
                 <span className="mr-1">View</span>
                 <svg
-                  className="w-3 h-3 transform group-hover:translate-x-1 transition-transform duration-300"
+                  className="h-3 w-3 transform transition-transform duration-300 group-hover:translate-x-1"
                   fill="none"
                   stroke="currentColor"
                   viewBox="0 0 24 24"

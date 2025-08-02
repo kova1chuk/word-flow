@@ -19,7 +19,7 @@ export const config = {
   // All backend services are derived from a single base URI.
 
   // Upload service for EPUB files
-  uploadServiceUrl: `${backendUri}/api/upload/`,
+  uploadServiceUrl: `${backendUri}/api/epub/`,
 
   // Subtitle analysis service
   subtitleAnalysisUrl: `${backendUri}/api/subtitle/`,

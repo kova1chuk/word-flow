@@ -58,7 +58,7 @@ export default function Footer() {
               </li>
               <li>
                 <Link
-                  href="/analyses"
+                  href="/reviews"
                   className="text-gray-600 transition-colors hover:text-blue-600 dark:text-gray-400 dark:hover:text-blue-400"
                 >
                   My Analyses

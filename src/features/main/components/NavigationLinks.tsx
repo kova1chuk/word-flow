@@ -16,10 +16,10 @@ export default function NavigationLinks() {
         Training Words
       </Link>
       <Link
-        href="/analyses"
+        href="/reviews"
         className="rounded-lg bg-green-600 px-6 py-3 text-center font-semibold text-white transition hover:bg-green-700"
       >
-        Analyses
+        Reviews
       </Link>
     </div>
   );

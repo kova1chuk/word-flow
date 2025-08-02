@@ -14,7 +14,7 @@ export const API_ENDPOINTS = {
   // Backend Service Endpoints
   upload: `${
     process.env.NEXT_PUBLIC_BACKEND_URI || "http://localhost:8000"
-  }/api/upload/`,
+  }/api/epub/`,
   subtitleAnalysis: `${
     process.env.NEXT_PUBLIC_BACKEND_URI || "http://localhost:8000"
   }/api/subtitle/`,

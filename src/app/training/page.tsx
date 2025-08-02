@@ -9,7 +9,7 @@ import { useSelector } from "react-redux";
 
 import { ChevronDownIcon, ChevronRightIcon } from "@heroicons/react/24/solid";
 
-import { useAnalyses } from "@/features/analyses/lib/useAnalyses";
+import { useAnalyses } from "@/features/review/lib/useAnalyses";
 
 import { selectUser } from "@/entities/user/model/selectors";
 

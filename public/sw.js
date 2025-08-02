@@ -1,8 +1,8 @@
-const CACHE_NAME = "word-flow-9b17beb";
+const CACHE_NAME = "word-flow-c73dce8";
 const urlsToCache = [
   "/",
-  "/analyses",
-  "/words",
+  "/reviews",
+  "/dictionary",
   "/training",
   "/favicon/favicon-16x16.png",
   "/favicon/favicon-32x32.png",

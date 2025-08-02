@@ -13,7 +13,7 @@ import {
   ArrowLeftIcon,
 } from "@heroicons/react/24/solid";
 
-import { useAnalyses } from "@/features/analyses/lib/useAnalyses";
+import { useAnalyses } from "@/features/review/lib/useAnalyses";
 import { useTrainingSession } from "@/features/training/lib/useTrainingSession";
 import { TrainingQuestionCard } from "@/features/training/ui/TrainingQuestionCard";
 import { TrainingSessionSummary } from "@/features/training/ui/TrainingSessionSummary";

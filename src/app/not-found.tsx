@@ -40,10 +40,10 @@ export default function NotFound() {
               Analyze Text
             </Link>
             <Link
-              href="/analyses"
+              href="/reviews"
               className="font-medium text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
             >
-              My Analyses
+              My Reviews
             </Link>
             <Link
               href="/training"

@@ -83,7 +83,7 @@ export default function Header() {
 
   const navLinks = [
     { href: "/dictionary", label: "Dictionary" },
-    { href: "/analyses", label: "Reviews" },
+    { href: "/reviews", label: "Reviews" },
     { href: "/hub", label: "Hub", disabled: true },
     { href: "/training", label: "Training", disabled: true },
   ];

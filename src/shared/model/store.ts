@@ -3,12 +3,11 @@ import { configureStore } from "@reduxjs/toolkit";
 import { TypedUseSelectorHook, useDispatch, useSelector } from "react-redux";
 
 // Import slices
-import analysesSlice from "@/features/analyses/model/analysesSlice";
 import trainingStatsSlice from "@/features/analysis-view/model/trainingStatsSlice";
 import analysisWordsSlice from "@/features/analysis-words/model/analysisWordsSlice";
-import analyzeSlice from "@/features/analyze/model/analyzeSlice";
 import mainSlice from "@/features/main/model/mainSlice";
 import profileReducer from "@/features/profile/model/profileSlice";
+import analysesSlice from "@/features/review/model/analysesSlice";
 import trainingSlice from "@/features/training/model/trainingSlice";
 
 import analysisSlice from "@/entities/analysis/model/analysisSlice";
@@ -22,7 +21,9 @@ import notificationSlice from "@/shared/model/notificationSlice";
 import uiSlice from "@/shared/model/uiSlice";
 
 import { analysisApi } from "../../entities/analysis/api/analysisApi";
+import { parseReviewApi, reviewApi } from "../../entities/review/api";
 import wordsSlice from "../../features/dictionary/model/wordsSlice";
+import createReviewSlice from "../../features/review/model/createReviewModel/createReviewSlice";
 
 // Import RTK Query APIs
 
@@ -34,7 +35,6 @@ export const store = configureStore({
     analyses: analysesSlice,
     analysisWords: analysisWordsSlice,
     trainingStats: trainingStatsSlice,
-    analyze: analyzeSlice,
     main: mainSlice,
     words: wordsSlice,
     ui: uiSlice,
@@ -42,11 +42,14 @@ export const store = configureStore({
     notification: notificationSlice,
     training: trainingSlice,
     profile: profileReducer,
+    createReview: createReviewSlice,
 
     // RTK Query APIs
     [dictionaryApi.reducerPath]: dictionaryApi.reducer,
     [wordApi.reducerPath]: wordApi.reducer,
     [analysisApi.reducerPath]: analysisApi.reducer,
+    [parseReviewApi.reducerPath]: parseReviewApi.reducer,
+    [reviewApi.reducerPath]: reviewApi.reducer,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
@@ -54,7 +57,12 @@ export const store = configureStore({
         // Ignore these action types
         ignoredActions: ["persist/PERSIST"],
         // Ignore these field paths in all actions
-        ignoredActionPaths: ["meta.arg", "payload.timestamp"],
+        ignoredActionPaths: [
+          "meta.arg",
+          "payload.timestamp",
+          "meta.baseQueryMeta.request",
+          "meta.baseQueryMeta.response",
+        ],
         // Ignore these paths in the state
         ignoredPaths: [
           "items.dates",
@@ -72,6 +80,7 @@ export const store = configureStore({
       dictionaryApi.middleware,
       wordApi.middleware,
       analysisApi.middleware,
+      parseReviewApi.middleware,
     ),
 });
 

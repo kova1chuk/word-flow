@@ -120,7 +120,15 @@ export const WordsPage: React.FC = () => {
   };
 
   const handleSilentRefetchPage = () => {
-    dispatch(silentRefetchPage({ page, pageSize: PAGE_SIZE }));
+    dispatch(
+      silentRefetchPage({
+        page,
+        pageSize: PAGE_SIZE,
+        statusFilter: statusFilter.map(Number),
+        search,
+        analysisIds,
+      }),
+    );
   };
 
   const handleAnalysisIdsChange = (analysisIds: string[]) => {

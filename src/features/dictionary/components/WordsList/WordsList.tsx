@@ -87,20 +87,23 @@ const WordsList: React.FC<WordsListProps> = ({
   );
 
   const handleUpdateWordStatus = useCallback(
-    (wordId: string, newStatus: WordStatus) => {
-      dispatch(updateWordStatus({ langCode: "en", id: wordId, newStatus }));
+    async (wordId: string, newStatus: WordStatus) => {
+      await dispatch(
+        updateWordStatus({ langCode: "en", id: wordId, newStatus }),
+      ).unwrap();
+      onSilentRefetchPage();
     },
     [dispatch],
   );
 
   const handleRemoveWord = useCallback(
-    (wordId: string) => {
-      dispatch(
+    async (wordId: string) => {
+      await dispatch(
         removeWordFromDictionary({
           langCode: "en",
           id: wordId,
         }),
-      );
+      ).unwrap();
       onSilentRefetchPage();
     },
     [dispatch],

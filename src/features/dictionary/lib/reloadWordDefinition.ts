@@ -29,6 +29,10 @@ export async function reloadWordDefinitionFromApi({
     const { definition, phoneticText, phoneticAudioLink } =
       await fetchWordDefinition(langCode, wordText);
 
+    if (!definition || definition.length === 0) {
+      return;
+    }
+
     // Use the thunk to save the definition to the database
     await reloadWordDefinition({
       langCode: "en",

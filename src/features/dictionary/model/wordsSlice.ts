@@ -1,3 +1,5 @@
+import { WritableDraft } from "immer";
+
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 import type { AnalysesForFilterResponse } from "@/entities/analysis/api/analysisApi";
@@ -163,13 +165,15 @@ const wordsSlice = createSlice({
       .addCase(silentRefetchPage.fulfilled, (state, action) => {
         const { words: newWords, page, totalWords, hasMore } = action.payload;
 
-        state.words[page] = newWords.map((word) => ({
-          ...word,
-          updatingWordStatus: false,
-          updatingWordDefinition: false,
-          updatingWordTranslation: false,
-          updatingWordDelete: false,
-        }));
+        state.words[page] = mergeWords(state.words[page], newWords);
+
+        // newWords.map((word) => ({
+        //   ...word,
+        //   updatingWordStatus: false,
+        //   updatingWordDefinition: false,
+        //   updatingWordTranslation: false,
+        //   updatingWordDelete: false,
+        // }));
         state.pagination.hasMore = hasMore || false;
 
         if (typeof totalWords === "number") {
@@ -351,3 +355,13 @@ export const {
 } = wordsSlice.actions;
 
 export default wordsSlice.reducer;
+
+function mergeWords(
+  words: WritableDraft<WordWithUpdate>[],
+  newWords: Word[],
+): import("immer").WritableDraft<WordWithUpdate>[] {
+  return words.map((word) => {
+    const newWord = newWords.find((w) => w.id === word.id);
+    return { ...word, ...newWord };
+  });
+}

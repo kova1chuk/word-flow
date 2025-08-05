@@ -43,7 +43,7 @@ const WordCard = memo(function WordCard({
     if (!word?.translation) {
       onReloadTranslation(wordId, word?.word ?? "");
     }
-  }, [wordId]);
+  }, [wordId, word?.definition, word?.translation]);
 
   if (!word) {
     return null;
@@ -123,4 +123,4 @@ const WordCard = memo(function WordCard({
   );
 });
 
-export default WordCard;
+export default memo(WordCard);

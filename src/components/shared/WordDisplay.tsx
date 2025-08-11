@@ -51,7 +51,7 @@ export default function WordDisplay({
     <div className="flex items-center space-x-3">
       {showLink ? (
         <Link
-          href={`/words/${word.word}`}
+          href={`/dictionary/${word.word}`}
           className="transition-colors hover:text-blue-900 dark:hover:text-blue-300"
         >
           {wordElement}

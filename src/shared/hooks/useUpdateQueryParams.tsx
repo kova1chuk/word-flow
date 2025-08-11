@@ -1,9 +1,8 @@
 "use client";
 
-import { useRouter, usePathname, useSearchParams } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 
 export const useUpdateQueryParams = () => {
-  const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
@@ -24,7 +23,7 @@ export const useUpdateQueryParams = () => {
       }
     }
 
-    router.push(`${pathname}?${params.toString()}`);
+    window.history.pushState({}, '', `${pathname}?${params.toString()}`);
   };
 
   const updateQueryParamsBatch = (
@@ -48,7 +47,7 @@ export const useUpdateQueryParams = () => {
       }
     });
 
-    router.push(`${pathname}?${params.toString()}`);
+    window.history.pushState({}, '', `${pathname}?${params.toString()}`);
   };
 
   return { updateQueryParam, updateQueryParamsBatch };

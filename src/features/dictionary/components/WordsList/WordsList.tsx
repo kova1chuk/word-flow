@@ -2,15 +2,12 @@ import React, { useCallback } from "react";
 
 import { useDispatch, useSelector } from "react-redux";
 
-import WordCard from "@/components/WordCard";
-
-import { selectPaginatedWordIds } from "@/features/dictionary/model/selectors";
-
 import type { AppDispatch, RootState } from "@/shared/model/store";
 
 import { WordStatus } from "../../../../types";
 import { reloadWordDefinitionFromApi } from "../../lib/reloadWordDefinition";
 import { reloadWordTranslationFromApi } from "../../lib/reloadWordTranslation";
+import { selectPaginatedWordIds } from "../../model/selectors";
 import {
   reloadWordDefinition,
   reloadWordTranslation,
@@ -21,6 +18,8 @@ import {
   addUpdatingDefinition,
   addUpdatingTranslation,
 } from "../../model/wordsSlice";
+
+import WordCard from "../WordCard";
 
 interface WordsListProps {
   currentPage: number;

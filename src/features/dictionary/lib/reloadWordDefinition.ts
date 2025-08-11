@@ -1,4 +1,4 @@
-import { fetchWordDefinition } from "@/features/dictionary/lib/fetchWordDefinition";
+import { fetchWordDefinition } from "./fetchWordDefinition";
 
 interface ReloadWordDefinitionParams {
   wordId: string;

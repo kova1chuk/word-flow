@@ -19,7 +19,17 @@
       }
     ],
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@dictionary": ["./src/features/dictionary"],
+      "@analysis-view": ["./src/features/analysis-view"],
+      "@analysis-words": ["./src/features/analysis-words"],
+      "@auth": ["./src/features/auth"],
+      "@main": ["./src/features/main"],
+      "@notifications": ["./src/features/notifications"],
+      "@profile": ["./src/features/profile"],
+      "@review": ["./src/features/review"],
+      "@training": ["./src/features/training"],
+      "@types": ["./src/types"]
     }
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", ".next/types/**/*.ts"],

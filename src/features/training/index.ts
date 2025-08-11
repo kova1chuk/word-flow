@@ -1,4 +1,4 @@
-// Training components
+// Training feature exports - only essential modules to avoid circular dependencies
 export { TrainingQuestionCard } from "./ui/TrainingQuestionCard";
 export { TrainingSessionSummary } from "./ui/TrainingSessionSummary";
 export { ManualTrainingCard } from "./ui/ManualTrainingCard";
@@ -8,6 +8,10 @@ export { useTrainingSession } from "./lib/useTrainingSession";
 
 // Training utilities
 export { TrainingQuestionGenerator } from "./lib/trainingQuestionGenerator";
+
+// Model exports
+export { default as trainingSlice } from "./model/trainingSlice";
+export * from "./model/selectors";
 
 // Training types
 export type {

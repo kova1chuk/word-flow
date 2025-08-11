@@ -162,7 +162,7 @@ export default function WelcomeScreen() {
         <div className="space-y-4">
           <div className="flex flex-col justify-center gap-4 sm:flex-row">
             <Link
-              href="/auth/signin"
+              href="/signin"
               className={`inline-flex transform items-center justify-center rounded-xl px-8 py-4 text-lg font-semibold transition-all duration-300 hover:scale-105 ${
                 isHovered
                   ? `bg-gradient-to-r ${colors.primary.hover} ${colors.button.primary.text} ${colors.shadow.buttonHover}`
@@ -188,7 +188,7 @@ export default function WelcomeScreen() {
             </Link>
 
             <Link
-              href="/auth/signup"
+              href="/signup"
               className={`inline-flex items-center justify-center px-8 py-4 text-lg font-semibold ${colors.button.secondary.background} ${colors.button.secondary.text.light} dark:${colors.button.secondary.text.dark} rounded-xl ${colors.button.secondary.hover.light} dark:${colors.button.secondary.hover.dark} transition-all duration-300`}
             >
               <svg

@@ -1,2 +1,2 @@
 export { default } from "./WordsList";
-export { WordsListSkeleton } from "./WordsListSkeleton";
+export { WordsListSkeleton } from "./WordsList.skeleton";

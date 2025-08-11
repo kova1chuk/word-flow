@@ -5,7 +5,7 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 
-import { login, signInWithGoogle } from "@/app/auth/actions";
+import { login, signInWithGoogle } from "@/app/(auth)/actions";
 
 import { colors, getPageBackground } from "@/shared/config/colors";
 
@@ -34,7 +34,7 @@ function SignInContent() {
           >
             Or{" "}
             <Link
-              href="/auth/signup"
+              href="/signup"
               className="font-medium text-blue-600 transition-colors hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300"
             >
               create a new account

@@ -40,7 +40,7 @@ export const SignUpPage: React.FC = () => {
           >
             Or{" "}
             <Link
-              href="/auth/signin"
+              href="/signin"
               className="font-medium text-blue-600 transition-colors hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300"
             >
               sign in to your existing account

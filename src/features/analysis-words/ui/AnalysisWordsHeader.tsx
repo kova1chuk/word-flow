@@ -12,7 +12,7 @@ export function AnalysisWordsHeader({ analysis }: AnalysisWordsHeaderProps) {
   return (
     <div className="mb-6">
       <Link
-        href={`/analyses/${analysis?.id || ""}`}
+        href={`/reviews/${analysis?.id || ""}`}
         className="mb-4 inline-flex items-center text-sm font-medium text-blue-600 transition-colors hover:text-blue-700"
       >
         <svg

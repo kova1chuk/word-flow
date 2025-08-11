@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useCallback } from "react";
 
-import { StatusMessages } from "@/features/notifications/ui/StatusMessages";
+import { StatusMessages } from "@notifications";
 
 interface NotificationContextType {
   showSuccess: (message: string) => void;

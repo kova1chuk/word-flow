@@ -1,6 +1,6 @@
 "use client";
 
-import { signInWithGoogle } from "@/app/auth/actions";
+import { signInWithGoogle } from "@/app/(auth)/actions";
 
 export default function GoogleSignInButton() {
   const handleGoogleSignIn = async () => {

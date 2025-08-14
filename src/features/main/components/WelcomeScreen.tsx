@@ -1,14 +1,8 @@
-"use client";
-
-import { useState } from "react";
-
 import Link from "next/link";
 
 import { colors } from "@/shared/config/colors";
 
 export default function WelcomeScreen() {
-  const [isHovered, setIsHovered] = useState(false);
-
   return (
     <div className={`flex min-h-screen items-center justify-center p-4 pt-26`}>
       <div className="mx-auto max-w-4xl text-center">
@@ -163,13 +157,7 @@ export default function WelcomeScreen() {
           <div className="flex flex-col justify-center gap-4 sm:flex-row">
             <Link
               href="/signin"
-              className={`inline-flex transform items-center justify-center rounded-xl px-8 py-4 text-lg font-semibold transition-all duration-300 hover:scale-105 ${
-                isHovered
-                  ? `bg-gradient-to-r ${colors.primary.hover} ${colors.button.primary.text} ${colors.shadow.buttonHover}`
-                  : `bg-gradient-to-r ${colors.button.primary.background} ${colors.button.primary.text} ${colors.shadow.button}`
-              }`}
-              onMouseEnter={() => setIsHovered(true)}
-              onMouseLeave={() => setIsHovered(false)}
+              className={`inline-flex transform items-center justify-center rounded-xl bg-gradient-to-r px-8 py-4 text-lg font-semibold transition-all duration-300 hover:scale-105 ${colors.button.primary.background} ${colors.button.primary.text} ${colors.shadow.button} hover:${colors.shadow.buttonHover}`}
             >
               <svg
                 className="mr-2 h-5 w-5"

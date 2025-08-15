@@ -5,7 +5,7 @@ import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch, RootState } from "@/shared/model/store";
 
 import { WordStatus } from "../../../../types";
-import { reloadWordDefinitionFromApi } from "../../lib/reloadWordDefinition";
+// import { reloadWordDefinitionFromApi } from "../../lib/reloadWordDefinition";
 import { reloadWordTranslationFromApi } from "../../lib/reloadWordTranslation";
 import { selectPaginatedWordIds } from "../../model/selectors";
 import {
@@ -15,7 +15,7 @@ import {
   updateWordStatus,
 } from "../../model/thunks";
 import {
-  addUpdatingDefinition,
+  // addUpdatingDefinition,
   addUpdatingTranslation,
 } from "../../model/wordsSlice";
 
@@ -38,25 +38,26 @@ const WordsList: React.FC<WordsListProps> = ({
 
   const handleReloadDefinition = useCallback(
     (wordId: string, wordText: string) => {
-      const reloadWordDefinitionThunk = (params: {
-        langCode: string;
-        id: string;
-        definition: string | null;
-        newPhoneticText: string | null;
-        newPhoneticAudioLink: string | null;
-      }) => {
-        dispatch(reloadWordDefinition(params));
-      };
-      const addUpdatingDefinitionAction = (id: string) => {
-        dispatch(addUpdatingDefinition(id));
-      };
-      reloadWordDefinitionFromApi({
-        wordId,
-        wordText,
-        addUpdatingDefinition: addUpdatingDefinitionAction,
-        reloadWordDefinition: reloadWordDefinitionThunk,
-        langCode: "en",
-      });
+      // const reloadWordDefinitionThunk = (params: {
+      //   langCode: string;
+      //   id: string;
+      //   definition: string | null;
+      //   newPhoneticText: string | null;
+      //   newPhoneticAudioLink: string | null;
+      // }) => {
+      //   dispatch(reloadWordDefinition(params));
+      // };
+      // const addUpdatingDefinitionAction = (id: string) => {
+      //   dispatch(addUpdatingDefinition(id));
+      // };
+      // reloadWordDefinitionFromApi({
+      //   wordId,
+      //   wordText,
+      //   addUpdatingDefinition: addUpdatingDefinitionAction,
+      //   reloadWordDefinition: reloadWordDefinitionThunk,
+      //   langCode: "en",
+      // });
+      dispatch(reloadWordDefinition({ langCode: "en", id: wordId, wordText }));
     },
     [dispatch],
   );

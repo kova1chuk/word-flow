@@ -3,7 +3,10 @@ import { createAsyncThunk } from "@reduxjs/toolkit";
 import { dictionaryApi } from "@/entities/dictionary/api/dictionaryApi";
 
 import { analysisApi } from "../../../entities/analysis/api/analysisApi";
-import { wordApi } from "../../../entities/word/api/wordApi";
+import {
+  wordApi,
+  wordThirdDictionaryApi,
+} from "../../../entities/word/api/wordApi";
 import { WordStatus } from "../../../types";
 
 export const addWord = createAsyncThunk(
@@ -125,18 +128,40 @@ export const reloadWordDefinition = createAsyncThunk(
     {
       langCode,
       id,
-      definition,
-      newPhoneticText,
-      newPhoneticAudioLink,
+      wordText,
     }: {
       langCode: string;
       id: string;
-      definition: string | null;
-      newPhoneticText: string | null;
-      newPhoneticAudioLink: string | null;
+      wordText: string;
     },
-    { dispatch },
+    { dispatch, rejectWithValue },
   ) => {
+    const resultThird = await dispatch(
+      wordThirdDictionaryApi.endpoints.getWordDefinition.initiate({
+        langCode,
+        wordText,
+      }),
+    ).unwrap();
+
+    let definition = "";
+    let newPhoneticText = "";
+    let newPhoneticAudioLink = "";
+
+    if (resultThird.meanings?.[0]?.definitions?.[0]?.definition) {
+      definition = resultThird.meanings?.[0]?.definitions?.[0]?.definition;
+    }
+
+    if (resultThird.phonetics?.[0]?.text) {
+      newPhoneticText = resultThird.phonetics?.[0]?.text;
+    }
+
+    if (resultThird.phonetics?.[0]?.audio) {
+      newPhoneticAudioLink = resultThird.phonetics?.[0]?.audio;
+    }
+    if (!definition || !newPhoneticText || !newPhoneticAudioLink) {
+      return rejectWithValue("No definition found");
+    }
+
     const result = await dispatch(
       wordApi.endpoints.reloadWordDefinition.initiate({
         langCode,
@@ -146,6 +171,7 @@ export const reloadWordDefinition = createAsyncThunk(
         newPhoneticAudioLink,
       }),
     ).unwrap();
+    console.log("result", result);
     return { id, ...result };
   },
 );

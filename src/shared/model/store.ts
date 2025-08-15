@@ -7,7 +7,7 @@ import { TypedUseSelectorHook, useDispatch, useSelector } from "react-redux";
 import analysisSlice from "@/entities/analysis/model/analysisSlice";
 import { dictionaryApi } from "@/entities/dictionary/api";
 import authSlice from "@/entities/user/model/authSlice";
-import { wordApi } from "@/entities/word/api/wordApi";
+import { wordApi, wordThirdDictionaryApi } from "@/entities/word/api/wordApi";
 import wordSlice from "@/entities/word/model/wordSlice";
 
 import formSlice from "@/shared/model/formSlice";
@@ -47,6 +47,7 @@ export const store = configureStore({
     // RTK Query APIs
     [dictionaryApi.reducerPath]: dictionaryApi.reducer,
     [wordApi.reducerPath]: wordApi.reducer,
+    [wordThirdDictionaryApi.reducerPath]: wordThirdDictionaryApi.reducer,
     [analysisApi.reducerPath]: analysisApi.reducer,
     [parseReviewApi.reducerPath]: parseReviewApi.reducer,
     [reviewApi.reducerPath]: reviewApi.reducer,
@@ -79,6 +80,7 @@ export const store = configureStore({
       // Add RTK Query middleware
       dictionaryApi.middleware,
       wordApi.middleware,
+      wordThirdDictionaryApi.middleware,
       analysisApi.middleware,
       parseReviewApi.middleware,
     ),

@@ -226,6 +226,7 @@ const wordsSlice = createSlice({
         if (entry?.value) {
           entry.value.updatingWordDefinition = false;
         }
+        console.error("reloadWordDefinition.rejected", action.error.message);
       });
 
     builder

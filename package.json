@@ -26,7 +26,13 @@
     "playwright:test:ui": "playwright test --ui",
     "playwright:codegen": "playwright codegen",
     "playwright:test:local": "playwright test --config=playwright.config.local.ts",
-    "playwright:test:no-server": "START_SERVER=false playwright test"
+    "playwright:test:no-server": "START_SERVER=false playwright test",
+    "test:ci": "npm run build && npm run playwright:test && npm run cypress:run:headless",
+    "test:playwright:ci": "npm run build && npm run playwright:test",
+    "test:cypress:ci": "npm run build && npm run cypress:run:headless",
+    "test:lint": "npm run lint && npx tsc --noEmit",
+    "test:build": "npm run build",
+    "test:all": "npm run test:lint && npm run test:build && npm run test:ci"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
@@ -66,6 +72,7 @@
     "husky": "^9.1.7",
     "lint-staged": "^16.1.2",
     "prettier": "^3.6.2",
+    "wait-on": "^7.2.0",
     "prettier-plugin-tailwindcss": "^0.6.14",
     "tailwindcss": "^4",
     "typescript": "^5"

@@ -1,0 +1,64 @@
+# Page snapshot
+
+```yaml
+- banner:
+  - link "Word Flow":
+    - /url: /
+  - link "Sign In":
+    - /url: /signin
+  - link "Sign Up":
+    - /url: /signup
+- main:
+  - img
+  - heading "Welcome to Word Flow" [level=1]
+  - paragraph: Master vocabulary through intelligent analysis, personalized training, and seamless learning experiences
+  - img
+  - heading "Smart Analysis" [level=3]
+  - paragraph: Upload texts and get intelligent word analysis with difficulty levels and learning recommendations
+  - img
+  - heading "Interactive Training" [level=3]
+  - paragraph: Engage with various training modes including quizzes, translations, and context exercises
+  - img
+  - heading "Progress Tracking" [level=3]
+  - paragraph: Monitor your learning progress with detailed statistics and personalized insights
+  - link "Get Started":
+    - /url: /signin
+    - img
+    - text: Get Started
+  - link "Create Account":
+    - /url: /signup
+    - img
+    - text: Create Account
+  - paragraph: Join thousands of learners improving their vocabulary with Word Flow
+- contentinfo:
+  - img
+  - heading "Word Flow" [level=3]
+  - text: ✨ Free to use 🔒 Privacy focused 📱 Works on all devices
+  - heading "Quick Links" [level=4]
+  - list:
+    - listitem:
+      - link "Analyze Text":
+        - /url: /reviews/create
+    - listitem:
+      - link "My Analyses":
+        - /url: /reviews
+    - listitem:
+      - link "Training":
+        - /url: /training
+    - listitem:
+      - link "Word List":
+        - /url: /dictionary
+  - heading "Account" [level=4]
+  - list:
+    - listitem:
+      - link "Sign In":
+        - /url: /signin
+    - listitem:
+      - link "Create Account":
+        - /url: /signup
+  - paragraph: © 2025 Word Flow. All rights reserved.
+  - link "Privacy Policy":
+    - /url: "#"
+  - link "Terms of Service":
+    - /url: "#"
+```

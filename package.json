@@ -15,7 +15,18 @@
     "sw:version": "node scripts/update-sw-version.js",
     "sw:version:commit": "npm run sw:version && git add public/sw.js",
     "hooks:install": "chmod +x .githooks/pre-commit && git config core.hooksPath .githooks",
-    "postinstall": "npm run hooks:install || true"
+    "postinstall": "npm run hooks:install || true",
+    "cypress:open": "cypress open",
+    "cypress:run": "cypress run",
+    "cypress:run:headless": "cypress run --headless",
+    "test:e2e": "cypress run",
+    "playwright:install": "playwright install",
+    "playwright:test": "playwright test",
+    "playwright:test:headed": "playwright test --headed",
+    "playwright:test:ui": "playwright test --ui",
+    "playwright:codegen": "playwright codegen",
+    "playwright:test:local": "playwright test --config=playwright.config.local.ts",
+    "playwright:test:no-server": "START_SERVER=false playwright test"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
@@ -39,6 +50,7 @@
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
+    "@playwright/test": "^1.50.0",
     "@tailwindcss/postcss": "^4",
     "@types/node": "^20",
     "@types/react": "^19",
@@ -46,6 +58,7 @@
     "@types/react-window": "^1.8.8",
     "@typescript-eslint/eslint-plugin": "^8.36.0",
     "@typescript-eslint/parser": "^8.36.0",
+    "cypress": "^14.0.0",
     "eslint": "^9",
     "eslint-config-next": "15.3.4",
     "eslint-import-resolver-typescript": "^4.4.4",

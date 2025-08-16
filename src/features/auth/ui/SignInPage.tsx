@@ -5,7 +5,7 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 
-import { login, signInWithGoogle } from "@/app/auth/actions";
+import { login, signInWithGoogle } from "@/app/(auth)/actions";
 
 import { colors, getPageBackground } from "@/shared/config/colors";
 
@@ -29,18 +29,6 @@ function SignInContent() {
           >
             Sign in to your account
           </h2>
-          <p
-            className={`text-center text-sm ${colors.text.secondary.light} dark:${colors.text.secondary.dark} mb-6`}
-          >
-            Or{" "}
-            <Link
-              href="/auth/signup"
-              className="font-medium text-blue-600 transition-colors hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300"
-            >
-              create a new account
-            </Link>
-          </p>
-
           <AuthForm
             serverAction={login}
             googleServerAction={signInWithGoogle}
@@ -50,6 +38,17 @@ function SignInContent() {
             googleText="Sign in with Google"
             showConfirmPassword={false}
           />
+          <p
+            className={`mt-6 text-center text-sm ${colors.text.secondary.light} dark:${colors.text.secondary.dark}`}
+          >
+            Don&apos;t have an account?{" "}
+            <Link
+              href="/signup"
+              className="font-medium text-blue-600 transition-colors hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300"
+            >
+              Create a new account
+            </Link>
+          </p>
         </div>
       </div>
     </div>

@@ -1,8 +1,4 @@
-import {
-  WordStatsChart,
-  NavigationLinks,
-  WelcomeScreen,
-} from "@/features/main";
+import { WordStatsChart, NavigationLinks, WelcomeScreen } from "@main";
 
 import getServerUser from "../utils/supabase/getServerUser";
 

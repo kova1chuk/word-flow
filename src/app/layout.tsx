@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 
 import "./globals.css";
-import MainLayout from "@/components/MainLayout";
+import { MainLayout } from "@/components";
 
 import Providers from "./providers";
 

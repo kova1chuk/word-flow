@@ -1,3 +1,5 @@
+"use client";
+
 import { useRef, useLayoutEffect, useState } from "react";
 
 import * as RadixSlider from "@radix-ui/react-slider";

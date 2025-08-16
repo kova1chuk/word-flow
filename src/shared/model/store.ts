@@ -1,19 +1,13 @@
+// Import slices
+
 import { configureStore } from "@reduxjs/toolkit";
 
 import { TypedUseSelectorHook, useDispatch, useSelector } from "react-redux";
 
-// Import slices
-import trainingStatsSlice from "@/features/analysis-view/model/trainingStatsSlice";
-import analysisWordsSlice from "@/features/analysis-words/model/analysisWordsSlice";
-import mainSlice from "@/features/main/model/mainSlice";
-import profileReducer from "@/features/profile/model/profileSlice";
-import analysesSlice from "@/features/review/model/analysesSlice";
-import trainingSlice from "@/features/training/model/trainingSlice";
-
 import analysisSlice from "@/entities/analysis/model/analysisSlice";
 import { dictionaryApi } from "@/entities/dictionary/api";
 import authSlice from "@/entities/user/model/authSlice";
-import { wordApi } from "@/entities/word/api/wordApi";
+import { wordApi, wordThirdDictionaryApi } from "@/entities/word/api/wordApi";
 import wordSlice from "@/entities/word/model/wordSlice";
 
 import formSlice from "@/shared/model/formSlice";
@@ -22,8 +16,14 @@ import uiSlice from "@/shared/model/uiSlice";
 
 import { analysisApi } from "../../entities/analysis/api/analysisApi";
 import { parseReviewApi, reviewApi } from "../../entities/review/api";
+import trainingStatsSlice from "../../features/analysis-view/model/trainingStatsSlice";
+import analysisWordsSlice from "../../features/analysis-words/model/analysisWordsSlice";
 import wordsSlice from "../../features/dictionary/model/wordsSlice";
+import mainSlice from "../../features/main/model/mainSlice";
+import profileReducer from "../../features/profile/model/profileSlice";
+import analysesSlice from "../../features/review/model/analysesSlice";
 import createReviewSlice from "../../features/review/model/createReviewModel/createReviewSlice";
+import trainingSlice from "../../features/training/model/trainingSlice";
 
 // Import RTK Query APIs
 
@@ -47,6 +47,7 @@ export const store = configureStore({
     // RTK Query APIs
     [dictionaryApi.reducerPath]: dictionaryApi.reducer,
     [wordApi.reducerPath]: wordApi.reducer,
+    [wordThirdDictionaryApi.reducerPath]: wordThirdDictionaryApi.reducer,
     [analysisApi.reducerPath]: analysisApi.reducer,
     [parseReviewApi.reducerPath]: parseReviewApi.reducer,
     [reviewApi.reducerPath]: reviewApi.reducer,
@@ -79,6 +80,7 @@ export const store = configureStore({
       // Add RTK Query middleware
       dictionaryApi.middleware,
       wordApi.middleware,
+      wordThirdDictionaryApi.middleware,
       analysisApi.middleware,
       parseReviewApi.middleware,
     ),

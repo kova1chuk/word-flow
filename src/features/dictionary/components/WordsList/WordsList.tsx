@@ -2,15 +2,12 @@ import React, { useCallback } from "react";
 
 import { useDispatch, useSelector } from "react-redux";
 
-import WordCard from "@/components/WordCard";
-
-import { selectPaginatedWordIds } from "@/features/dictionary/model/selectors";
-
 import type { AppDispatch, RootState } from "@/shared/model/store";
 
 import { WordStatus } from "../../../../types";
-import { reloadWordDefinitionFromApi } from "../../lib/reloadWordDefinition";
+// import { reloadWordDefinitionFromApi } from "../../lib/reloadWordDefinition";
 import { reloadWordTranslationFromApi } from "../../lib/reloadWordTranslation";
+import { selectPaginatedWordIds } from "../../model/selectors";
 import {
   reloadWordDefinition,
   reloadWordTranslation,
@@ -18,9 +15,11 @@ import {
   updateWordStatus,
 } from "../../model/thunks";
 import {
-  addUpdatingDefinition,
+  // addUpdatingDefinition,
   addUpdatingTranslation,
 } from "../../model/wordsSlice";
+
+import WordCard from "../WordCard";
 
 interface WordsListProps {
   currentPage: number;
@@ -39,25 +38,26 @@ const WordsList: React.FC<WordsListProps> = ({
 
   const handleReloadDefinition = useCallback(
     (wordId: string, wordText: string) => {
-      const reloadWordDefinitionThunk = (params: {
-        langCode: string;
-        id: string;
-        definition: string | null;
-        newPhoneticText: string | null;
-        newPhoneticAudioLink: string | null;
-      }) => {
-        dispatch(reloadWordDefinition(params));
-      };
-      const addUpdatingDefinitionAction = (id: string) => {
-        dispatch(addUpdatingDefinition(id));
-      };
-      reloadWordDefinitionFromApi({
-        wordId,
-        wordText,
-        addUpdatingDefinition: addUpdatingDefinitionAction,
-        reloadWordDefinition: reloadWordDefinitionThunk,
-        langCode: "en",
-      });
+      // const reloadWordDefinitionThunk = (params: {
+      //   langCode: string;
+      //   id: string;
+      //   definition: string | null;
+      //   newPhoneticText: string | null;
+      //   newPhoneticAudioLink: string | null;
+      // }) => {
+      //   dispatch(reloadWordDefinition(params));
+      // };
+      // const addUpdatingDefinitionAction = (id: string) => {
+      //   dispatch(addUpdatingDefinition(id));
+      // };
+      // reloadWordDefinitionFromApi({
+      //   wordId,
+      //   wordText,
+      //   addUpdatingDefinition: addUpdatingDefinitionAction,
+      //   reloadWordDefinition: reloadWordDefinitionThunk,
+      //   langCode: "en",
+      // });
+      dispatch(reloadWordDefinition({ langCode: "en", id: wordId, wordText }));
     },
     [dispatch],
   );

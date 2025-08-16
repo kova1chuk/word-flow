@@ -1,3 +1,4 @@
+// Main feature exports - only essential modules to avoid circular dependencies
 export {
   WordStatsChart,
   WordStatsChartSkeleton,
@@ -6,4 +7,7 @@ export {
 export { default as NavigationLinks } from "./components/NavigationLinks";
 export { default as WelcomeScreen } from "./components/WelcomeScreen";
 
-export * from "./model";
+// Model exports
+export { default as mainSlice } from "./model/mainSlice";
+export * from "./model/selectors";
+export * from "./model/thunks";

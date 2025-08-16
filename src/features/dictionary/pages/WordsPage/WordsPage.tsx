@@ -14,8 +14,7 @@ import { WithSkeleton } from "@/shared/hocs";
 import { useUpdateQueryParams } from "@/shared/hooks/useUpdateQueryParams";
 import { AppDispatch, RootState } from "@/shared/model/store";
 
-import { WordsList } from "../../components";
-import { WordsListSkeleton } from "../../components/WordsList";
+import { default as WordsList, WordsListSkeleton } from "../../components/WordsList";
 import { selectPageInfo } from "../../model";
 import {
   fetchAnalysesForFilter,

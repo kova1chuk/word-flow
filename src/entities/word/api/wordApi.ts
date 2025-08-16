@@ -1,8 +1,11 @@
-import { createApi } from "@reduxjs/toolkit/query/react";
+import { createApi, fetchBaseQuery } from "@reduxjs/toolkit/query/react";
 
 import { supabaseRpcBaseQuery } from "@/shared/api";
 
+import { config } from "@/lib/config";
+
 import { WordStatus } from "../../../types";
+import { DictionaryApiResponse } from "../../dictionary/types";
 
 interface ReloadWordDefinitionResponse {
   definition: string;
@@ -124,6 +127,23 @@ export const wordApi = createApi({
           p_word_id: id,
         },
         invalidatesTags: ["Word"],
+      }),
+    }),
+  }),
+});
+
+export const wordThirdDictionaryApi = createApi({
+  reducerPath: "wordThirdDictionaryApi",
+  baseQuery: fetchBaseQuery({
+    baseUrl: config.dictionaryApi,
+  }),
+  endpoints: (builder) => ({
+    getWordDefinition: builder.query<
+      DictionaryApiResponse,
+      { langCode: string; wordText: string }
+    >({
+      query: ({ langCode, wordText }) => ({
+        url: `${langCode}/${encodeURIComponent(wordText)}`,
       }),
     }),
   }),

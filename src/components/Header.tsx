@@ -2,12 +2,14 @@
 
 import { useState, useEffect, useRef } from "react";
 
+import type { Route } from "next";
+
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import { useSelector } from "react-redux";
 
-import { signOut } from "@/app/auth/actions";
+import { signOut } from "@/app/(auth)/actions";
 
 import { selectUser } from "@/entities/user/model/selectors";
 
@@ -112,13 +114,13 @@ export default function Header() {
             {/* Auth Links */}
             <div className="flex items-center space-x-2">
               <Link
-                href="/auth/signin"
+                href="/signin"
                 className="rounded-xl px-4 py-2 text-sm font-medium text-gray-600 transition-all duration-200 hover:bg-gray-100/50 hover:text-blue-600 dark:text-gray-300 dark:hover:bg-gray-700/50 dark:hover:text-white"
               >
                 Sign In
               </Link>
               <Link
-                href="/auth/signup"
+                href="/signup"
                 className="rounded-xl bg-blue-600 px-4 py-2 text-sm font-medium text-white transition-all duration-200 hover:bg-blue-700"
               >
                 Sign Up
@@ -185,7 +187,7 @@ export default function Header() {
                     return (
                       <Link
                         key={link.href}
-                        href={link.href}
+                        href={link.href as Route}
                         onClick={closeMenus}
                         className={`rounded-xl px-3 py-2 text-sm font-medium transition-all duration-200 ${
                           isActive
@@ -325,7 +327,7 @@ export default function Header() {
                         return (
                           <Link
                             key={link.href}
-                            href={link.href}
+                            href={link.href as Route}
                             onClick={closeMenus}
                             className={`block rounded-xl px-3 py-2 text-base font-medium transition-all duration-200 ${
                               isActive

@@ -1,14 +1,8 @@
-"use client";
-
-import { useState } from "react";
-
 import Link from "next/link";
 
 import { colors } from "@/shared/config/colors";
 
 export default function WelcomeScreen() {
-  const [isHovered, setIsHovered] = useState(false);
-
   return (
     <div className={`flex min-h-screen items-center justify-center p-4 pt-26`}>
       <div className="mx-auto max-w-4xl text-center">
@@ -107,6 +101,72 @@ export default function WelcomeScreen() {
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   strokeWidth={2}
+                  d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z"
+                />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                />
+              </svg>
+            </div>
+            <h3
+              className={`text-lg font-semibold ${colors.text.primary.light} dark:${colors.text.primary.dark} mb-2`}
+            >
+              Interactive Training
+            </h3>
+            <p
+              className={`${colors.text.secondary.light} dark:${colors.text.secondary.dark}`}
+            >
+              Engage with dynamic flashcards, quizzes, and exercises to
+              reinforce your vocabulary
+            </p>
+          </div>
+
+          <div
+            className={`${colors.background.card.light} dark:${colors.background.card.dark} rounded-xl p-6 ${colors.shadow.card} ${colors.shadow.cardHover} transition-shadow duration-300`}
+          >
+            <div
+              className={`h-12 w-12 ${colors.features.progress.icon.light} dark:${colors.features.progress.icon.dark} mx-auto mb-4 flex items-center justify-center rounded-lg`}
+            >
+              <svg
+                className={`h-6 w-6 ${colors.features.progress.text.light} dark:${colors.features.progress.text.dark}`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
+                />
+              </svg>
+            </div>
+            <h3
+              className={`text-lg font-semibold ${colors.text.primary.light} dark:${colors.text.primary.dark} mb-2`}
+            >
+              Progress Tracking
+            </h3>
+          </div>
+
+          <div
+            className={`${colors.background.card.light} dark:${colors.background.card.dark} rounded-xl p-6 ${colors.shadow.card} ${colors.shadow.cardHover} transition-shadow duration-300`}
+          >
+            <div
+              className={`h-12 w-12 ${colors.features.training.icon.light} dark:${colors.features.training.icon.dark} mx-auto mb-4 flex items-center justify-center rounded-lg`}
+            >
+              <svg
+                className={`h-6 w-6 ${colors.features.training.text.light} dark:${colors.features.training.text.dark}`}
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
                   d="M13 10V3L4 14h7v7l9-11h-7z"
                 />
               </svg>
@@ -162,14 +222,8 @@ export default function WelcomeScreen() {
         <div className="space-y-4">
           <div className="flex flex-col justify-center gap-4 sm:flex-row">
             <Link
-              href="/auth/signin"
-              className={`inline-flex transform items-center justify-center rounded-xl px-8 py-4 text-lg font-semibold transition-all duration-300 hover:scale-105 ${
-                isHovered
-                  ? `bg-gradient-to-r ${colors.primary.hover} ${colors.button.primary.text} ${colors.shadow.buttonHover}`
-                  : `bg-gradient-to-r ${colors.button.primary.background} ${colors.button.primary.text} ${colors.shadow.button}`
-              }`}
-              onMouseEnter={() => setIsHovered(true)}
-              onMouseLeave={() => setIsHovered(false)}
+              href="/signin"
+              className={`inline-flex transform items-center justify-center rounded-xl bg-gradient-to-r px-8 py-4 text-lg font-semibold transition-all duration-300 hover:scale-105 ${colors.button.primary.background} ${colors.button.primary.text} ${colors.shadow.button} hover:${colors.shadow.buttonHover}`}
             >
               <svg
                 className="mr-2 h-5 w-5"
@@ -188,7 +242,7 @@ export default function WelcomeScreen() {
             </Link>
 
             <Link
-              href="/auth/signup"
+              href="/signup"
               className={`inline-flex items-center justify-center px-8 py-4 text-lg font-semibold ${colors.button.secondary.background} ${colors.button.secondary.text.light} dark:${colors.button.secondary.text.dark} rounded-xl ${colors.button.secondary.hover.light} dark:${colors.button.secondary.hover.dark} transition-all duration-300`}
             >
               <svg

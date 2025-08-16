@@ -166,7 +166,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        device: [Pixel 5, iPhone 12]
+        project: ["Mobile Chrome", "Mobile Safari"]
 
     steps:
       - name: Checkout code
@@ -188,7 +188,7 @@ jobs:
         run: npm run build
 
       - name: Run Playwright mobile tests
-        run: npx playwright test --project="Mobile ${{ matrix.device }}" --reporter=html
+        run: npx playwright test --project="${{ matrix.project }}" --reporter=html
         env:
           START_SERVER: true
           DEV_COMMAND: "npm run start"
@@ -197,7 +197,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: playwright-mobile-report-${{ matrix.device }}
+          name: playwright-mobile-report-${{ matrix.project }}
           path: playwright-report/
           retention-days: 30
 

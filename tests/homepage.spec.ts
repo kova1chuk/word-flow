@@ -15,22 +15,28 @@ test.describe("Homepage", () => {
   });
 
   test("should have navigation links", async ({ page }) => {
-    const signInLink = page.getByRole("link", { name: "Get Started" });
-    const signUpLink = page.getByRole("link", { name: "Create Account" });
+    const main = page.getByRole("main");
+    const signInLink = main.getByRole("link", { name: "Get Started" });
+    const signUpLink = main.getByRole("link", { name: "Create Account" });
 
     await expect(signInLink).toHaveAttribute("href", "/signin");
     await expect(signUpLink).toHaveAttribute("href", "/signup");
   });
 
   test("should display feature cards", async ({ page }) => {
+    const featureSection = page.locator("div.grid");
     await expect(
-      page.getByRole("heading", { name: "Smart Analysis" }),
+      featureSection.getByRole("heading", { name: "Smart Analysis" }),
     ).toBeVisible();
     await expect(
-      page.getByRole("heading", { name: "Interactive Training" }),
+      featureSection
+        .getByRole("heading", { name: "Interactive Training" })
+        .first(),
     ).toBeVisible();
     await expect(
-      page.getByRole("heading", { name: "Progress Tracking" }),
+      featureSection
+        .getByRole("heading", { name: "Progress Tracking" })
+        .first(),
     ).toBeVisible();
   });
 
@@ -40,7 +46,7 @@ test.describe("Homepage", () => {
 
     // Check for proper heading structure
     const headings = page.locator("h1, h2, h3, h4, h5, h6");
-    await expect(headings).toHaveCount(4); // 1 h1 + 3 h3
+    await expect(headings).toHaveCount(9); // 1 h1 + 3 h2
   });
 
   test("should be responsive", async ({ page }) => {

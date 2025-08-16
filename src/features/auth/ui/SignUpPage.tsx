@@ -35,17 +35,6 @@ export const SignUpPage: React.FC = () => {
           >
             Create your account
           </h2>
-          <p
-            className={`text-center text-sm ${colors.text.secondary.light} dark:${colors.text.secondary.dark} mb-6`}
-          >
-            Or{" "}
-            <Link
-              href="/signin"
-              className="font-medium text-blue-600 transition-colors hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300"
-            >
-              sign in to your existing account
-            </Link>
-          </p>
           <AuthForm
             email={email}
             password={password}
@@ -61,6 +50,17 @@ export const SignUpPage: React.FC = () => {
             googleText="Sign up with Google"
             showConfirmPassword={true}
           />
+          <p
+            className={`mt-6 text-center text-sm ${colors.text.secondary.light} dark:${colors.text.secondary.dark}`}
+          >
+            Already have an account?{" "}
+            <Link
+              href="/signin"
+              className="font-medium text-blue-600 transition-colors hover:text-blue-500 dark:text-blue-400 dark:hover:text-blue-300"
+            >
+              Sign in
+            </Link>
+          </p>
         </div>
       </div>
     </div>

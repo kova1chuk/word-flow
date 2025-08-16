@@ -3,7 +3,7 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 
 import "./globals.css";
-import { MainLayout, PlerdyScript } from "@/components";
+import { MainLayout } from "@/components";
 
 import Providers from "./providers";
 
@@ -70,7 +70,6 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <Providers>
-          <PlerdyScript />
           <MainLayout>{children}</MainLayout>
         </Providers>
       </body>

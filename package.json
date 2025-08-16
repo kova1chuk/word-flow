@@ -32,7 +32,10 @@
     "test:cypress:ci": "npm run build && npm run cypress:run:headless",
     "test:lint": "npm run lint && npx tsc --noEmit",
     "test:build": "npm run build",
-    "test:all": "npm run test:lint && npm run test:build && npm run test:ci"
+    "test:all": "npm run test:lint && npm run test:build && npm run test:ci",
+    "test:playwright:mobile": "npx playwright test --project=\"Mobile Chrome\" --project=\"Mobile Safari\"",
+    "test:playwright:browsers": "npx playwright test --project=chromium --project=firefox --project=webkit",
+    "test:playwright:all": "npx playwright test"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
